@@ -384,7 +384,16 @@ export function Workbench({
           </div>
         </header>
 
-        {activeTab === "insights" ? <InsightsView brief={brief} holdings={holdings} /> : null}
+        {activeTab === "insights" ? (
+          <InsightsView
+            brief={brief}
+            holdings={holdings}
+            onOpenMarket={(country) => {
+              setRequestedCountry(country);
+              setActiveTab("map");
+            }}
+          />
+        ) : null}
         {activeTab === "portfolio" ? (
           <PortfolioView
             holdings={holdings}

@@ -128,8 +128,8 @@ export function buildDailyBrief(input: {
   return {
     id: `brief-${asOf}`,
     brief_date: asOf,
-    title: `Portfolio brief · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long" }).format(new Date(asOf))}`,
-    summary: `${summary.count} positions · ${formatMoney(summary.total)} · ${insights.filter((item) => item.severity === "attention").length} items need attention.`,
+    title: `US & Europe market brief · ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long" }).format(new Date(asOf))}`,
+    summary: `${summary.count} positions · ${formatMoney(summary.total)} · US technology, European macro conditions, and NOK translation remain the primary daily lens. ${insights.filter((item) => item.severity === "attention").length} items need attention.`,
     insights,
     generated_at: input.generatedAt ?? `${asOf}T06:00:00.000Z`,
   };

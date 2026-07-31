@@ -4,26 +4,63 @@ import {
   ArrowUpRight,
   Check,
   Clipboard,
+  Compass,
   FileSearch,
   Link2,
+  MapPinned,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
   X,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  Legend,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
 import { buildChatGptPacket, redactHoldingIdentities } from "@/lib/insights";
 import { formatMoney, holdingValueNok } from "@/lib/calculations";
 import type { DailyBrief, Holding, ShareOptions } from "@/lib/types";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { ShareDialog } from "@/components/share-dialog";
 
+type DeskFocus = "core" | "us" | "europe" | "discover";
+
+const marketDesk = [
+  { id: "us-policy", region: "us", market: "United States", label: "Policy and liquidity", title: "Fed, inflation, and the dollar", watch: "Rate expectations, labour-market direction, financial conditions, and USD/NOK translation.", relevance: "The portfolio is dominated by US earnings and long-duration technology exposure.", source: "FRED", sourceUrl: "https://fred.stlouisfed.org/" },
+  { id: "us-filings", region: "us", market: "United States", label: "Company evidence", title: "Technology earnings breadth", watch: "SEC filings, data-centre investment, margins, customer concentration, and capital returns.", relevance: "MSFT, NVDA, and GOOGL are direct overweights and are also held through the S&P 500 ETF.", source: "SEC EDGAR", sourceUrl: "https://www.sec.gov/search-filings" },
+  { id: "eu-policy", region: "europe", market: "Germany", label: "Monetary transmission", title: "ECB rates and European demand", watch: "Policy rates, credit conditions, inflation, and the industrial cycle across the euro area.", relevance: "European conditions affect the ETF listing currency, global demand, and NOK/EUR translation.", source: "ECB Data Portal", sourceUrl: "https://data.ecb.europa.eu/" },
+  { id: "eu-cycle", region: "europe", market: "France", label: "Cross-Atlantic check", title: "European earnings and fiscal risk", watch: "Industrial orders, consumer demand, sovereign spreads, defence budgets, and political stability.", relevance: "Europe provides a useful counterweight when US technology dominates the portfolio narrative.", source: "Eurostat", sourceUrl: "https://ec.europa.eu/eurostat" },
+  { id: "japan", region: "discover", market: "Japan", label: "Discover", title: "Japan: rates, yen, and governance", watch: "Bank of Japan normalization, wage growth, yen sensitivity, and corporate capital allocation.", relevance: "A different monetary regime and industrial mix can expose assumptions hidden by a US-heavy portfolio.", source: "Bank of Japan", sourceUrl: "https://www.boj.or.jp/en/" },
+  { id: "india", region: "discover", market: "India", label: "Discover", title: "India: domestic growth at a premium", watch: "Credit growth, oil imports, rupee sensitivity, market valuations, and infrastructure execution.", relevance: "Domestic demand and financial deepening differ materially from the portfolio's US mega-cap drivers.", source: "Reserve Bank of India", sourceUrl: "https://www.rbi.org.in/" },
+  { id: "brazil", region: "discover", market: "Brazil", label: "Discover", title: "Brazil: real rates and commodities", watch: "Fiscal credibility, policy rates, the real, iron ore, agriculture, and China-linked demand.", relevance: "Real assets and high-rate dynamics provide a useful contrast with technology-duration exposure.", source: "Banco Central do Brasil", sourceUrl: "https://www.bcb.gov.br/en" },
+  { id: "south-korea", region: "discover", market: "South Korea", label: "Discover", title: "South Korea: the semiconductor cycle", watch: "Memory pricing, export demand, governance reform, the won, and regional security.", relevance: "It broadens the AI supply-chain view beyond Nvidia while retaining clear cyclical risks.", source: "Bank of Korea", sourceUrl: "https://www.bok.or.kr/eng/main/main.do" },
+] as const;
+
+const investorProfiles = {
+  buffett: { name: "Warren Buffett", color: "#d4af37", scores: [82, 92, 22, 58, 80] },
+  ackman: { name: "Bill Ackman", color: "#c87854", scores: [96, 62, 20, 96, 72] },
+  renaissance: { name: "Renaissance Technologies", color: "#63a6a1", scores: [24, 78, 100, 8, 12] },
+  smith: { name: "Terry Smith", color: "#91a28f", scores: [76, 48, 48, 12, 78] },
+} as const;
+
+type InvestorId = keyof typeof investorProfiles;
+const comparisonAxes = ["Concentration", "Liquidity", "Systematic", "Intervention", "Transparency"];
+
 export function InsightsView({
   brief,
   holdings,
+  onOpenMarket,
 }: {
   brief: DailyBrief;
   holdings: Holding[];
+  onOpenMarket: (country: string) => void;
 }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -33,6 +70,7 @@ export function InsightsView({
     includeCommentary: false,
   });
   const [copied, setCopied] = useState(false);
+  const [deskFocus, setDeskFocus] = useState<DeskFocus>("core");
   const attention = brief.insights.filter((item) => item.severity === "attention").length;
   const sourced = brief.insights.filter((item) => item.source_url).length;
 
@@ -82,7 +120,7 @@ export function InsightsView({
 
   return (
     <>
-      <div className="insights-layout">
+      <div className="insights-layout insights-workbench">
         <section className="brief-hero">
           <div>
             <span className="eyebrow">Daily decision brief</span>
@@ -116,6 +154,34 @@ export function InsightsView({
             <strong>Off</strong>
           </article>
         </section>
+
+        <section className="market-desk wide" aria-labelledby="market-desk-title">
+          <div className="section-heading">
+            <div><span className="eyebrow">Geographic research desk</span><h2 id="market-desk-title">Daily focus and market discovery</h2></div>
+            <div className="desk-focus" aria-label="Market desk focus">
+              {([
+                ["core", "US & Europe"], ["us", "United States"], ["europe", "Europe"], ["discover", "Discover"],
+              ] as Array<[DeskFocus, string]>).map(([id, label]) => (
+                <button key={id} type="button" className={deskFocus === id ? "active" : ""} onClick={() => setDeskFocus(id)}>{label}</button>
+              ))}
+            </div>
+          </div>
+          <div className="market-desk-grid">
+            {marketDesk.filter((item) => deskFocus === "core" ? item.region !== "discover" : item.region === deskFocus).map((item) => (
+              <article key={item.id}>
+                <header><span>{item.label}</span><strong>{item.market}</strong></header>
+                <h3>{item.title}</h3>
+                <dl><div><dt>Watch</dt><dd>{item.watch}</dd></div><div><dt>Portfolio lens</dt><dd>{item.relevance}</dd></div></dl>
+                <footer>
+                  <a href={item.sourceUrl} target="_blank" rel="noreferrer">{item.source} <ArrowUpRight size={12} /></a>
+                  <button type="button" onClick={() => onOpenMarket(item.market)}><MapPinned size={13} /> Open map</button>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <InvestorComparison />
 
         <section className="insight-feed">
           <div className="section-heading">
@@ -235,5 +301,47 @@ export function InsightsView({
         </div>
       ) : null}
     </>
+  );
+}
+
+function InvestorComparison() {
+  const [left, setLeft] = useState<InvestorId>("buffett");
+  const [right, setRight] = useState<InvestorId>("renaissance");
+  const leftProfile = investorProfiles[left];
+  const rightProfile = investorProfiles[right];
+  const data = comparisonAxes.map((axis, index) => ({ axis, left: leftProfile.scores[index], right: rightProfile.scores[index] }));
+
+  return (
+    <section className="investor-comparison wide" aria-labelledby="investor-comparison-title">
+      <div className="section-heading">
+        <div><span className="eyebrow">Strategy comparison</span><h2 id="investor-comparison-title">Compare investor operating systems</h2></div>
+        <div className="investor-selectors">
+          <label><span>Investor A</span><select value={left} onChange={(event) => setLeft(event.target.value as InvestorId)}>{Object.entries(investorProfiles).map(([id, profile]) => <option key={id} value={id}>{profile.name}</option>)}</select></label>
+          <label><span>Investor B</span><select value={right} onChange={(event) => setRight(event.target.value as InvestorId)}>{Object.entries(investorProfiles).map(([id, profile]) => <option key={id} value={id}>{profile.name}</option>)}</select></label>
+        </div>
+      </div>
+      <div className="investor-comparison-body">
+        <div className="investor-radar">
+          <ResponsiveContainer width="100%" height={330}>
+            <RadarChart data={data} outerRadius="72%">
+              <PolarGrid stroke="rgba(214, 180, 91, 0.22)" />
+              <PolarAngleAxis dataKey="axis" tick={{ fill: "#c5d0c7", fontSize: 10 }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+              <Radar name={leftProfile.name} dataKey="left" stroke={leftProfile.color} fill={leftProfile.color} fillOpacity={0.2} strokeWidth={2} />
+              <Radar name={rightProfile.name} dataKey="right" stroke={rightProfile.color} fill={rightProfile.color} fillOpacity={0.16} strokeWidth={2} />
+              <Legend wrapperStyle={{ color: "#dce3dc", fontSize: 10 }} />
+              <Tooltip contentStyle={{ background: "#14221b", border: "1px solid rgba(212, 175, 55, 0.45)", color: "#f5f0e5" }} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="comparison-notes">
+          <Compass size={20} />
+          <h3>Read shape, not rank</h3>
+          <p>The scores describe visible process characteristics, not expected return or investment quality. A high score is not automatically better.</p>
+          <p>Renaissance&apos;s public filings do not reveal Medallion&apos;s full strategy. Buffett&apos;s liquidity and Ackman&apos;s intervention are also difficult to reproduce from a personal account.</p>
+          <span>Qualitative Aurelian framework · 0-100 descriptive scale</span>
+        </div>
+      </div>
+    </section>
   );
 }

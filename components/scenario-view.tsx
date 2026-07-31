@@ -43,6 +43,12 @@ import type {
 import { ShareDialog } from "@/components/share-dialog";
 
 const factorKeys = Object.keys(factorLabels) as FactorKey[];
+const darkTooltip = {
+  backgroundColor: "rgba(20, 34, 27, 0.96)",
+  border: "1px solid rgba(212, 175, 55, 0.5)",
+  borderRadius: "5px",
+  color: "#f5f0e5",
+};
 
 export function ScenarioView({
   holdings,
@@ -109,7 +115,7 @@ export function ScenarioView({
 
   return (
     <>
-      <div className="scenario-layout">
+      <div className="scenario-layout scenario-workbench">
         <section className="scenario-toolbar">
           <div>
             <span className="eyebrow">Named stress tests</span>
@@ -195,12 +201,12 @@ export function ScenarioView({
               }))}
               margin={{ left: 8, right: 54 }}
             >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-              <XAxis type="number" tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
-              <YAxis dataKey="name" type="category" width={70} />
-              <Tooltip formatter={(value) => formatMoney(Number(value), displayCurrency)} />
+              <CartesianGrid stroke="rgba(214, 180, 91, 0.16)" strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" tick={{ fill: "#acb9ae", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
+              <YAxis dataKey="name" type="category" width={70} tick={{ fill: "#d8dfd6", fontSize: 10 }} />
+              <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
               <Bar dataKey="impact" radius={3}>
-                {rows.map((row) => <Cell key={row.holding.id} fill={row.impactNok >= 0 ? "#4f7461" : "#a65d45"} />)}
+                {rows.map((row) => <Cell key={row.holding.id} fill={row.impactNok >= 0 ? "#78b88c" : "#d07c62"} />)}
                 <LabelList
                   dataKey="impact"
                   position="right"
@@ -217,12 +223,12 @@ export function ScenarioView({
           </div>
           <ResponsiveContainer width="100%" height={270}>
             <BarChart data={beforeAfter}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
-              <Tooltip formatter={(value) => formatMoney(Number(value), displayCurrency)} />
+              <CartesianGrid stroke="rgba(214, 180, 91, 0.16)" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: "#d8dfd6", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#acb9ae", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
+              <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
               <Bar dataKey="value" radius={[3, 3, 0, 0]}>
-                <Cell fill="#263329" /><Cell fill={impact >= 0 ? "#4f7461" : "#a65d45"} />
+                <Cell fill="#d4af37" /><Cell fill={impact >= 0 ? "#78b88c" : "#d07c62"} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
