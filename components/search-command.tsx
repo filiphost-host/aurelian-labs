@@ -25,7 +25,10 @@ type LocalResult = {
 
 const searchableCountries = [
   "Norway", "Sweden", "Denmark", "Finland", "United Kingdom", "Germany",
-  "France", "Spain", "United States", "Canada", "Japan", "Australia",
+  "France", "Spain", "Netherlands", "Switzerland", "Italy", "Belgium",
+  "Austria", "Ireland", "Portugal", "Poland", "United States", "Canada",
+  "Mexico", "Brazil", "Japan", "China", "India", "South Korea", "Australia",
+  "South Africa", "Egypt",
 ];
 
 export function SearchCommand({
