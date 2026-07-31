@@ -1,8 +1,22 @@
 "use client";
 
 import { geoNaturalEarth1, geoPath } from "d3-geo";
-import { Building2, Crosshair, Factory, Landmark, Minus, Plus, Search } from "lucide-react";
-import { useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  Crosshair,
+  Factory,
+  Landmark,
+  Minus,
+  Plus,
+  Search,
+} from "lucide-react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import worldAtlas from "world-atlas/countries-110m.json";
@@ -467,6 +481,7 @@ export function GlobalMapView({
   );
   const [query, setQuery] = useState(requestedMarket?.name ?? "");
   const [dragging, setDragging] = useState(false);
+  const [expandedHoverId, setExpandedHoverId] = useState<string | null>(null);
   const dragRef = useRef<{
     pointerId: number;
     start: MapPoint;
@@ -474,6 +489,7 @@ export function GlobalMapView({
     moved: boolean;
   } | null>(null);
   const suppressClickRef = useRef(false);
+  const hoverClearRef = useRef<number | null>(null);
   const activeId = hoveredId ?? pinnedId;
   const previewCountry = marketCountries.find((country) => country.id === hoveredId) ?? null;
   const selectedCountry = marketCountries.find((country) => country.id === pinnedId) ?? previewCountry;
@@ -486,8 +502,35 @@ export function GlobalMapView({
   const viewX = Math.max(0, Math.min(900 - viewWidth, center[0] - viewWidth / 2));
   const viewY = Math.max(0, Math.min(460 - viewHeight, center[1] - viewHeight / 2));
   const previewCentroid = previewShape?.centroid ?? [450, 230];
-  const calloutX = previewCentroid[0] > 540 ? previewCentroid[0] - 270 : previewCentroid[0] + 28;
-  const calloutY = Math.max(18, previewCentroid[1] - 80);
+  const previewLeft = Math.max(4, Math.min(96, (previewCentroid[0] - viewX) / viewWidth * 100));
+  const previewTop = Math.max(8, Math.min(92, (previewCentroid[1] - viewY) / viewHeight * 100));
+  const previewSide = previewLeft > 64 ? "left" : "right";
+  const previewVertical = previewTop < 28 ? "below" : previewTop > 72 ? "above" : "middle";
+  const previewScale = zoom >= 3.1 ? "micro" : zoom >= 2 ? "compact" : "standard";
+
+  useEffect(() => () => {
+    if (hoverClearRef.current !== null) window.clearTimeout(hoverClearRef.current);
+  }, []);
+
+  function keepPreview(countryId?: string) {
+    if (hoverClearRef.current !== null) {
+      window.clearTimeout(hoverClearRef.current);
+      hoverClearRef.current = null;
+    }
+    if (countryId) {
+      setHoveredId(countryId);
+      setExpandedHoverId((current) => current === countryId ? current : null);
+    }
+  }
+
+  function clearPreviewSoon() {
+    if (hoverClearRef.current !== null) window.clearTimeout(hoverClearRef.current);
+    hoverClearRef.current = window.setTimeout(() => {
+      setHoveredId(null);
+      setExpandedHoverId(null);
+      hoverClearRef.current = null;
+    }, 160);
+  }
 
   function selectCountry(country: MarketCountry) {
     const shape = worldCountries.find((item) => item.name === country.atlasName);
@@ -505,6 +548,7 @@ export function GlobalMapView({
     setZoom(DEFAULT_ZOOM);
     setCenter(DEFAULT_CENTER);
     setQuery("");
+    setExpandedHoverId(null);
   }
 
   function changeZoom(nextZoom: number, pointerRatio: MapPoint = [0.5, 0.5]) {
@@ -558,6 +602,14 @@ export function GlobalMapView({
     changeZoom(zoom * (event.deltaY < 0 ? 1.16 : 0.86), pointerRatio);
   }
 
+  function nudgeMap(horizontal: number, vertical: number) {
+    const [currentWidth, currentHeight] = mapViewSize(zoom);
+    setCenter(clampMapCenter([
+      center[0] + currentWidth * horizontal * 0.2,
+      center[1] + currentHeight * vertical * 0.2,
+    ], zoom));
+  }
+
   const suggestions = query
     ? marketCountries.filter((country) => country.name.toLowerCase().includes(query.toLowerCase()) && country.name !== query)
     : [];
@@ -566,6 +618,7 @@ export function GlobalMapView({
       .reduce((sum, holding) => sum + holdingValueNok(holding), 0) / portfolioTotal * 100
     : 0;
   const selectedResearch = selectedCountry ? marketResearch[selectedCountry.id] : null;
+  const previewResearch = previewCountry ? marketResearch[previewCountry.id] : null;
   const shortcuts = ["norway", "netherlands", "united-states", "south-africa"]
     .map((id) => marketCountries.find((country) => country.id === id))
     .filter((country): country is MarketCountry => Boolean(country));
@@ -605,7 +658,7 @@ export function GlobalMapView({
       </section>
 
       <section className="panel wide map-panel">
-        <div className="world-map-shell" onMouseLeave={() => setHoveredId(null)}>
+        <div className="world-map-shell" onMouseLeave={clearPreviewSoon}>
           <svg
             className={`world-map${dragging ? " dragging" : ""}`}
             viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
@@ -646,10 +699,10 @@ export function GlobalMapView({
                   tabIndex={0}
                   aria-pressed={pinnedId === market.id}
                   aria-label={`${pinnedId === market.id ? "Pinned" : "Open"} ${market.name} market profile`}
-                  onMouseEnter={() => setHoveredId(market.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  onFocus={() => setHoveredId(market.id)}
-                  onBlur={() => setHoveredId(null)}
+                  onMouseEnter={() => keepPreview(market.id)}
+                  onMouseLeave={clearPreviewSoon}
+                  onFocus={() => keepPreview(market.id)}
+                  onBlur={clearPreviewSoon}
                   onClick={() => {
                     if (!suppressClickRef.current) selectCountry(market);
                   }}
@@ -663,20 +716,50 @@ export function GlobalMapView({
                 </g>
               );
             })}
-            {previewCountry ? (
-              <g className="callout-layer" pointerEvents="none">
-                <line className="callout-line" x1={previewCentroid[0]} y1={previewCentroid[1]} x2={calloutX} y2={calloutY + 30} />
-                <circle className="callout-anchor" cx={previewCentroid[0]} cy={previewCentroid[1]} r="6" />
-                <foreignObject x={calloutX} y={calloutY} width="235" height="125">
-                  <div className="map-callout">
-                    <span>{previewCountry.currency} · {previewCountry.keyIndex}</span>
-                    <strong>{previewCountry.name}</strong>
-                    <p>{previewCountry.note}</p>
-                  </div>
-                </foreignObject>
-              </g>
-            ) : null}
           </svg>
+          {previewCountry ? (
+            <aside
+              className={`map-callout ${previewScale} ${previewSide} ${previewVertical}${expandedHoverId === previewCountry.id ? " expanded" : ""}`}
+              style={{ left: `${previewLeft}%`, top: `${previewTop}%` }}
+              onMouseEnter={() => keepPreview(previewCountry.id)}
+              onMouseLeave={clearPreviewSoon}
+              onFocus={() => keepPreview(previewCountry.id)}
+              onBlur={clearPreviewSoon}
+              aria-label={`${previewCountry.name} market preview`}
+            >
+              <div className="map-callout-heading">
+                <span>{previewCountry.currency} · {previewCountry.keyIndex}</span>
+                <strong>{previewCountry.name}</strong>
+              </div>
+              <p>{previewCountry.note}</p>
+              {expandedHoverId === previewCountry.id && previewResearch ? (
+                <div className="map-callout-details">
+                  <dl>
+                    <div><dt>Leading sectors</dt><dd>{previewCountry.sectors}</dd></div>
+                    <div><dt>Resources</dt><dd>{previewResearch.materials}</dd></div>
+                    <div><dt>Companies</dt><dd>{previewResearch.companies.slice(0, 3).join(", ")}</dd></div>
+                  </dl>
+                  <p className="map-callout-policy">{previewResearch.policyWatch}</p>
+                  <button type="button" onClick={() => selectCountry(previewCountry)}>Open full profile</button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="map-callout-more"
+                aria-expanded={expandedHoverId === previewCountry.id}
+                onClick={() => setExpandedHoverId((current) => current === previewCountry.id ? null : previewCountry.id)}
+              >
+                {expandedHoverId === previewCountry.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                {expandedHoverId === previewCountry.id ? "Less" : "More info"}
+              </button>
+            </aside>
+          ) : null}
+          <div className="map-pan-controls" aria-label="Pan map">
+            <button className="north" type="button" aria-label="Pan north" title="Pan north" onClick={() => nudgeMap(0, -1)}><ArrowUp size={15} /></button>
+            <button className="west" type="button" aria-label="Pan west" title="Pan west" onClick={() => nudgeMap(-1, 0)}><ArrowLeft size={15} /></button>
+            <button className="east" type="button" aria-label="Pan east" title="Pan east" onClick={() => nudgeMap(1, 0)}><ArrowRight size={15} /></button>
+            <button className="south" type="button" aria-label="Pan south" title="Pan south" onClick={() => nudgeMap(0, 1)}><ArrowDown size={15} /></button>
+          </div>
           <div className="map-zoom-controls">
             <button type="button" aria-label="Zoom in" onClick={() => changeZoom(zoom * 1.28)}><Plus size={16} /></button>
             <button type="button" aria-label="Zoom out" onClick={() => changeZoom(zoom / 1.28)}><Minus size={16} /></button>
