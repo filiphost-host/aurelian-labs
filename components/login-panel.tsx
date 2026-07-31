@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, LockKeyhole, Mail } from "lucide-react";
+import { getAuthSignInErrorMessage } from "@/lib/auth-errors";
 import { createClient, hasSupabaseEnv } from "@/lib/supabase";
 
 export function LoginPanel({ initialMessage = "" }: { initialMessage?: string }) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState(initialMessage);
   const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const configured = hasSupabaseEnv();
+
+  useEffect(() => {
+    if (cooldown === 0) return;
+
+    const timer = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
 
   async function signIn() {
     const supabase = createClient();
@@ -24,7 +33,13 @@ export function LoginPanel({ initialMessage = "" }: { initialMessage?: string })
       },
     });
     setBusy(false);
-    setMessage(error ? error.message : "Check your email for the private sign-in link.");
+    if (error) {
+      setMessage(getAuthSignInErrorMessage(error));
+      return;
+    }
+
+    setCooldown(60);
+    setMessage("Check your email for the private sign-in link. The newest link is the one to use.");
   }
 
   return (
@@ -54,8 +69,8 @@ export function LoginPanel({ initialMessage = "" }: { initialMessage?: string })
                 onChange={(event) => setEmail(event.target.value)}
               />
             </div>
-            <button onClick={signIn} disabled={busy || !email}>
-              {busy ? "Sending..." : "Send magic link"}
+            <button onClick={signIn} disabled={busy || !email || cooldown > 0}>
+              {busy ? "Sending..." : cooldown > 0 ? `Send again in ${cooldown}s` : "Send magic link"}
               <ArrowRight size={16} />
             </button>
             {message ? <p className="form-message">{message}</p> : null}
