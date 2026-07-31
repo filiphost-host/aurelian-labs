@@ -524,6 +524,8 @@ export function GlobalMapView({
   } | null>(null);
   const suppressClickRef = useRef(false);
   const hoverClearRef = useRef<number | null>(null);
+  const hoverReadyRef = useRef(false);
+  const hoverPointRef = useRef<MapPoint | null>(null);
   const activeId = hoveredId ?? pinnedId;
   const previewCountry = marketCountries.find((country) => country.id === hoveredId) ?? null;
   const selectedCountry = marketCountries.find((country) => country.id === pinnedId) ?? previewCountry;
@@ -542,11 +544,14 @@ export function GlobalMapView({
   const previewVertical = previewTop < 28 ? "below" : previewTop > 72 ? "above" : "middle";
   const previewScale = zoom >= 3.1 ? "micro" : zoom >= 2 ? "compact" : "standard";
 
-  useEffect(() => () => {
-    if (hoverClearRef.current !== null) window.clearTimeout(hoverClearRef.current);
+  useEffect(() => {
+    return () => {
+      if (hoverClearRef.current !== null) window.clearTimeout(hoverClearRef.current);
+    };
   }, []);
 
-  function keepPreview(countryId?: string) {
+  function keepPreview(countryId?: string, force = false) {
+    if (!force && !hoverReadyRef.current) return;
     if (hoverClearRef.current !== null) {
       window.clearTimeout(hoverClearRef.current);
       hoverClearRef.current = null;
@@ -564,6 +569,16 @@ export function GlobalMapView({
       setExpandedHoverId(null);
       hoverClearRef.current = null;
     }, 160);
+  }
+
+  function previewOnPointerMove(event: ReactPointerEvent<SVGGElement>, countryId: string) {
+    const point: MapPoint = [event.clientX, event.clientY];
+    const previousPoint = hoverPointRef.current;
+    hoverPointRef.current = point;
+    if (dragRef.current || !previousPoint) return;
+    if (Math.hypot(point[0] - previousPoint[0], point[1] - previousPoint[1]) <= 2) return;
+    hoverReadyRef.current = true;
+    keepPreview(countryId);
   }
 
   function selectCountry(country: MarketCountry) {
@@ -750,8 +765,9 @@ export function GlobalMapView({
                   aria-pressed={pinnedId === market.id}
                   aria-label={`${pinnedId === market.id ? "Pinned" : "Open"} ${market.name} market profile`}
                   onMouseEnter={() => keepPreview(market.id)}
+                  onPointerMove={(event) => previewOnPointerMove(event, market.id)}
                   onMouseLeave={clearPreviewSoon}
-                  onFocus={() => keepPreview(market.id)}
+                  onFocus={() => keepPreview(market.id, true)}
                   onBlur={clearPreviewSoon}
                   onClick={() => {
                     if (!suppressClickRef.current) selectCountry(market);

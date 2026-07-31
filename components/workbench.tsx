@@ -200,6 +200,16 @@ export function Workbench({
   );
   const brief = storedBrief?.brief_date === calculatedBrief.brief_date ? storedBrief : calculatedBrief;
 
+  function openTab(tab: Tab) {
+    setActiveTab(tab);
+    window.requestAnimationFrame(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    });
+  }
+
   async function saveHolding(holding: Holding) {
     const isNew = !holdings.some((item) => item.id === holding.id);
     const normalized = normalizeHolding(holding);
@@ -300,21 +310,21 @@ export function Workbench({
 
   function handleLocalSearch(result: LocalSearchResult) {
     if (result.type === "holding") {
-      setActiveTab("portfolio");
+      openTab("portfolio");
       setFocusedHoldingId(result.id);
       window.setTimeout(() => document.getElementById(`holding-${result.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
     } else if (result.type === "insight") {
-      setActiveTab("insights");
+      openTab("insights");
     } else if (result.type === "scenario") {
       const preset = scenarioPresets.find((item) => item.id === result.id);
       if (preset) {
         setScenario({ ...preset.shocks });
         setActivePresetId(preset.id);
       }
-      setActiveTab("scenarios");
+      openTab("scenarios");
     } else {
       setRequestedCountry(result.title);
-      setActiveTab("map");
+      openTab("map");
     }
   }
 
@@ -350,7 +360,10 @@ export function Workbench({
               <button
                 key={tab.id}
                 className={activeTab === tab.id ? "active" : ""}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => openTab(tab.id)}
+                aria-current={activeTab === tab.id ? "page" : undefined}
+                aria-label={tab.label}
+                title={tab.label}
               >
                 <Icon size={17} />
                 {tab.label}
@@ -380,57 +393,59 @@ export function Workbench({
             <button className="search-trigger" onClick={() => setSearchOpen(true)}>
               <Search size={16} /><span>Search Aurelian</span><kbd>⌘ K</kbd>
             </button>
-            <div className="status-pill"><i />{status}</div>
+            <div className="status-pill" role="status"><i />{status}</div>
           </div>
         </header>
 
-        {activeTab === "insights" ? (
-          <InsightsView
-            brief={brief}
-            holdings={holdings}
-            onOpenMarket={(country) => {
-              setRequestedCountry(country);
-              setActiveTab("map");
-            }}
-          />
-        ) : null}
-        {activeTab === "portfolio" ? (
-          <PortfolioView
-            holdings={holdings}
-            transactions={transactions}
-            snapshots={snapshots}
-            decisions={decisions}
-            displayCurrency={displayCurrency}
-            focusedHoldingId={focusedHoldingId}
-            instrumentSeed={instrumentSeed}
-            onConsumeInstrumentSeed={consumeInstrumentSeed}
-            onSaveHolding={saveHolding}
-            onDeleteHolding={deleteHolding}
-            onSaveTransaction={saveTransaction}
-            onDeleteTransaction={deleteTransaction}
-            onSaveDecision={saveDecision}
-          />
-        ) : null}
-        {activeTab === "map" ? (
-          <GlobalMapView
-            key={requestedCountry ?? "default-map"}
-            holdings={holdings}
-            requestedCountry={requestedCountry}
-          />
-        ) : null}
-        {activeTab === "scenarios" ? (
-          <ScenarioView
-            holdings={holdings}
-            displayCurrency={displayCurrency}
-            scenario={scenario}
-            setScenario={setScenario}
-            activePresetId={activePresetId}
-            setActivePresetId={setActivePresetId}
-            savedScenarios={savedScenarios}
-            onSaveScenario={saveScenario}
-            onDeleteScenario={deleteScenario}
-          />
-        ) : null}
+        <div className="view-stage" key={activeTab} role="region" aria-label={`${tabs.find((tab) => tab.id === activeTab)?.label} view`}>
+          {activeTab === "insights" ? (
+            <InsightsView
+              brief={brief}
+              holdings={holdings}
+              onOpenMarket={(country) => {
+                setRequestedCountry(country);
+                openTab("map");
+              }}
+            />
+          ) : null}
+          {activeTab === "portfolio" ? (
+            <PortfolioView
+              holdings={holdings}
+              transactions={transactions}
+              snapshots={snapshots}
+              decisions={decisions}
+              displayCurrency={displayCurrency}
+              focusedHoldingId={focusedHoldingId}
+              instrumentSeed={instrumentSeed}
+              onConsumeInstrumentSeed={consumeInstrumentSeed}
+              onSaveHolding={saveHolding}
+              onDeleteHolding={deleteHolding}
+              onSaveTransaction={saveTransaction}
+              onDeleteTransaction={deleteTransaction}
+              onSaveDecision={saveDecision}
+            />
+          ) : null}
+          {activeTab === "map" ? (
+            <GlobalMapView
+              key={requestedCountry ?? "default-map"}
+              holdings={holdings}
+              requestedCountry={requestedCountry}
+            />
+          ) : null}
+          {activeTab === "scenarios" ? (
+            <ScenarioView
+              holdings={holdings}
+              displayCurrency={displayCurrency}
+              scenario={scenario}
+              setScenario={setScenario}
+              activePresetId={activePresetId}
+              setActivePresetId={setActivePresetId}
+              savedScenarios={savedScenarios}
+              onSaveScenario={saveScenario}
+              onDeleteScenario={deleteScenario}
+            />
+          ) : null}
+        </div>
       </section>
 
       {searchOpen ? (
@@ -443,7 +458,7 @@ export function Workbench({
           onLocalSelect={handleLocalSearch}
           onInstrumentSelect={(instrument) => {
             setInstrumentSeed(instrument);
-            setActiveTab("portfolio");
+            openTab("portfolio");
           }}
         />
       ) : null}
