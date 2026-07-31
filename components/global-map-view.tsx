@@ -15,6 +15,7 @@ import {
   Minus,
   Plus,
   Search,
+  Settings2,
 } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { feature } from "topojson-client";
@@ -50,6 +51,8 @@ type MarketResearch = {
   policyWatch: string;
   takeaways: string[];
 };
+
+type MapLens = "rates" | "energy" | "trillion" | "blue-banana";
 
 const officialSources = {
   worldBank: "https://data.worldbank.org/indicator/CM.MKT.LCAP.GD.ZS",
@@ -275,6 +278,14 @@ const marketCountries: MarketCountry[] = [
     marketCapToGdp: { value: "Concentrated nearshoring market", asOf: "Latest available", source: "World Bank", sourceUrl: officialSources.worldBank },
     note: "US trade, nearshoring, remittances, domestic policy, and the peso define the investment profile.",
   },
+  {
+    id: "russia", name: "Russia", atlasName: "Russia", currency: "RUB", keyIndex: "MOEX Russia Index",
+    sectors: "Energy, materials, financials, defence",
+    policyRate: { value: "Restricted-market context", asOf: "Verify current access", source: "Bank of Russia", sourceUrl: "https://www.cbr.ru/eng/hd_base/KeyRate/" },
+    debtToGdp: { value: "Low headline public debt", asOf: "Annual series", source: "IMF", sourceUrl: officialSources.imfDebt },
+    marketCapToGdp: { value: "Access-limited market", asOf: "Latest available", source: "World Bank", sourceUrl: officialSources.worldBank },
+    note: "Sanctions, capital controls, custody, settlement, and investor-access restrictions dominate conventional valuation analysis.",
+  },
 ];
 
 const marketResearch: Record<string, MarketResearch> = {
@@ -440,6 +451,12 @@ const marketResearch: Record<string, MarketResearch> = {
     policyWatch: "USMCA review, energy policy, judicial changes, security, and nearshoring infrastructure.",
     takeaways: ["US industrial demand is the dominant external factor.", "Nearshoring potential depends on power, water, logistics, and legal certainty."],
   },
+  russia: {
+    companies: ["Gazprom", "Rosneft", "Sberbank", "Norilsk Nickel"],
+    materials: "Oil, natural gas, nickel, palladium, aluminium, wheat",
+    policyWatch: "Sanctions, capital controls, foreign-investor restrictions, war financing, commodity exports, and settlement infrastructure.",
+    takeaways: ["Market access and legal ownership can matter more than quoted valuation.", "Commodity exposure does not remove currency, governance, or geopolitical risk."],
+  },
 };
 
 const countryCollection = feature<{ name: string }>(
@@ -448,6 +465,15 @@ const countryCollection = feature<{ name: string }>(
 ) as unknown as FeatureCollection<Geometry, { name: string }>;
 const projection = geoNaturalEarth1().fitExtent([[12, -18], [888, 478]], { type: "Sphere" });
 const mapPath = geoPath(projection);
+const blueBananaCoordinates: Array<[number, number]> = [
+  [-2.5, 53], [0.2, 51.5], [4.4, 51], [6.8, 50.4], [8.5, 48.2], [8.2, 46.2], [9.2, 45.2],
+];
+const blueBananaPath = blueBananaCoordinates
+  .map((coordinates, index) => {
+    const point = projection(coordinates);
+    return point ? `${index === 0 ? "M" : "L"}${point[0].toFixed(1)},${point[1].toFixed(1)}` : "";
+  })
+  .join(" ");
 const worldCountries = countryCollection.features
   .map((country) => ({
     feature: country as CountryFeature,
@@ -459,6 +485,12 @@ const worldCountries = countryCollection.features
 const marketByAtlasName = new Map(marketCountries.map((country) => [country.atlasName, country]));
 const DEFAULT_ZOOM = 1.12;
 const DEFAULT_CENTER: MapPoint = [465, 205];
+const energyMarkets = new Set(["norway", "united-kingdom", "united-states", "canada", "australia", "brazil", "mexico", "china", "egypt", "russia"]);
+const trillionEconomies = new Set(["united-states", "china", "germany", "japan", "india", "united-kingdom", "france", "italy", "brazil", "canada", "russia", "south-korea", "australia", "spain", "mexico", "netherlands"]);
+const rateAnchors = [
+  { id: "united-states", label: "FED" }, { id: "germany", label: "ECB" }, { id: "united-kingdom", label: "BOE" },
+  { id: "norway", label: "NB" }, { id: "japan", label: "BOJ" }, { id: "china", label: "PBOC" },
+];
 
 export function GlobalMapView({
   holdings,
@@ -482,6 +514,8 @@ export function GlobalMapView({
   const [query, setQuery] = useState(requestedMarket?.name ?? "");
   const [dragging, setDragging] = useState(false);
   const [expandedHoverId, setExpandedHoverId] = useState<string | null>(null);
+  const [lensPanelOpen, setLensPanelOpen] = useState(false);
+  const [activeLenses, setActiveLenses] = useState<Set<MapLens>>(() => new Set());
   const dragRef = useRef<{
     pointerId: number;
     start: MapPoint;
@@ -610,6 +644,21 @@ export function GlobalMapView({
     ], zoom));
   }
 
+  function toggleLens(lens: MapLens) {
+    setActiveLenses((current) => {
+      const next = new Set(current);
+      if (next.has(lens)) next.delete(lens);
+      else next.add(lens);
+      return next;
+    });
+  }
+
+  function marketPassesFilters(market: MarketCountry) {
+    if (activeLenses.has("energy") && !energyMarkets.has(market.id)) return false;
+    if (activeLenses.has("trillion") && !trillionEconomies.has(market.id)) return false;
+    return true;
+  }
+
   const suggestions = query
     ? marketCountries.filter((country) => country.name.toLowerCase().includes(query.toLowerCase()) && country.name !== query)
     : [];
@@ -691,6 +740,7 @@ export function GlobalMapView({
               const market = marketByAtlasName.get(country.name);
               if (!market) return <path key={country.name} className="map-land muted" d={country.path} />;
               const active = market.id === activeId;
+              const filteredOut = !marketPassesFilters(market);
               const isNordic = ["norway", "sweden", "denmark", "finland"].includes(market.id);
               return (
                 <g
@@ -710,13 +760,47 @@ export function GlobalMapView({
                     if (event.key === "Enter" || event.key === " ") selectCountry(market);
                   }}
                 >
-                  <path className={`map-land market-country${active ? " active" : ""}${pinnedId === market.id ? " pinned" : ""}`} d={country.path} />
+                  <path className={`map-land market-country${active ? " active" : ""}${pinnedId === market.id ? " pinned" : ""}${filteredOut ? " filtered-out" : ""}${energyMarkets.has(market.id) && activeLenses.has("energy") ? " energy-market" : ""}`} d={country.path} />
                   <circle className="market-hit-target" cx={country.centroid[0]} cy={country.centroid[1]} r={isNordic ? 13 : 8} />
-                  <circle className={`market-pulse${active ? " active" : ""}`} cx={country.centroid[0]} cy={country.centroid[1]} r={isNordic ? 4.5 : 3.5} />
+                  <circle className={`market-pulse${active ? " active" : ""}${filteredOut ? " filtered-out" : ""}`} cx={country.centroid[0]} cy={country.centroid[1]} r={isNordic ? 4.5 : 3.5} />
                 </g>
               );
             })}
+            {activeLenses.has("blue-banana") ? <path className="blue-banana-corridor" d={blueBananaPath} /> : null}
+            {activeLenses.has("rates") ? rateAnchors.map((anchor) => {
+              const market = marketCountries.find((country) => country.id === anchor.id);
+              const shape = market ? worldCountries.find((country) => country.name === market.atlasName) : null;
+              if (!shape) return null;
+              return (
+                <g className="rate-anchor" key={anchor.id} transform={`translate(${shape.centroid[0]} ${shape.centroid[1]})`}>
+                  <circle r="11" />
+                  <text y="2.5" textAnchor="middle">{anchor.label}</text>
+                </g>
+              );
+            }) : null}
           </svg>
+          <div className="map-lens-control">
+            <button
+              className={`map-lens-trigger${lensPanelOpen ? " active" : ""}`}
+              type="button"
+              aria-label="Map lenses"
+              aria-expanded={lensPanelOpen}
+              title="Map lenses"
+              onClick={() => setLensPanelOpen((current) => !current)}
+            >
+              <Settings2 size={17} />
+            </button>
+            {lensPanelOpen ? (
+              <div className="map-lens-panel">
+                <header><span>Market lenses</span><strong>{activeLenses.size || "All"}</strong></header>
+                <label><input type="checkbox" checked={activeLenses.has("rates")} onChange={() => toggleLens("rates")} /><span><strong>Central banks</strong><small>Major policy-rate anchors</small></span></label>
+                <label><input type="checkbox" checked={activeLenses.has("energy")} onChange={() => toggleLens("energy")} /><span><strong>Oil &amp; gas</strong><small>Material producer exposure</small></span></label>
+                <label><input type="checkbox" checked={activeLenses.has("trillion")} onChange={() => toggleLens("trillion")} /><span><strong>GDP above $1tn</strong><small>Annual nominal GDP screen</small></span></label>
+                <label><input type="checkbox" checked={activeLenses.has("blue-banana")} onChange={() => toggleLens("blue-banana")} /><span><strong>Blue Banana</strong><small>European urban-economic corridor</small></span></label>
+                <button type="button" onClick={() => setActiveLenses(new Set())}>Clear lenses</button>
+              </div>
+            ) : null}
+          </div>
           {previewCountry ? (
             <aside
               className={`map-callout ${previewScale} ${previewSide} ${previewVertical}${expandedHoverId === previewCountry.id ? " expanded" : ""}`}

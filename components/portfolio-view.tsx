@@ -19,9 +19,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -46,8 +43,15 @@ import type {
 } from "@/lib/types";
 import type { RemoteInstrument } from "@/components/search-command";
 import { ProvenanceBadge } from "@/components/provenance-badge";
+import { InvestorPlaybooks } from "@/components/investor-playbooks";
 
-const chartColors = ["#263329", "#c99738", "#4f7461", "#a65d45", "#3f7476", "#81705c"];
+const chartColors = ["#d4af37", "#668572", "#c87854", "#4e8f92", "#b69258", "#91a28f"];
+const darkTooltip = {
+  backgroundColor: "rgba(20, 34, 27, 0.96)",
+  border: "1px solid rgba(212, 175, 55, 0.5)",
+  borderRadius: "5px",
+  color: "#f5f0e5",
+};
 
 function blankHolding(seed?: RemoteInstrument): Holding {
   return {
@@ -134,7 +138,7 @@ export function PortfolioView({
 
   return (
     <>
-      <div className="portfolio-layout">
+      <div className="portfolio-layout portfolio-workbench">
         <section className="metric-grid portfolio-metrics">
           <Metric label="Portfolio value" value={formatMoney(summary.total, displayCurrency)} />
           <Metric
@@ -232,8 +236,10 @@ export function PortfolioView({
           </div>
         </section>
 
-        <AllocationPanel title="Asset allocation" data={assetAllocation} displayCurrency={displayCurrency} />
-        <AllocationPanel title="Region exposure" data={regionAllocation} displayCurrency={displayCurrency} />
+        <AllocationPanel title="Asset allocation" data={assetAllocation} />
+        <AllocationPanel title="Region exposure" data={regionAllocation} />
+
+        <InvestorPlaybooks />
 
         <section className="panel wide performance-panel">
           <div className="panel-title-row">
@@ -257,13 +263,15 @@ export function PortfolioView({
                   <stop offset="95%" stopColor="#c99738" stopOpacity={0.06} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tickFormatter={(value) => String(value).slice(0, 4)} />
+              <CartesianGrid stroke="rgba(214, 180, 91, 0.16)" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="date" tick={{ fill: "#acb9ae", fontSize: 11 }} tickFormatter={(value) => String(value).slice(0, 4)} />
               <YAxis
                 width={88}
+                tick={{ fill: "#acb9ae", fontSize: 11 }}
                 tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))}
               />
               <Tooltip
+                contentStyle={darkTooltip}
                 formatter={(value) => new Intl.NumberFormat("nb-NO", {
                   style: "currency",
                   currency: displayCurrency,
@@ -284,11 +292,11 @@ export function PortfolioView({
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={sectorAllocation}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => `${value}%`} />
-              <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
-              <Bar dataKey="percent" radius={[3, 3, 0, 0]} fill="#263329" />
+              <CartesianGrid stroke="rgba(214, 180, 91, 0.16)" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: "#acb9ae", fontSize: 11 }} />
+              <YAxis tick={{ fill: "#acb9ae", fontSize: 11 }} tickFormatter={(value) => `${value}%`} />
+              <Tooltip contentStyle={darkTooltip} formatter={(value) => `${Number(value).toFixed(1)}%`} />
+              <Bar dataKey="percent" radius={[3, 3, 0, 0]} fill="#d4af37" />
             </BarChart>
           </ResponsiveContainer>
         </section>
@@ -375,24 +383,33 @@ function Metric({
 function AllocationPanel({
   title,
   data,
-  displayCurrency,
 }: {
   title: string;
   data: Array<{ name: string; value: number; percent: number }>;
-  displayCurrency: DisplayCurrency;
 }) {
+  let cursor = 0;
+  const gradient = data.length
+    ? `conic-gradient(${data.map((row, index) => {
+      const start = cursor;
+      cursor += row.percent;
+      return `${chartColors[index % chartColors.length]} ${start}% ${cursor}%`;
+    }).join(", ")})`
+    : "conic-gradient(#52675a 0 100%)";
+
   return (
     <section className="panel allocation-panel">
       <h2>{title}</h2>
       <div className="allocation-content">
-        <ResponsiveContainer width="46%" height={210}>
-          <PieChart>
-            <Pie data={data} dataKey="value" nameKey="name" innerRadius={54} outerRadius={78} paddingAngle={2}>
-              {data.map((row, index) => <Cell key={row.name} fill={chartColors[index % chartColors.length]} />)}
-            </Pie>
-            <Tooltip formatter={(value) => formatMoney(Number(value), displayCurrency)} />
-          </PieChart>
-        </ResponsiveContainer>
+        <div className="allocation-chart">
+          <div
+            className="allocation-donut"
+            style={{ background: gradient }}
+            role="img"
+            aria-label={`${title}: ${data.map((row) => `${row.name} ${formatPercent(row.percent)}`).join(", ")}`}
+          >
+            <div><strong>{data.length}</strong><span>segments</span></div>
+          </div>
+        </div>
         <div className="legend-list">
           {data.map((row, index) => (
             <div key={row.name}>
