@@ -2,18 +2,21 @@
 
 import {
   ArrowUpRight,
+  Activity,
   Check,
+  ChevronDown,
   Clipboard,
   Compass,
   FileSearch,
   Link2,
   MapPinned,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Legend,
   PolarAngleAxis,
@@ -26,11 +29,21 @@ import {
 } from "recharts";
 import { buildChatGptPacket, redactHoldingIdentities } from "@/lib/insights";
 import { formatMoney, holdingValueNok } from "@/lib/calculations";
-import type { DailyBrief, Holding, ShareOptions } from "@/lib/types";
+import type { DailyBrief, Holding, MarketQuote, ShareOptions } from "@/lib/types";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { ShareDialog } from "@/components/share-dialog";
 
 type DeskFocus = "core" | "us" | "europe" | "discover";
+type InsightView = "overview" | "markets" | "signals" | "investors" | "sources";
+type QuoteScope = "indices" | "portfolio";
+
+const insightViews: Array<{ id: InsightView; label: string; description: string }> = [
+  { id: "overview", label: "Daily overview", description: "Market pulse and priority signals" },
+  { id: "markets", label: "Markets", description: "Major indices and geographic research" },
+  { id: "signals", label: "Portfolio signals", description: "Facts, relevance, and scenarios" },
+  { id: "investors", label: "Investor comparison", description: "Compare operating styles" },
+  { id: "sources", label: "Data sources", description: "Price provenance and freshness" },
+];
 
 const marketDesk = [
   { id: "us-policy", region: "us", market: "United States", label: "Policy and liquidity", title: "Fed, inflation, and the dollar", watch: "Rate expectations, labour-market direction, financial conditions, and USD/NOK translation.", relevance: "The portfolio is dominated by US earnings and long-duration technology exposure.", source: "FRED", sourceUrl: "https://fred.stlouisfed.org/" },
@@ -57,10 +70,12 @@ export function InsightsView({
   brief,
   holdings,
   onOpenMarket,
+  onQuotesUpdated,
 }: {
   brief: DailyBrief;
   holdings: Holding[];
   onOpenMarket: (country: string) => void;
+  onQuotesUpdated: (quotes: MarketQuote[]) => void;
 }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -71,8 +86,51 @@ export function InsightsView({
   });
   const [copied, setCopied] = useState(false);
   const [deskFocus, setDeskFocus] = useState<DeskFocus>("core");
+  const [insightView, setInsightView] = useState<InsightView>("overview");
+  const [quoteScope, setQuoteScope] = useState<QuoteScope>("indices");
+  const [quotes, setQuotes] = useState<MarketQuote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(true);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quotesRefreshedAt, setQuotesRefreshedAt] = useState<string | null>(null);
   const attention = brief.insights.filter((item) => item.severity === "attention").length;
   const sourced = brief.insights.filter((item) => item.source_url).length;
+  const instrumentKey = useMemo(() => JSON.stringify(holdings
+    .filter((holding) => holding.ticker && !["bond", "cash"].includes(holding.asset_type))
+    .map((holding) => ({
+      id: holding.id,
+      symbol: holding.ticker,
+      name: holding.name,
+      exchange: holding.exchange,
+      currency: holding.currency,
+    }))), [holdings]);
+
+  const refreshQuotes = useCallback(async () => {
+    setQuotesLoading(true);
+    setQuoteError(null);
+    try {
+      const instruments = JSON.parse(instrumentKey) as Array<{ id: string; symbol: string; name: string; exchange: string | null; currency: string }>;
+      const response = await fetch("/api/market/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruments }),
+      });
+      if (!response.ok) throw new Error("The market feed did not respond.");
+      const payload = await response.json() as { quotes?: MarketQuote[]; refreshedAt?: string };
+      const nextQuotes = payload.quotes ?? [];
+      setQuotes(nextQuotes);
+      setQuotesRefreshedAt(payload.refreshedAt ?? new Date().toISOString());
+      onQuotesUpdated(nextQuotes.filter((quote) => !quote.id.startsWith("index-")));
+    } catch {
+      setQuoteError("Latest quotes are temporarily unavailable. Stored values remain unchanged.");
+    } finally {
+      setQuotesLoading(false);
+    }
+  }, [instrumentKey, onQuotesUpdated]);
+
+  useEffect(() => {
+    const refreshTimer = window.setTimeout(() => void refreshQuotes(), 0);
+    return () => window.clearTimeout(refreshTimer);
+  }, [refreshQuotes]);
 
   async function analyzeInChatGpt() {
     const packet = buildChatGptPacket(brief, holdings, chatOptions);
@@ -137,103 +195,69 @@ export function InsightsView({
           </div>
         </section>
 
-        <section className="brief-stats" aria-label="Brief status">
-          <article>
-            <TriangleAlert size={17} />
-            <span>Needs attention</span>
-            <strong>{attention}</strong>
-          </article>
-          <article>
-            <FileSearch size={17} />
-            <span>Linked sources</span>
-            <strong>{sourced}</strong>
-          </article>
-          <article>
-            <ShieldCheck size={17} />
-            <span>Automatic advice</span>
-            <strong>Off</strong>
-          </article>
+        <section className="insights-control-bar" aria-label="Insights view controls">
+          <div className="insights-view-select">
+            <Activity size={17} />
+            <label htmlFor="insights-view">Workspace</label>
+            <div className="select-shell">
+              <select id="insights-view" value={insightView} onChange={(event) => setInsightView(event.target.value as InsightView)}>
+                {insightViews.map((view) => <option key={view.id} value={view.id}>{view.label} - {view.description}</option>)}
+              </select>
+              <ChevronDown size={15} aria-hidden="true" />
+            </div>
+          </div>
+          <span>{insightViews.find((view) => view.id === insightView)?.description}</span>
         </section>
 
-        <section className="market-desk wide" aria-labelledby="market-desk-title">
-          <div className="section-heading">
-            <div><span className="eyebrow">Geographic research desk</span><h2 id="market-desk-title">Daily focus and market discovery</h2></div>
-            <div className="desk-focus" aria-label="Market desk focus">
-              {([
-                ["core", "US & Europe"], ["us", "United States"], ["europe", "Europe"], ["discover", "Discover"],
-              ] as Array<[DeskFocus, string]>).map(([id, label]) => (
-                <button key={id} type="button" className={deskFocus === id ? "active" : ""} onClick={() => setDeskFocus(id)}>{label}</button>
+        {insightView === "overview" || insightView === "markets" ? (
+          <MarketMonitor
+            quotes={quotes}
+            scope={quoteScope}
+            onScopeChange={setQuoteScope}
+            loading={quotesLoading}
+            error={quoteError}
+            refreshedAt={quotesRefreshedAt}
+            onRefresh={refreshQuotes}
+          />
+        ) : null}
+
+        {insightView === "overview" ? (
+          <section className="brief-stats" aria-label="Brief status">
+            <article><TriangleAlert size={17} /><span>Needs attention</span><strong>{attention}</strong></article>
+            <article><FileSearch size={17} /><span>Linked sources</span><strong>{sourced}</strong></article>
+            <article><ShieldCheck size={17} /><span>Automatic advice</span><strong>Off</strong></article>
+          </section>
+        ) : null}
+
+        {insightView === "markets" ? (
+          <MarketResearchDesk deskFocus={deskFocus} onDeskFocus={setDeskFocus} onOpenMarket={onOpenMarket} />
+        ) : null}
+
+        {insightView === "investors" ? <InvestorComparison /> : null}
+
+        {insightView === "overview" || insightView === "signals" ? (
+          <InsightFeed
+            brief={brief}
+            limit={insightView === "overview" ? 3 : undefined}
+            onViewAll={() => setInsightView("signals")}
+          />
+        ) : null}
+
+        {insightView === "sources" ? (
+          <section className="panel wide data-ledger">
+            <div className="section-heading">
+              <div><span className="eyebrow">Provenance ledger</span><h2>Values behind this brief</h2></div>
+            </div>
+            <div className="data-ledger-grid">
+              {holdings.map((holding) => (
+                <article key={holding.id}>
+                  <div><strong>{holding.ticker ?? holding.name}</strong><span>{formatMoney(holdingValueNok(holding))}</span></div>
+                  <ProvenanceBadge provenance={holding.price_provenance} />
+                </article>
               ))}
             </div>
-          </div>
-          <div className="market-desk-grid">
-            {marketDesk.filter((item) => deskFocus === "core" ? item.region !== "discover" : item.region === deskFocus).map((item) => (
-              <article key={item.id}>
-                <header><span>{item.label}</span><strong>{item.market}</strong></header>
-                <h3>{item.title}</h3>
-                <dl><div><dt>Watch</dt><dd>{item.watch}</dd></div><div><dt>Portfolio lens</dt><dd>{item.relevance}</dd></div></dl>
-                <footer>
-                  <a href={item.sourceUrl} target="_blank" rel="noreferrer">{item.source} <ArrowUpRight size={12} /></a>
-                  <button type="button" onClick={() => onOpenMarket(item.market)}><MapPinned size={13} /> Open map</button>
-                </footer>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <InvestorComparison />
-
-        <section className="insight-feed">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">What changed and what to review</span>
-              <h2>Today&apos;s portfolio signals</h2>
-            </div>
-            <span className="as-of">Generated {new Intl.DateTimeFormat("en-GB", { timeStyle: "short" }).format(new Date(brief.generated_at))}</span>
-          </div>
-
-          {brief.insights.map((item, index) => (
-            <article className={`insight-card ${item.severity}`} key={item.id}>
-              <div className="insight-index">{String(index + 1).padStart(2, "0")}</div>
-              <div className="insight-body">
-                <div className="insight-title">
-                  <span>{item.kind}</span>
-                  <h3>{item.title}</h3>
-                </div>
-                <div className="insight-columns">
-                  <div><strong>Fact</strong><p>{item.fact}</p></div>
-                  <div><strong>Portfolio relevance</strong><p>{item.relevance}</p></div>
-                  <div><strong>Possible scenario</strong><p>{item.scenario}</p></div>
-                </div>
-                <footer>
-                  {item.source_url ? (
-                    <a href={item.source_url} target="_blank" rel="noreferrer">
-                      {item.source} <ArrowUpRight size={13} />
-                    </a>
-                  ) : <span>{item.source}</span>}
-                  <span>As of {item.as_of}</span>
-                </footer>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <section className="panel wide data-ledger">
-          <div className="section-heading">
-            <div><span className="eyebrow">Provenance ledger</span><h2>Values behind this brief</h2></div>
-          </div>
-          <div className="data-ledger-grid">
-            {holdings.map((holding) => (
-              <article key={holding.id}>
-                <div>
-                  <strong>{holding.ticker ?? holding.name}</strong>
-                  <span>{formatMoney(holdingValueNok(holding))}</span>
-                </div>
-                <ProvenanceBadge provenance={holding.price_provenance} />
-              </article>
-            ))}
-          </div>
-        </section>
+          </section>
+        ) : null}
       </div>
 
       {shareOpen ? (
@@ -302,6 +326,130 @@ export function InsightsView({
       ) : null}
     </>
   );
+}
+
+function MarketMonitor({
+  quotes,
+  scope,
+  onScopeChange,
+  loading,
+  error,
+  refreshedAt,
+  onRefresh,
+}: {
+  quotes: MarketQuote[];
+  scope: QuoteScope;
+  onScopeChange: (scope: QuoteScope) => void;
+  loading: boolean;
+  error: string | null;
+  refreshedAt: string | null;
+  onRefresh: () => void;
+}) {
+  const visibleQuotes = quotes.filter((quote) => scope === "indices" ? quote.id.startsWith("index-") : !quote.id.startsWith("index-"));
+  return (
+    <section className="market-monitor wide" aria-labelledby="market-monitor-title">
+      <div className="section-heading market-monitor-heading">
+        <div><span className="eyebrow">Latest available market data</span><h2 id="market-monitor-title">Market monitor</h2></div>
+        <div className="market-monitor-actions">
+          <div className="quote-scope" aria-label="Market monitor content">
+            <button type="button" className={scope === "indices" ? "active" : ""} onClick={() => onScopeChange("indices")}>Major indices</button>
+            <button type="button" className={scope === "portfolio" ? "active" : ""} onClick={() => onScopeChange("portfolio")}>My securities</button>
+          </div>
+          <button className="icon-button" type="button" onClick={onRefresh} disabled={loading} aria-label="Refresh market data" title="Refresh market data">
+            <RefreshCw size={15} className={loading ? "spinning" : ""} />
+          </button>
+        </div>
+      </div>
+      {error ? <p className="market-feed-message bad">{error}</p> : null}
+      <div className="market-monitor-grid" aria-live="polite" aria-busy={loading}>
+        {loading && visibleQuotes.length === 0 ? Array.from({ length: scope === "indices" ? 7 : 5 }, (_, index) => (
+          <div className="quote-card quote-skeleton" key={index} aria-hidden="true"><i /><i /><i /></div>
+        )) : visibleQuotes.map((quote) => {
+          const positive = (quote.percentChange ?? 0) >= 0;
+          return (
+            <article className="quote-card" key={quote.id}>
+              <header><span>{quote.symbol}</span><i className={quote.status} title={quote.status === "live" ? "Live quote" : "Delayed quote"} /></header>
+              <strong>{quote.price.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <small>{quote.currency}</small></strong>
+              <div><span>{quote.name}</span><em className={positive ? "good" : "bad"}>{quote.percentChange === null ? "-" : `${positive ? "+" : ""}${quote.percentChange.toFixed(2)}%`}</em></div>
+              <footer>{quote.source} · {formatQuoteTime(quote.asOf)}</footer>
+            </article>
+          );
+        })}
+      </div>
+      <footer className="market-monitor-footer">
+        <span>{scope === "indices" ? "Global benchmarks" : "Prices are applied to the Portfolio view; manual NOK value overrides remain intact."}</span>
+        <span>{refreshedAt ? `Refreshed ${formatQuoteTime(refreshedAt)}` : "Connecting to market feed"}</span>
+      </footer>
+    </section>
+  );
+}
+
+function MarketResearchDesk({ deskFocus, onDeskFocus, onOpenMarket }: {
+  deskFocus: DeskFocus;
+  onDeskFocus: (focus: DeskFocus) => void;
+  onOpenMarket: (country: string) => void;
+}) {
+  return (
+    <section className="market-desk wide" aria-labelledby="market-desk-title">
+      <div className="section-heading">
+        <div><span className="eyebrow">Geographic research desk</span><h2 id="market-desk-title">Daily focus and market discovery</h2></div>
+        <div className="desk-focus" aria-label="Market desk focus">
+          {([ ["core", "US & Europe"], ["us", "United States"], ["europe", "Europe"], ["discover", "Discover"] ] as Array<[DeskFocus, string]>).map(([id, label]) => (
+            <button key={id} type="button" className={deskFocus === id ? "active" : ""} onClick={() => onDeskFocus(id)}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="market-desk-grid">
+        {marketDesk.filter((item) => deskFocus === "core" ? item.region !== "discover" : item.region === deskFocus).map((item) => (
+          <article key={item.id}>
+            <header><span>{item.label}</span><strong>{item.market}</strong></header>
+            <h3>{item.title}</h3>
+            <dl><div><dt>Watch</dt><dd>{item.watch}</dd></div><div><dt>Portfolio lens</dt><dd>{item.relevance}</dd></div></dl>
+            <footer>
+              <a href={item.sourceUrl} target="_blank" rel="noreferrer">{item.source} <ArrowUpRight size={12} /></a>
+              <button type="button" onClick={() => onOpenMarket(item.market)}><MapPinned size={13} /> Open map</button>
+            </footer>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function InsightFeed({ brief, limit, onViewAll }: { brief: DailyBrief; limit?: number; onViewAll: () => void }) {
+  const insights = limit ? brief.insights.slice(0, limit) : brief.insights;
+  return (
+    <section className="insight-feed">
+      <div className="section-heading">
+        <div><span className="eyebrow">What changed and what to review</span><h2>Today&apos;s portfolio signals</h2></div>
+        <span className="as-of">Generated {new Intl.DateTimeFormat("en-GB", { timeStyle: "short" }).format(new Date(brief.generated_at))}</span>
+      </div>
+      {insights.map((item, index) => (
+        <article className={`insight-card ${item.severity}`} key={item.id}>
+          <div className="insight-index">{String(index + 1).padStart(2, "0")}</div>
+          <div className="insight-body">
+            <div className="insight-title"><span>{item.kind}</span><h3>{item.title}</h3></div>
+            <div className="insight-columns">
+              <div><strong>Fact</strong><p>{item.fact}</p></div>
+              <div><strong>Portfolio relevance</strong><p>{item.relevance}</p></div>
+              <div><strong>Possible scenario</strong><p>{item.scenario}</p></div>
+            </div>
+            <footer>
+              {item.source_url ? <a href={item.source_url} target="_blank" rel="noreferrer">{item.source} <ArrowUpRight size={13} /></a> : <span>{item.source}</span>}
+              <span>As of {item.as_of}</span>
+            </footer>
+          </div>
+        </article>
+      ))}
+      {limit && brief.insights.length > limit ? <button className="signals-more" type="button" onClick={onViewAll}>View all {brief.insights.length} signals <ArrowUpRight size={14} /></button> : null}
+    </section>
+  );
+}
+
+function formatQuoteTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
 function InvestorComparison() {

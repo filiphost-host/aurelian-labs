@@ -16,6 +16,8 @@
   --red: #a65d45;
   --teal: #3f7476;
   --shadow: 0 16px 44px rgba(30, 37, 31, 0.12);
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
 }
 
 * {
@@ -33,7 +35,8 @@ body {
   background:
     repeating-linear-gradient(0deg, rgba(61, 48, 26, 0.018) 0 1px, transparent 1px 4px),
     linear-gradient(180deg, #f0eadf 0%, var(--bg) 100%);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
 }
 
 body::before {
@@ -93,6 +96,13 @@ p {
   margin-top: 0;
 }
 
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 650;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -139,7 +149,7 @@ p {
 .brand strong {
   display: block;
   color: #d4af37;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
   line-height: 1.05;
@@ -196,7 +206,7 @@ p {
   z-index: 1;
   margin: 0;
   color: #d4af37;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 31px;
   font-weight: 700;
   text-shadow: none;
@@ -504,7 +514,7 @@ kbd {
 
 .brief-hero h2 {
   margin: 5px 0 7px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 27px;
 }
 
@@ -575,7 +585,7 @@ kbd {
   place-items: start center;
   padding-top: 20px;
   color: var(--gold-dark);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 17px;
   background: rgba(167, 124, 39, 0.08);
   border-right: 1px solid var(--line);
@@ -1402,7 +1412,7 @@ input[type="range"] {
 
 .map-callout-heading strong {
   margin-top: 4px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 16px;
 }
 
@@ -2244,7 +2254,7 @@ input[type="range"] {
 
 .login-panel h1 {
   margin: 18px 0 8px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 31px;
 }
 
@@ -2326,7 +2336,7 @@ input[type="range"] {
 
 .share-header h1 {
   margin: 14px 0 7px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 32px;
 }
 
@@ -2708,6 +2718,8 @@ input[type="range"] {
 
 .insights-workbench .brief-hero,
 .insights-workbench .brief-stats,
+.insights-workbench .insights-control-bar,
+.insights-workbench .market-monitor,
 .insights-workbench .market-desk,
 .insights-workbench .investor-comparison,
 .insights-workbench > .panel,
@@ -2760,6 +2772,64 @@ input[type="range"] {
 
 .insights-workbench .brief-hero {
   border-top: 3px solid #d4af37;
+}
+
+.insights-control-bar {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 13px;
+}
+
+.insights-control-bar > span {
+  color: #9eada1;
+  font-size: 10px;
+}
+
+.insights-view-select {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.insights-view-select > svg {
+  color: #d4af37;
+}
+
+.insights-view-select > label {
+  color: #9eada1;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.select-shell {
+  min-width: 280px;
+  position: relative;
+}
+
+.select-shell select {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 34px 0 11px;
+  border: 1px solid rgba(199, 169, 93, 0.32);
+  border-radius: 5px;
+  color: #eef1e9;
+  background: #172820;
+  appearance: none;
+  font-size: 11px;
+}
+
+.select-shell svg {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  pointer-events: none;
+  color: #d4af37;
+  transform: translateY(-50%);
 }
 
 .insights-workbench .brief-stats article {
@@ -2821,6 +2891,195 @@ input[type="range"] {
 
 .insights-workbench .data-ledger-grid span {
   color: #acb9ae;
+}
+
+.market-monitor {
+  padding: 18px 19px 12px;
+}
+
+.market-monitor-heading {
+  align-items: center;
+}
+
+.market-monitor-actions,
+.quote-scope {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.quote-scope {
+  overflow: hidden;
+  gap: 0;
+  border: 1px solid rgba(199, 169, 93, 0.28);
+  border-radius: 5px;
+}
+
+.quote-scope button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 0;
+  border-right: 1px solid rgba(199, 169, 93, 0.2);
+  color: #acb9ae;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 10px;
+}
+
+.quote-scope button:last-child {
+  border-right: 0;
+}
+
+.quote-scope button:hover,
+.quote-scope button.active {
+  color: #172820;
+  background: #d4af37;
+}
+
+.market-monitor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 7px;
+}
+
+.quote-card {
+  min-width: 0;
+  min-height: 128px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border: 1px solid rgba(157, 177, 161, 0.2);
+  border-radius: 5px;
+  background: rgba(8, 20, 14, 0.2);
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.quote-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(157, 177, 161, 0.52);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.quote-card header,
+.quote-card > div,
+.market-monitor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.quote-card header span {
+  overflow: hidden;
+  color: #9eada1;
+  font-size: 9px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quote-card header i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #8c9b90;
+}
+
+.quote-card header i.live {
+  background: #73a889;
+  box-shadow: 0 0 0 3px rgba(115, 168, 137, 0.12);
+}
+
+.quote-card > strong {
+  margin: 14px 0 9px;
+  color: #f5f0e5;
+  font-size: 18px;
+}
+
+.quote-card > strong small {
+  color: #91a094;
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.quote-card > div span {
+  min-width: 0;
+  overflow: hidden;
+  color: #c4cec5;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quote-card > div em {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.quote-card footer {
+  margin-top: auto;
+  padding-top: 10px;
+  color: #7f9184;
+  font-size: 8px;
+}
+
+.market-monitor-footer {
+  padding-top: 10px;
+  color: #819287;
+  font-size: 8px;
+}
+
+.market-feed-message {
+  margin: 0 0 10px;
+  font-size: 10px;
+}
+
+.quote-skeleton {
+  justify-content: center;
+  gap: 10px;
+}
+
+.quote-skeleton i {
+  height: 8px;
+  display: block;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  animation: quote-pulse 1.2s ease-in-out infinite alternate;
+}
+
+.quote-skeleton i:nth-child(2) { width: 70%; height: 18px; }
+.quote-skeleton i:nth-child(3) { width: 45%; }
+
+@keyframes quote-pulse {
+  to { opacity: 0.42; }
+}
+
+.spinning {
+  animation: quote-spin 800ms linear infinite;
+}
+
+@keyframes quote-spin {
+  to { transform: rotate(360deg); }
+}
+
+.signals-more {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(199, 169, 93, 0.24);
+  border-radius: 5px;
+  color: #d8be75;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 10px;
+}
+
+.signals-more:hover {
+  border-color: rgba(231, 199, 112, 0.56);
+  background: rgba(255, 255, 255, 0.055);
 }
 
 .market-desk,
@@ -3237,8 +3496,45 @@ input[type="range"] {
   }
 
   .market-desk,
-  .investor-comparison {
+  .investor-comparison,
+  .market-monitor {
     padding: 14px;
+  }
+
+  .insights-control-bar,
+  .insights-view-select,
+  .market-monitor-heading,
+  .market-monitor-actions,
+  .market-monitor-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .insights-control-bar > span,
+  .insights-view-select > label {
+    display: none;
+  }
+
+  .select-shell {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .quote-scope {
+    flex: 1;
+  }
+
+  .quote-scope button {
+    flex: 1;
+  }
+
+  .market-monitor-actions {
+    display: grid;
+    grid-template-columns: 1fr 36px;
+  }
+
+  .market-monitor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .market-desk .section-heading,

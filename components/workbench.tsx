@@ -31,6 +31,7 @@ import type {
   DisplayCurrency,
   Holding,
   HoldingDecision,
+  MarketQuote,
   MarketEvent,
   PortfolioSnapshot,
   SavedScenario,
@@ -209,6 +210,36 @@ export function Workbench({
       });
     });
   }
+
+  const applyMarketQuotes = useCallback((quotes: MarketQuote[]) => {
+    if (quotes.length === 0) return;
+    const byHoldingId = new Map(quotes.map((quote) => [quote.id, quote]));
+    setHoldings((current) => current.map((holding) => {
+      const quote = byHoldingId.get(holding.id);
+      if (!quote) return holding;
+      return {
+        ...holding,
+        market_price: quote.price,
+        price_provenance: {
+          source: quote.source,
+          as_of: quote.asOf,
+          status: quote.status,
+          note: quote.status === "delayed" ? "Latest available quote; exchange delays may apply." : null,
+        },
+      };
+    }));
+    if (supabase && userId) {
+      void Promise.all(quotes.map((quote) => supabase.from("holdings").update({
+        market_price: quote.price,
+        price_provenance: {
+          source: quote.source,
+          as_of: quote.asOf,
+          status: quote.status,
+          note: quote.status === "delayed" ? "Latest available quote; exchange delays may apply." : null,
+        },
+      }).eq("id", quote.id).eq("user_id", userId)));
+    }
+  }, [supabase, userId]);
 
   async function saveHolding(holding: Holding) {
     const isNew = !holdings.some((item) => item.id === holding.id);
@@ -402,6 +433,7 @@ export function Workbench({
             <InsightsView
               brief={brief}
               holdings={holdings}
+              onQuotesUpdated={applyMarketQuotes}
               onOpenMarket={(country) => {
                 setRequestedCountry(country);
                 openTab("map");

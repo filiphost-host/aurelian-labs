@@ -56,7 +56,8 @@ Public snapshot URLs contain random opaque tokens. Only token hashes are stored,
 
 ## Data policy
 
-- SEC EDGAR, ECB, FRED, World Bank, OpenFIGI, and Twelve Data are accessed through server adapters.
+- SEC EDGAR, ECB, FRED, World Bank, OpenFIGI, and market-price sources are accessed through server adapters.
+- Latest quotes prefer Twelve Data when configured and otherwise use a clearly labelled delayed Yahoo Finance fallback cached for five minutes.
 - Missing data stays missing. Previous observations may remain visible as stale after a provider failure.
 - Manual and estimated values are explicitly labelled.
 - Shared snapshots should omit provider-controlled raw data where redistribution is unclear.

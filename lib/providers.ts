@@ -1,5 +1,8 @@
 import "server-only";
 
+import { marketDataSymbol } from "@/lib/market-symbols";
+import type { MarketQuote } from "@/lib/types";
+
 export type InstrumentSearchResult = {
   id: string;
   symbol: string;
@@ -17,7 +20,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> 
     const response = await fetch(url, {
       ...init,
       signal: AbortSignal.timeout(8_000),
-      next: { revalidate: 86_400 },
+      next: init?.next ?? { revalidate: 86_400 },
     });
     if (!response.ok) return null;
     return await response.json() as T;
@@ -155,6 +158,104 @@ export async function fetchDailyClose(symbol: string) {
     source: "Twelve Data",
     status: "delayed" as const,
   };
+}
+
+type QuoteRequest = {
+  id: string;
+  symbol: string;
+  name: string;
+  exchange?: string | null;
+  currency?: string | null;
+};
+
+function finiteNumber(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function fetchTwelveDataQuote(instrument: QuoteRequest): Promise<MarketQuote | null> {
+  if (!process.env.TWELVE_DATA_API_KEY) return null;
+  const response = await fetchJson<{
+    close?: string;
+    previous_close?: string;
+    change?: string;
+    percent_change?: string;
+    currency?: string;
+    datetime?: string;
+    timestamp?: number;
+    is_market_open?: boolean;
+    status?: string;
+  }>(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(instrument.symbol)}${instrument.exchange ? `&exchange=${encodeURIComponent(instrument.exchange)}` : ""}`, {
+    headers: { Authorization: `apikey ${process.env.TWELVE_DATA_API_KEY}` },
+    next: { revalidate: 300 },
+  });
+  const price = finiteNumber(response?.close);
+  if (price === null || response?.status === "error") return null;
+  const previousClose = finiteNumber(response?.previous_close);
+  return {
+    id: instrument.id,
+    symbol: instrument.symbol,
+    name: instrument.name,
+    price,
+    previousClose,
+    change: finiteNumber(response?.change) ?? (previousClose === null ? null : price - previousClose),
+    percentChange: finiteNumber(response?.percent_change) ?? (previousClose ? ((price - previousClose) / previousClose) * 100 : null),
+    currency: response?.currency ?? instrument.currency ?? "",
+    asOf: response?.timestamp ? new Date(response.timestamp * 1000).toISOString() : response?.datetime ?? new Date().toISOString(),
+    marketState: response?.is_market_open === true ? "Open" : response?.is_market_open === false ? "Closed" : null,
+    source: "Twelve Data",
+    status: response?.is_market_open ? "live" : "delayed",
+  };
+}
+
+async function fetchYahooChartQuote(instrument: QuoteRequest): Promise<MarketQuote | null> {
+  const providerSymbol = marketDataSymbol(instrument.symbol, instrument.exchange);
+  const response = await fetchJson<{
+    chart?: {
+      result?: Array<{
+        meta?: {
+          regularMarketPrice?: number;
+          regularMarketPreviousClose?: number;
+          previousClose?: number;
+          chartPreviousClose?: number;
+          currency?: string;
+          regularMarketTime?: number;
+          marketState?: string;
+        };
+        indicators?: { quote?: Array<{ close?: Array<number | null> }> };
+      }>;
+    };
+  }>(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(providerSymbol)}?interval=1d&range=5d`, {
+    headers: { "User-Agent": "Aurelian-Labs/1.0" },
+    next: { revalidate: 300 },
+  });
+  const result = response?.chart?.result?.[0];
+  const meta = result?.meta;
+  const price = finiteNumber(meta?.regularMarketPrice);
+  const closes = (result?.indicators?.quote?.[0]?.close ?? []).flatMap((value) => {
+    const parsed = finiteNumber(value);
+    return parsed === null ? [] : [parsed];
+  });
+  const previousClose = finiteNumber(meta?.regularMarketPreviousClose) ?? (closes.length > 1 ? closes.at(-2)! : null);
+  if (price === null) return null;
+  return {
+    id: instrument.id,
+    symbol: instrument.symbol,
+    name: instrument.name,
+    price,
+    previousClose,
+    change: previousClose === null ? null : price - previousClose,
+    percentChange: previousClose ? ((price - previousClose) / previousClose) * 100 : null,
+    currency: meta?.currency ?? instrument.currency ?? "",
+    asOf: meta?.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : new Date().toISOString(),
+    marketState: meta?.marketState ?? null,
+    source: "Yahoo Finance",
+    status: "delayed",
+  };
+}
+
+export async function fetchLatestQuote(instrument: QuoteRequest) {
+  return await fetchTwelveDataQuote(instrument) ?? await fetchYahooChartQuote(instrument);
 }
 
 export async function fetchEcbFxToNok() {

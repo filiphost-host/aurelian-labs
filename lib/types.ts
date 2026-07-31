@@ -39,6 +39,21 @@ export type DataProvenance = {
   note?: string | null;
 };
 
+export type MarketQuote = {
+  id: string;
+  symbol: string;
+  name: string;
+  price: number;
+  previousClose: number | null;
+  change: number | null;
+  percentChange: number | null;
+  currency: string;
+  asOf: string;
+  marketState: string | null;
+  source: string;
+  status: "live" | "delayed";
+};
+
 export type Holding = {
   id: string;
   user_id?: string;
