@@ -284,6 +284,7 @@ export function scenarioImpact(holding: Holding, scenario: Scenario) {
     const exposure = Number(rawExposure) || 0;
     if (!exposure || key === "rates" || key === "credit") continue;
     const shock = scenario[key] ?? 0;
+    if (!shock) continue;
     impactPercent += shock * exposure;
     assumptions.push(`${factorLabels[key]} ${formatShock(key, shock)} × ${exposure.toFixed(1)}`);
   }
@@ -294,8 +295,8 @@ export function scenarioImpact(holding: Holding, scenario: Scenario) {
     const creditExposure = Number(holding.factor_exposures.credit ?? 1);
     const creditImpact = -duration * ((scenario.credit ?? 0) / 100) * creditExposure;
     impactPercent += rateImpact + creditImpact;
-    assumptions.push(`Duration ${duration.toFixed(1)} × rates ${formatShock("rates", scenario.rates)}`);
-    assumptions.push(`Spread duration proxy × ${formatShock("credit", scenario.credit)}`);
+    if (scenario.rates) assumptions.push(`Duration ${duration.toFixed(1)} × rates ${formatShock("rates", scenario.rates)}`);
+    if (scenario.credit) assumptions.push(`Spread duration proxy × ${formatShock("credit", scenario.credit)}`);
   }
 
   const impactNok = value * (impactPercent / 100);

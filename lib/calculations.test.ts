@@ -141,4 +141,10 @@ describe("scenario engine", () => {
     expect(result.impactPercent).toBeCloseTo(-12.5, 4);
     expect(result.impactNok).toBeCloseTo(-12500, 2);
   });
+
+  it("reports only assumptions that are active in the selected stress test", () => {
+    const result = scenarioImpact(baseHolding, { ...blankScenario, rates: 100 });
+    expect(result.impactNok).toBe(0);
+    expect(result.assumptions).toEqual([]);
+  });
 });

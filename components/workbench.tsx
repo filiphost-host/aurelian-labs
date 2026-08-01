@@ -64,7 +64,7 @@ const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: "insights", label: "Insights", icon: Newspaper },
   { id: "portfolio", label: "Portfolio", icon: BarChart3 },
   { id: "map", label: "Global Map", icon: Globe2 },
-  { id: "scenarios", label: "Scenarios", icon: SlidersHorizontal },
+  { id: "scenarios", label: "Stress Test", icon: SlidersHorizontal },
 ];
 
 function normalizeHolding(holding: Holding): Holding {

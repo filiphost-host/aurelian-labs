@@ -1002,6 +1002,202 @@ tr.focused-row {
   padding: 17px 19px;
 }
 
+.scenario-toolbar p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.scenario-how-to,
+.scenario-question-card,
+.scenario-interpretation,
+.scenario-details-trigger {
+  grid-column: 1 / -1;
+}
+
+.scenario-how-to {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.7fr);
+  align-items: center;
+  gap: 22px;
+  padding: 17px 19px;
+}
+
+.scenario-how-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.scenario-how-heading h2 {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
+.scenario-how-to ol {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scenario-how-to li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 9px;
+  padding: 2px 14px;
+  border-left: 1px solid var(--line);
+}
+
+.scenario-how-to li > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font-size: 10px;
+}
+
+.scenario-how-to li strong,
+.scenario-how-to li p {
+  display: block;
+}
+
+.scenario-how-to li strong {
+  font-size: 11px;
+}
+
+.scenario-how-to li p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.scenario-question-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr);
+}
+
+.scenario-question-copy,
+.scenario-purpose {
+  padding: 21px;
+}
+
+.scenario-question-copy h2 {
+  max-width: 780px;
+  margin: 7px 0 8px;
+  font-size: 22px;
+}
+
+.scenario-question-copy p,
+.scenario-purpose p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.scenario-purpose {
+  border-left: 1px solid var(--line);
+}
+
+.scenario-purpose > span {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.scenario-interpretation {
+  padding: 19px;
+}
+
+.scenario-verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.scenario-verdict h2 {
+  margin: 5px 0 0;
+  font-size: 18px;
+}
+
+.scenario-reading-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.scenario-reading-grid article {
+  min-width: 0;
+  padding: 16px 17px 2px;
+  border-right: 1px solid var(--line);
+}
+
+.scenario-reading-grid article:first-child { padding-left: 0; }
+.scenario-reading-grid article:last-child { padding-right: 0; border-right: 0; }
+
+.scenario-reading-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.scenario-reading-grid strong {
+  display: block;
+  margin: 7px 0 6px;
+  font-size: 13px;
+}
+
+.scenario-reading-grid p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.scenario-details-trigger {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 17px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 253, 247, 0.58);
+  text-align: left;
+}
+
+.scenario-details-trigger > div,
+.scenario-details-trigger span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.scenario-details-trigger span {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scenario-details-trigger strong,
+.scenario-details-trigger small { display: block; }
+.scenario-details-trigger strong { font-size: 12px; }
+.scenario-details-trigger small { color: var(--muted); font-size: 9px; }
+
 .preset-strip {
   grid-column: 1 / -1;
   display: grid;
@@ -2725,6 +2921,9 @@ input[type="range"] {
 .insights-workbench > .panel,
 .scenario-workbench .scenario-toolbar,
 .scenario-workbench .scenario-result-band,
+.scenario-workbench .scenario-how-to,
+.scenario-workbench .scenario-question-card,
+.scenario-workbench .scenario-interpretation,
 .scenario-workbench > .panel {
   border: 1px solid rgba(199, 169, 93, 0.28);
   border-radius: 6px;
@@ -2754,6 +2953,46 @@ input[type="range"] {
 .scenario-workbench .scenario-result-band span,
 .scenario-workbench .scenario-result-band em {
   color: #acb9ae;
+}
+
+.scenario-workbench .scenario-toolbar p,
+.scenario-workbench .scenario-how-to li p,
+.scenario-workbench .scenario-question-copy p,
+.scenario-workbench .scenario-purpose p,
+.scenario-workbench .scenario-reading-grid p,
+.scenario-workbench .scenario-reading-grid span,
+.scenario-workbench .scenario-details-trigger small {
+  color: #acb9ae;
+}
+
+.scenario-workbench .scenario-how-to li,
+.scenario-workbench .scenario-purpose,
+.scenario-workbench .scenario-verdict,
+.scenario-workbench .scenario-reading-grid article {
+  border-color: rgba(199, 169, 93, 0.2);
+}
+
+.scenario-workbench .scenario-how-to li > span {
+  border-color: rgba(199, 169, 93, 0.34);
+  color: #d4af37;
+}
+
+.scenario-workbench .scenario-how-heading > svg,
+.scenario-workbench .scenario-purpose > svg,
+.scenario-workbench .scenario-verdict > svg {
+  color: #d4af37;
+}
+
+.scenario-workbench .scenario-details-trigger {
+  border-color: rgba(199, 169, 93, 0.3);
+  color: #eef1e9;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.scenario-workbench .scenario-details-trigger:hover,
+.scenario-workbench .scenario-details-trigger.open {
+  border-color: rgba(231, 199, 112, 0.62);
+  background: rgba(212, 175, 55, 0.07);
 }
 
 .insights-workbench .ghost-button,
@@ -3360,6 +3599,21 @@ input[type="range"] {
 }
 
 @media (max-width: 900px) {
+  .scenario-how-to,
+  .scenario-question-card {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-how-to ol {
+    border-top: 1px solid rgba(199, 169, 93, 0.2);
+    padding-top: 14px;
+  }
+
+  .scenario-purpose {
+    border-top: 1px solid rgba(199, 169, 93, 0.2);
+    border-left: 0;
+  }
+
   .investor-comparison-body {
     grid-template-columns: 1fr;
   }
@@ -3535,6 +3789,47 @@ input[type="range"] {
 
   .market-monitor-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scenario-how-to {
+    padding: 15px;
+  }
+
+  .scenario-how-to ol,
+  .scenario-reading-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-how-to li {
+    padding: 10px 0;
+    border-top: 1px solid rgba(199, 169, 93, 0.18);
+    border-left: 0;
+  }
+
+  .scenario-how-to li:first-child {
+    border-top: 0;
+  }
+
+  .scenario-question-copy,
+  .scenario-purpose,
+  .scenario-interpretation {
+    padding: 16px;
+  }
+
+  .scenario-question-copy h2 {
+    font-size: 19px;
+  }
+
+  .scenario-reading-grid article,
+  .scenario-reading-grid article:first-child,
+  .scenario-reading-grid article:last-child {
+    padding: 13px 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(199, 169, 93, 0.18);
+  }
+
+  .scenario-reading-grid article:last-child {
+    border-bottom: 0;
   }
 
   .market-desk .section-heading,
