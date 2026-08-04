@@ -190,7 +190,14 @@ export function PortfolioView({
                   maximumFractionDigits: 0,
                 }).format(Number(value))}
               />
-              <Area type="monotone" dataKey="value" stroke="#f0edeb" strokeWidth={2} fill="rgba(255, 255, 255, 0.018)" />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#f0edeb"
+                strokeWidth={2}
+                fill="rgba(255, 255, 255, 0.018)"
+                activeDot={{ fill: "#df5268", stroke: "#f0edeb", strokeWidth: 2, r: 4 }}
+              />
             </AreaChart>
           </ResponsiveContainer>
           <p className="panel-note">

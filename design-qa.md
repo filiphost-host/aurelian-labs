@@ -15,6 +15,8 @@
 
 The reference and implementation were inspected together at original detail. The implementation carries over the reference's near-black canvas, quiet graphite panels, white chart line, divider-led KPI strip, muted labels, compact controls, and restrained green/red status colors. Aurelian gold remains deliberately limited to the brand, selected navigation, and selected states.
 
+The subsequent crimson signal pass adds a subtle burgundy cast to the canvas, short red section rules, red interaction details, and stronger downside emphasis. Red is reserved for attention, risk, and interaction; positive portfolio data remains green and researched-market identity remains gold.
+
 The portfolio is the closest structural match because its transaction-backed history is now the primary visualization directly below the KPI strip. Insights, Global Map, Stress Test, login, dialogs, search, and public snapshots use the same surfaces and hierarchy without imitating a single-stock page where that would reduce usability.
 
 ## Findings
@@ -30,6 +32,7 @@ The portfolio is the closest structural match because its transaction-backed his
 - P1 fixed: mobile navigation labels were compressed in the 390 px header; compact icon-only navigation now preserves spacing.
 - P2 fixed: portfolio chart looked absent in an immediate capture; QA now waits for the intentional chart entrance animation and confirms the rendered SVG path.
 - P2 fixed: gold and green previously competed across most surfaces; both are now scoped to identity, selection, and semantic data.
+- P2 fixed: the first Obsidian pass was visually quiet compared with the reference; controlled crimson details now add energy without reducing data clarity.
 - Open P0/P1/P2 findings: none.
 
 final result: passed
