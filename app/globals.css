@@ -4164,3 +4164,977 @@ input[type="range"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* Aurelian Obsidian visual system */
+:root {
+  --bg: #0b090a;
+  --panel: #111113;
+  --panel-strong: #151416;
+  --panel-muted: #1a181b;
+  --ink: #f2efed;
+  --muted: #8b8689;
+  --line: rgba(255, 255, 255, 0.075);
+  --line-strong: rgba(255, 255, 255, 0.15);
+  --green: #3f8f70;
+  --green-deep: #0d1110;
+  --green-soft: #54a981;
+  --gold: #c5a45b;
+  --gold-bright: #d5b96f;
+  --gold-dark: #d5b96f;
+  --red: #b65f69;
+  --teal: #588889;
+  --shadow: 0 22px 64px rgba(0, 0, 0, 0.34);
+}
+
+html,
+body {
+  color-scheme: dark;
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+  color: var(--ink);
+  background: #0b090a;
+}
+
+body::before {
+  display: none;
+}
+
+::selection {
+  color: #090909;
+  background: #d5b96f;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline-color: #d5b96f;
+}
+
+.app-shell {
+  grid-template-columns: 224px minmax(0, 1fr);
+  background: #0b090a;
+}
+
+.sidebar {
+  padding: 24px 18px;
+  color: #e8e4e2;
+  border-right: 1px solid var(--line);
+  background: #0d0c0e;
+}
+
+.brand {
+  margin-bottom: 30px;
+}
+
+.brand strong {
+  color: #d5b96f;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.brand span {
+  color: #716d70;
+  font-size: 10px;
+}
+
+.brand-mark {
+  width: 43px;
+  height: 43px;
+  border: 1px solid rgba(213, 185, 111, 0.68);
+  border-radius: 7px;
+  color: #d5b96f;
+  background: #151315;
+  box-shadow: inset 0 0 0 1px rgba(213, 185, 111, 0.08);
+}
+
+.brand-mark span {
+  color: #d5b96f;
+  font-size: 27px;
+}
+
+nav {
+  gap: 3px;
+  padding-top: 14px;
+  border-top-color: var(--line);
+}
+
+nav button,
+.sidebar-signout {
+  min-height: 42px;
+  border-radius: 5px;
+  color: #979295;
+  font-size: 12px;
+}
+
+nav button:hover {
+  transform: none;
+}
+
+nav button:hover,
+nav button:focus-visible,
+nav button.active {
+  color: #f2efed;
+  border-color: var(--line);
+  background: #171619;
+  box-shadow: inset 2px 0 0 #c5a45b;
+}
+
+.currency-toggle {
+  border-color: var(--line-strong);
+  border-radius: 5px;
+}
+
+.currency-toggle button {
+  color: #7e797c;
+  background: transparent;
+}
+
+.currency-toggle button.active {
+  color: #f2efed;
+  background: #242226;
+}
+
+.sidebar-signout {
+  color: #777275;
+  border-color: var(--line);
+}
+
+.workspace {
+  padding: 30px 34px 48px;
+  background: #0b090a;
+}
+
+.topbar {
+  min-height: 64px;
+  align-items: center;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar h1 {
+  color: #f5f2f0;
+  font-size: 28px;
+  font-weight: 650;
+}
+
+.eyebrow {
+  color: #777275;
+  font-size: 9px;
+  letter-spacing: 0;
+}
+
+.search-trigger,
+.status-pill {
+  min-height: 38px;
+  border-color: var(--line);
+  border-radius: 5px;
+  color: #817c7f;
+  background: #121114;
+}
+
+.search-trigger:hover {
+  border-color: var(--line-strong);
+  background: #18171a;
+  box-shadow: none;
+}
+
+kbd {
+  color: #716d70;
+  border-color: var(--line);
+  background: #1a191c;
+}
+
+.status-pill i {
+  background: #4f9d78;
+  box-shadow: 0 0 0 3px rgba(79, 157, 120, 0.11);
+}
+
+.panel,
+.metric,
+.country-dashboard,
+.brief-hero,
+.brief-stats,
+.scenario-toolbar,
+.scenario-result-band,
+.share-summary,
+.shared-insight,
+.portfolio-workbench,
+.insights-workbench,
+.scenario-workbench,
+.investor-playbooks,
+.insights-workbench .brief-hero,
+.insights-workbench .brief-stats,
+.insights-workbench .insights-control-bar,
+.insights-workbench .market-monitor,
+.insights-workbench .market-desk,
+.insights-workbench .investor-comparison,
+.insights-workbench > .panel,
+.scenario-workbench .scenario-toolbar,
+.scenario-workbench .scenario-result-band,
+.scenario-workbench .scenario-how-to,
+.scenario-workbench .scenario-question-card,
+.scenario-workbench .scenario-interpretation,
+.scenario-workbench > .panel,
+.portfolio-workbench > .panel,
+.portfolio-workbench .metric {
+  color: var(--ink);
+  border-color: var(--line);
+  border-radius: 7px;
+  background: #121114;
+  box-shadow: none;
+}
+
+.portfolio-workbench,
+.insights-workbench,
+.scenario-workbench {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.panel {
+  padding: 20px;
+}
+
+.panel h2,
+.section-heading h2,
+.panel-title-row h2,
+.map-toolbar h2,
+.scenario-toolbar h2,
+.portfolio-workbench h2,
+.portfolio-workbench h3,
+.insights-workbench h2,
+.insights-workbench h3,
+.scenario-workbench h2,
+.scenario-workbench h3 {
+  color: #eeeae8;
+  font-weight: 610;
+}
+
+.panel-note,
+.modal-copy,
+.as-of,
+.portfolio-workbench .panel-note,
+.portfolio-workbench .legend-list,
+.portfolio-workbench .decision-grid button > div span,
+.portfolio-workbench .decision-grid footer,
+.insights-workbench .brief-hero p,
+.scenario-workbench .panel-note,
+.scenario-workbench .preset-strip span,
+.scenario-workbench .scenario-result-band span,
+.scenario-workbench .scenario-result-band em,
+.scenario-workbench .scenario-toolbar p,
+.scenario-workbench .scenario-how-to li p,
+.scenario-workbench .scenario-question-copy p,
+.scenario-workbench .scenario-purpose p,
+.scenario-workbench .scenario-reading-grid p,
+.scenario-workbench .scenario-reading-grid span,
+.scenario-workbench .scenario-details-trigger small {
+  color: #817c7f;
+}
+
+.portfolio-workbench .eyebrow,
+.insights-workbench .eyebrow,
+.scenario-workbench .eyebrow {
+  color: #8f898c;
+}
+
+.primary-button,
+.ghost-button,
+.icon-button,
+.portfolio-workbench .primary-button,
+.portfolio-workbench .ghost-button,
+.portfolio-workbench .icon-button,
+.insights-workbench .primary-button,
+.insights-workbench .ghost-button,
+.scenario-workbench .primary-button,
+.scenario-workbench .ghost-button,
+.scenario-workbench .icon-button {
+  min-height: 36px;
+  border-radius: 5px;
+}
+
+.primary-button,
+.portfolio-workbench .primary-button,
+.insights-workbench .primary-button,
+.scenario-workbench .primary-button {
+  color: #f4f1ef;
+  border-color: rgba(255, 255, 255, 0.09);
+  background: #262428;
+}
+
+.primary-button:hover,
+.portfolio-workbench .primary-button:hover,
+.insights-workbench .primary-button:hover,
+.scenario-workbench .primary-button:hover {
+  color: #fff;
+  background: #302e32;
+}
+
+.ghost-button,
+.icon-button,
+.portfolio-workbench .ghost-button,
+.portfolio-workbench .icon-button,
+.insights-workbench .ghost-button,
+.scenario-workbench .ghost-button,
+.scenario-workbench .icon-button {
+  color: #b0abae;
+  border-color: var(--line);
+  background: #171619;
+}
+
+.ghost-button:hover,
+.icon-button:hover {
+  color: #f2efed;
+  border-color: var(--line-strong);
+  background: #201f22;
+}
+
+.portfolio-metrics {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #121114;
+}
+
+.portfolio-workbench .portfolio-metrics .metric {
+  min-height: 116px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.portfolio-workbench .portfolio-metrics .metric:last-child {
+  border-right: 0;
+}
+
+.portfolio-workbench .metric:hover,
+.portfolio-workbench > .allocation-panel:hover,
+.portfolio-workbench .decision-grid > button:hover,
+.insights-workbench .insight-card:hover,
+.market-desk-grid article:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
+}
+
+.portfolio-workbench .metric > span,
+.portfolio-workbench .metric em,
+.portfolio-workbench td > span {
+  color: #777275;
+}
+
+.portfolio-workbench .metric strong,
+.scenario-workbench .scenario-result-band strong,
+.insights-workbench .brief-stats strong {
+  color: #f4f1ef;
+}
+
+.portfolio-workbench .good,
+.good {
+  color: #58ae85 !important;
+}
+
+.portfolio-workbench .bad,
+.bad {
+  color: #c96974 !important;
+}
+
+.performance-panel {
+  min-height: 430px;
+  padding: 24px 24px 12px;
+  background: #0f0e10;
+}
+
+.performance-panel .recharts-cartesian-axis-line,
+.performance-panel .recharts-cartesian-axis-tick-line {
+  stroke: rgba(255, 255, 255, 0.05);
+}
+
+.history-status,
+.portfolio-workbench .history-status,
+.portfolio-workbench .provenance {
+  color: #8a8588;
+}
+
+.portfolio-workbench th,
+.scenario-workbench th {
+  color: #817c7f;
+  border-bottom-color: var(--line-strong);
+}
+
+.portfolio-workbench td,
+.scenario-workbench td {
+  border-bottom-color: var(--line);
+}
+
+.portfolio-workbench tbody tr:hover,
+.scenario-workbench tbody tr:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 2px 0 0 #c5a45b;
+}
+
+.portfolio-workbench .decision-grid > button,
+.portfolio-workbench .bond-grid article,
+.portfolio-workbench .saved-scenario-list article,
+.scenario-workbench .saved-scenario-list article,
+.scenario-workbench .empty-state,
+.insights-workbench .data-ledger-grid article {
+  color: #dedad8;
+  border-color: var(--line);
+  background: #161518;
+}
+
+.investor-playbooks {
+  border-color: var(--line);
+  background: #121114;
+}
+
+.playbook-heading,
+.playbook-selector,
+.playbook-detail footer {
+  border-color: var(--line);
+}
+
+.playbook-selector button {
+  color: #aaa5a8;
+  border-right-color: var(--line);
+  background: #0f0e10;
+}
+
+.playbook-selector button:hover,
+.playbook-selector button.active {
+  transform: none;
+  color: #f2efed;
+  background: #1a191c;
+  box-shadow: inset 0 -2px 0 #c5a45b;
+}
+
+.playbook-selector button small,
+.playbook-detail footer {
+  color: #777275;
+}
+
+.playbook-detail > div,
+.playbook-lesson > div + div {
+  border-color: var(--line);
+}
+
+.playbook-icon {
+  color: #c5a45b;
+  border-color: rgba(197, 164, 91, 0.28);
+  background: rgba(197, 164, 91, 0.06);
+}
+
+.playbook-profile span,
+.playbook-case > span,
+.playbook-lesson span,
+.playbook-detail footer a {
+  color: #a99362;
+}
+
+.playbook-profile p,
+.playbook-case p,
+.playbook-lesson p {
+  color: #aaa5a8;
+}
+
+.insights-workbench .brief-hero {
+  border-top: 1px solid var(--line);
+}
+
+.insights-workbench .brief-stats article,
+.scenario-workbench .scenario-result-band article {
+  border-right-color: var(--line);
+}
+
+.insights-control-bar,
+.quote-scope,
+.desk-focus,
+.select-shell select,
+.investor-selectors select {
+  border-color: var(--line);
+  background: #121114;
+}
+
+.select-shell select,
+.investor-selectors select {
+  color: #dedad8;
+}
+
+.insights-view-select > svg,
+.select-shell svg,
+.comparison-notes svg,
+.comparison-notes span {
+  color: #9f8958;
+}
+
+.quote-scope button,
+.desk-focus button {
+  color: #817c7f;
+  border-color: var(--line);
+  background: transparent;
+}
+
+.quote-scope button:hover,
+.quote-scope button.active,
+.desk-focus button:hover,
+.desk-focus button.active {
+  color: #f2efed;
+  background: #29272b;
+}
+
+.quote-card,
+.market-desk-grid article,
+.investor-radar,
+.comparison-notes,
+.insights-workbench .insight-card {
+  color: #dedad8;
+  border-color: var(--line);
+  background: #0f0e10;
+}
+
+.quote-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+  background: #151416;
+}
+
+.quote-card header span,
+.quote-card footer,
+.market-monitor-footer,
+.insights-workbench .insight-body footer,
+.insights-workbench .insight-body footer span,
+.insights-workbench .brief-stats span {
+  color: #716d70;
+}
+
+.quote-card > strong,
+.market-desk-grid h3 {
+  color: #f0edeb;
+}
+
+.insights-workbench .insight-index {
+  color: #9f8958;
+  border-right-color: var(--line);
+  background: rgba(197, 164, 91, 0.035);
+}
+
+.insights-workbench .insight-title > span,
+.insights-workbench .insight-columns strong,
+.market-desk-grid dt,
+.market-desk-grid footer a,
+.market-desk-grid footer button {
+  color: #a99362;
+}
+
+.insights-workbench .insight-columns > div,
+.insights-workbench .insight-body footer,
+.market-desk-grid footer {
+  border-color: var(--line);
+}
+
+.market-desk-grid dd,
+.comparison-notes p {
+  color: #aaa5a8;
+}
+
+.signals-more {
+  color: #9b9699;
+  border-color: var(--line);
+  background: #131215;
+}
+
+.scenario-workbench .preset-strip button,
+.scenario-workbench .scenario-details-trigger {
+  color: #aaa5a8;
+  border-color: var(--line);
+  background: #151416;
+}
+
+.scenario-workbench .preset-strip button:hover,
+.scenario-workbench .preset-strip button.active {
+  transform: translateY(-1px);
+  color: #f2efed;
+  border-color: rgba(197, 164, 91, 0.42);
+  background: #201e20;
+  box-shadow: inset 0 2px 0 #c5a45b;
+}
+
+.scenario-workbench .scenario-details-trigger:hover,
+.scenario-workbench .scenario-details-trigger.open {
+  border-color: var(--line-strong);
+  background: #1d1b1e;
+}
+
+.scenario-workbench .scenario-how-to li,
+.scenario-workbench .scenario-purpose,
+.scenario-workbench .scenario-verdict,
+.scenario-workbench .scenario-reading-grid article {
+  border-color: var(--line);
+}
+
+.scenario-workbench .scenario-how-to li > span {
+  color: #b79e64;
+  border-color: rgba(197, 164, 91, 0.3);
+}
+
+.scenario-workbench .scenario-how-heading > svg,
+.scenario-workbench .scenario-purpose > svg,
+.scenario-workbench .scenario-verdict > svg {
+  color: #a99362;
+}
+
+.scenario-workbench .slider-list input[type="range"] {
+  accent-color: #898489;
+}
+
+/* Map uses the same neutral terminal surface while retaining readable geography. */
+.map-toolbar,
+.map-panel,
+.country-dashboard {
+  color: var(--ink);
+  border-color: var(--line);
+  background: #121114;
+}
+
+.country-search,
+.country-suggestions,
+.map-market-shortcuts button {
+  color: #aaa5a8;
+  border-color: var(--line);
+  background: #171619;
+}
+
+.country-suggestions button {
+  border-bottom-color: var(--line);
+}
+
+.country-suggestions button:hover,
+.map-market-shortcuts button:hover {
+  color: #f2efed;
+  border-color: var(--line-strong);
+  background: #201f22;
+}
+
+.world-map-shell {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #090a0a;
+}
+
+.map-ocean {
+  fill: #090a0a;
+}
+
+.map-grain {
+  opacity: 0.035;
+}
+
+.map-grid-lines line {
+  stroke: rgba(255, 255, 255, 0.045);
+}
+
+.map-land {
+  fill: #26282a;
+  stroke: rgba(255, 255, 255, 0.16);
+}
+
+.map-land.muted {
+  fill: #1a1b1d;
+  opacity: 0.78;
+}
+
+.map-land.market-country,
+.map-land.market-country.energy-market {
+  fill: #333638;
+  stroke: #62676a;
+}
+
+.map-land.market-country.active,
+.map-land.market-country.pinned {
+  fill: #5a5140;
+  stroke: #c5a45b;
+}
+
+.market-pulse {
+  fill: #7a7f80;
+  stroke: #c5c8c8;
+}
+
+.blue-banana-corridor {
+  stroke: rgba(76, 141, 142, 0.64);
+}
+
+.rate-anchor circle {
+  fill: #131416;
+  stroke: #717679;
+}
+
+.map-callout,
+.map-callout.expanded,
+.map-pan-controls button,
+.map-zoom-controls,
+.map-coverage-status,
+.map-lens-trigger,
+.map-lens-panel {
+  color: #e6e2e0;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(15, 14, 16, 0.82);
+  backdrop-filter: blur(12px);
+}
+
+.map-callout-heading span,
+.map-callout-details dt,
+.map-lens-panel label small {
+  color: #817c7f;
+}
+
+.map-callout > p,
+.map-callout .map-callout-policy,
+.map-callout-details dd {
+  color: #bbb6b8;
+}
+
+.map-callout-more,
+.map-callout-details > button {
+  color: #bdb8bb;
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.map-pan-controls button,
+.map-zoom-controls button,
+.map-lens-trigger {
+  color: #bdb8bb;
+}
+
+.map-lens-panel header,
+.map-lens-panel > button {
+  color: #a99362;
+  border-color: var(--line);
+}
+
+.map-lens-panel label,
+.map-callout-details,
+.map-callout .map-callout-policy {
+  border-color: var(--line);
+}
+
+.country-dashboard > header,
+.country-metrics article,
+.country-research-grid > article {
+  border-color: var(--line);
+}
+
+/* Dialogs, search, login, and public snapshots share the same shell. */
+.modal-backdrop,
+.command-backdrop {
+  background: rgba(5, 4, 5, 0.76);
+  backdrop-filter: blur(8px);
+}
+
+.modal,
+.command-menu,
+.login-panel,
+.loader-card {
+  color: var(--ink);
+  border-color: var(--line-strong);
+  border-radius: 7px;
+  background: #121114;
+  box-shadow: var(--shadow);
+}
+
+.field input,
+.field select,
+.field textarea,
+.input-row,
+.share-url,
+.privacy-list label {
+  color: #e6e2e0;
+  border-color: var(--line);
+  background: #18171a;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: rgba(197, 164, 91, 0.58);
+  box-shadow: 0 0 0 2px rgba(197, 164, 91, 0.08);
+}
+
+.form-section,
+.modal-actions,
+.decision-history,
+.decision-history article,
+.command-input,
+.command-menu > footer {
+  border-color: var(--line);
+}
+
+.command-menu > footer {
+  background: #0f0e10;
+}
+
+.command-results > button:hover,
+.command-results > button:focus-visible {
+  background: #1b1a1d;
+}
+
+.result-icon {
+  color: #a99362;
+  border-color: var(--line);
+}
+
+.setup-box {
+  color: #8b8689;
+  border-color: var(--line);
+  background: #18171a;
+}
+
+.login-form > button {
+  color: #f4f1ef;
+  background: #29272b;
+}
+
+.login-form > button:hover {
+  background: #343136;
+}
+
+.shared-insight > span,
+.shared-insight a {
+  color: #a99362;
+}
+
+@media (max-width: 1180px) {
+  .portfolio-workbench .portfolio-metrics .metric:nth-child(2) {
+    border-right: 0;
+  }
+
+  .portfolio-workbench .portfolio-metrics .metric:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    display: block;
+  }
+
+  .sidebar {
+    height: 66px;
+    padding: 9px 14px;
+    border-right: 0;
+    border-bottom-color: var(--line);
+    background: rgba(13, 12, 14, 0.96);
+    backdrop-filter: blur(14px);
+  }
+
+  nav button.active {
+    box-shadow: inset 0 -2px 0 #c5a45b;
+  }
+
+  .workspace {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 620px) {
+  .sidebar {
+    grid-template-columns: 32px minmax(0, 1fr) 72px;
+    gap: 7px;
+    padding: 9px 10px;
+  }
+
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand-mark span {
+    font-size: 20px;
+  }
+
+  .sidebar nav {
+    justify-content: flex-start;
+    gap: 2px;
+  }
+
+  .sidebar nav button {
+    width: 34px;
+    min-height: 38px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .sidebar nav button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .currency-toggle {
+    width: 72px;
+  }
+
+  .currency-toggle button {
+    min-height: 34px;
+    font-size: 9px;
+  }
+
+  .workspace {
+    padding: 16px 12px 30px;
+  }
+
+  .topbar {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+
+  .topbar h1 {
+    font-size: 23px;
+  }
+
+  .portfolio-workbench,
+  .insights-workbench,
+  .scenario-workbench {
+    margin-inline: 0;
+    padding: 0;
+  }
+
+  .portfolio-workbench .portfolio-metrics .metric {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .portfolio-workbench .portfolio-metrics .metric:last-child {
+    border-bottom: 0;
+  }
+
+  .performance-panel {
+    min-height: 390px;
+    padding: 17px 10px 8px;
+  }
+
+  .playbook-selector button,
+  .playbook-selector button:nth-child(2),
+  .playbook-detail > div,
+  .playbook-lesson,
+  .scenario-how-to li,
+  .scenario-reading-grid article {
+    border-color: var(--line);
+  }
+
+  .brief-stats article,
+  .scenario-result-band article {
+    border-bottom-color: var(--line);
+  }
+}

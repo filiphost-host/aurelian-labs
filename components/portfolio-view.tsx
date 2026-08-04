@@ -45,12 +45,12 @@ import type { RemoteInstrument } from "@/components/search-command";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { InvestorPlaybooks } from "@/components/investor-playbooks";
 
-const chartColors = ["#d4af37", "#668572", "#c87854", "#4e8f92", "#b69258", "#91a28f"];
+const chartColors = ["#f0edeb", "#4f9d78", "#b36570", "#6f777c", "#c5a45b", "#587f78"];
 const darkTooltip = {
-  backgroundColor: "rgba(20, 34, 27, 0.96)",
-  border: "1px solid rgba(212, 175, 55, 0.5)",
+  backgroundColor: "rgba(14, 13, 15, 0.97)",
+  border: "1px solid rgba(255, 255, 255, 0.14)",
   borderRadius: "5px",
-  color: "#f5f0e5",
+  color: "#f4f1ef",
 };
 
 function blankHolding(seed?: RemoteInstrument): Holding {
@@ -159,6 +159,45 @@ export function PortfolioView({
           />
         </section>
 
+        <section className="panel wide performance-panel">
+          <div className="panel-title-row">
+            <div>
+              <span className="eyebrow">Transaction-backed history</span>
+              <h2>Portfolio value and return path</h2>
+            </div>
+            <div className="history-status">
+              <span>{snapshots.some((snapshot) => snapshot.source === "legacy_estimate") ? "Legacy estimates present" : "Calculated snapshots"}</span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={320}>
+            <AreaChart data={snapshots.map((snapshot) => ({
+              date: snapshot.snapshot_date,
+              value: displayValue(snapshot.total_value_nok, displayCurrency),
+              source: snapshot.source,
+            }))}>
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" vertical={false} />
+              <XAxis dataKey="date" tick={{ fill: "#7f7a7d", fontSize: 11 }} tickFormatter={(value) => String(value).slice(0, 4)} />
+              <YAxis
+                width={88}
+                tick={{ fill: "#7f7a7d", fontSize: 11 }}
+                tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))}
+              />
+              <Tooltip
+                contentStyle={darkTooltip}
+                formatter={(value) => new Intl.NumberFormat("nb-NO", {
+                  style: "currency",
+                  currency: displayCurrency,
+                  maximumFractionDigits: 0,
+                }).format(Number(value))}
+              />
+              <Area type="monotone" dataKey="value" stroke="#f0edeb" strokeWidth={2} fill="rgba(255, 255, 255, 0.018)" />
+            </AreaChart>
+          </ResponsiveContainer>
+          <p className="panel-note">
+            Legacy points remain clearly marked until daily calculated snapshots replace the original estimated history.
+          </p>
+        </section>
+
         <section className="panel wide holdings-panel">
           <div className="panel-title-row">
             <div>
@@ -241,62 +280,17 @@ export function PortfolioView({
 
         <InvestorPlaybooks />
 
-        <section className="panel wide performance-panel">
-          <div className="panel-title-row">
-            <div>
-              <span className="eyebrow">Transaction-backed history</span>
-              <h2>Portfolio value and return path</h2>
-            </div>
-            <div className="history-status">
-              <span>{snapshots.some((snapshot) => snapshot.source === "legacy_estimate") ? "Legacy estimates present" : "Calculated snapshots"}</span>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={snapshots.map((snapshot) => ({
-              date: snapshot.snapshot_date,
-              value: displayValue(snapshot.total_value_nok, displayCurrency),
-              source: snapshot.source,
-            }))}>
-              <defs>
-                <linearGradient id="valueGold" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="5%" stopColor="#c99738" stopOpacity={0.72} />
-                  <stop offset="95%" stopColor="#c99738" stopOpacity={0.06} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="rgba(214, 180, 91, 0.16)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: "#acb9ae", fontSize: 11 }} tickFormatter={(value) => String(value).slice(0, 4)} />
-              <YAxis
-                width={88}
-                tick={{ fill: "#acb9ae", fontSize: 11 }}
-                tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))}
-              />
-              <Tooltip
-                contentStyle={darkTooltip}
-                formatter={(value) => new Intl.NumberFormat("nb-NO", {
-                  style: "currency",
-                  currency: displayCurrency,
-                  maximumFractionDigits: 0,
-                }).format(Number(value))}
-              />
-              <Area type="monotone" dataKey="value" stroke="#8a6923" strokeWidth={3} fill="url(#valueGold)" />
-            </AreaChart>
-          </ResponsiveContainer>
-          <p className="panel-note">
-            Legacy points remain clearly marked until daily calculated snapshots replace the original estimated history.
-          </p>
-        </section>
-
         <section className="panel wide">
           <div className="panel-title-row">
             <div><span className="eyebrow">Concentration</span><h2>Top sectors</h2></div>
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={sectorAllocation}>
-              <CartesianGrid stroke="rgba(214, 180, 91, 0.16)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" tick={{ fill: "#acb9ae", fontSize: 11 }} />
-              <YAxis tick={{ fill: "#acb9ae", fontSize: 11 }} tickFormatter={(value) => `${value}%`} />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: "#7f7a7d", fontSize: 11 }} />
+              <YAxis tick={{ fill: "#7f7a7d", fontSize: 11 }} tickFormatter={(value) => `${value}%`} />
               <Tooltip contentStyle={darkTooltip} formatter={(value) => `${Number(value).toFixed(1)}%`} />
-              <Bar dataKey="percent" radius={[3, 3, 0, 0]} fill="#d4af37" />
+              <Bar dataKey="percent" radius={[3, 3, 0, 0]} fill="#557c69" />
             </BarChart>
           </ResponsiveContainer>
         </section>

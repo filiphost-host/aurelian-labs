@@ -472,13 +472,13 @@ function InvestorComparison() {
         <div className="investor-radar">
           <ResponsiveContainer width="100%" height={330}>
             <RadarChart data={data} outerRadius="72%">
-              <PolarGrid stroke="rgba(214, 180, 91, 0.22)" />
-              <PolarAngleAxis dataKey="axis" tick={{ fill: "#c5d0c7", fontSize: 10 }} />
+              <PolarGrid stroke="rgba(255, 255, 255, 0.09)" />
+              <PolarAngleAxis dataKey="axis" tick={{ fill: "#aaa5a8", fontSize: 10 }} />
               <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
               <Radar name={leftProfile.name} dataKey="left" stroke={leftProfile.color} fill={leftProfile.color} fillOpacity={0.2} strokeWidth={2} />
               <Radar name={rightProfile.name} dataKey="right" stroke={rightProfile.color} fill={rightProfile.color} fillOpacity={0.16} strokeWidth={2} />
               <Legend wrapperStyle={{ color: "#dce3dc", fontSize: 10 }} />
-              <Tooltip contentStyle={{ background: "#14221b", border: "1px solid rgba(212, 175, 55, 0.45)", color: "#f5f0e5" }} />
+              <Tooltip contentStyle={{ background: "#0e0d0f", border: "1px solid rgba(255, 255, 255, 0.14)", color: "#f4f1ef" }} />
             </RadarChart>
           </ResponsiveContainer>
         </div>

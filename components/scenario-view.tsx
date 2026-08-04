@@ -81,10 +81,10 @@ const scenarioGuides: Record<string, { question: string; meaning: string; review
   },
 };
 const darkTooltip = {
-  backgroundColor: "rgba(20, 34, 27, 0.96)",
-  border: "1px solid rgba(212, 175, 55, 0.5)",
+  backgroundColor: "rgba(14, 13, 15, 0.97)",
+  border: "1px solid rgba(255, 255, 255, 0.14)",
   borderRadius: "5px",
-  color: "#f5f0e5",
+  color: "#f4f1ef",
 };
 
 export function ScenarioView({
@@ -304,12 +304,12 @@ export function ScenarioView({
               }))}
               margin={{ left: 8, right: 54 }}
             >
-              <CartesianGrid stroke="rgba(214, 180, 91, 0.16)" strokeDasharray="3 3" horizontal={false} />
-              <XAxis type="number" tick={{ fill: "#acb9ae", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
-              <YAxis dataKey="name" type="category" width={70} tick={{ fill: "#d8dfd6", fontSize: 10 }} />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" horizontal={false} />
+              <XAxis type="number" tick={{ fill: "#7f7a7d", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
+              <YAxis dataKey="name" type="category" width={70} tick={{ fill: "#d7d3d1", fontSize: 10 }} />
               <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
               <Bar dataKey="impact" radius={3}>
-                {rows.map((row) => <Cell key={row.holding.id} fill={row.impactNok >= 0 ? "#78b88c" : "#d07c62"} />)}
+                {rows.map((row) => <Cell key={row.holding.id} fill={row.impactNok >= 0 ? "#4f9d78" : "#b65f69"} />)}
                 <LabelList
                   dataKey="impact"
                   position="right"
@@ -326,12 +326,12 @@ export function ScenarioView({
           </div>
           <ResponsiveContainer width="100%" height={270}>
             <BarChart data={beforeAfter}>
-              <CartesianGrid stroke="rgba(214, 180, 91, 0.16)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" tick={{ fill: "#d8dfd6", fontSize: 10 }} />
-              <YAxis tick={{ fill: "#acb9ae", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: "#d7d3d1", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#7f7a7d", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
               <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
               <Bar dataKey="value" radius={[3, 3, 0, 0]}>
-                <Cell fill="#d4af37" /><Cell fill={impact >= 0 ? "#78b88c" : "#d07c62"} />
+                <Cell fill="#767276" /><Cell fill={impact >= 0 ? "#4f9d78" : "#b65f69"} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
