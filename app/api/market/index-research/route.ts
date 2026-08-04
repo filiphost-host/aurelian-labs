@@ -101,6 +101,8 @@ const trackedIndices: Record<string, { symbol: string; name: string; constituent
   },
 };
 
+const secDebtCache = new Map<string, { value: number | null; expiresAt: number }>();
+
 type HistoryMetric = {
   growthPercent: number | null;
   sharpeRatio: number | null;
@@ -165,10 +167,12 @@ function latestSecValue(facts: Record<string, { units?: { USD?: Array<{ val?: nu
 }
 
 async function fetchSecDebtToEquity(cik: string) {
+  const cached = secDebtCache.get(cik);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
   const response = await fetch(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`, {
     headers: { "User-Agent": process.env.SEC_USER_AGENT ?? "Aurelian Labs https://aurelian-labs.vercel.app" },
     signal: AbortSignal.timeout(8_000),
-    next: { revalidate: 86_400 },
+    cache: "no-store",
   }).catch(() => null);
   if (!response?.ok) return null;
   const payload = await response.json().catch(() => null) as {
@@ -186,8 +190,11 @@ async function fetchSecDebtToEquity(cik: string) {
   const shortTermDebt = latestSecValue(facts, ["ShortTermBorrowings", "ShortTermDebt"]);
   const equity = latestSecValue(facts, ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"]);
   const debtParts = [currentDebt, noncurrentDebt, shortTermDebt].filter((value): value is number => value !== null);
-  if (!debtParts.length || equity === null || equity <= 0) return null;
-  return debtParts.reduce((sum, value) => sum + value, 0) / equity * 100;
+  const value = !debtParts.length || equity === null || equity <= 0
+    ? null
+    : debtParts.reduce((sum, item) => sum + item, 0) / equity * 100;
+  secDebtCache.set(cik, { value, expiresAt: Date.now() + 86_400_000 });
+  return value;
 }
 
 async function fetchYahooDebtToEquity(symbol: string) {
