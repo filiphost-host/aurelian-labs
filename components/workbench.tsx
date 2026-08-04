@@ -2,7 +2,9 @@
 
 import {
   BarChart3,
+  CalendarDays,
   CircleGauge,
+  FlaskConical,
   Globe2,
   LogOut,
   Newspaper,
@@ -51,8 +53,16 @@ const ScenarioView = dynamic(
   () => import("@/components/scenario-view").then((module) => module.ScenarioView),
   { ssr: false, loading: () => <div className="view-loading">Loading scenario tools...</div> },
 );
+const EarningsCalendarView = dynamic(
+  () => import("@/components/earnings-calendar-view").then((module) => module.EarningsCalendarView),
+  { ssr: false, loading: () => <div className="view-loading">Loading event calendar...</div> },
+);
+const CompanyResearchView = dynamic(
+  () => import("@/components/company-research-view").then((module) => module.CompanyResearchView),
+  { ssr: false, loading: () => <div className="view-loading">Loading company research...</div> },
+);
 
-type Tab = "insights" | "portfolio" | "map" | "scenarios";
+type Tab = "insights" | "portfolio" | "map" | "scenarios" | "calendar" | "research";
 type LocalSearchResult = {
   id: string;
   type: "holding" | "insight" | "scenario" | "country";
@@ -63,6 +73,8 @@ type LocalSearchResult = {
 const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: "insights", label: "Insights", icon: Newspaper },
   { id: "portfolio", label: "Portfolio", icon: BarChart3 },
+  { id: "research", label: "Research", icon: FlaskConical },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "map", label: "Global Map", icon: Globe2 },
   { id: "scenarios", label: "Stress Test", icon: SlidersHorizontal },
 ];
@@ -107,6 +119,7 @@ export function Workbench({
   const [focusedHoldingId, setFocusedHoldingId] = useState<string | null>(null);
   const [instrumentSeed, setInstrumentSeed] = useState<RemoteInstrument | null>(null);
   const [requestedCountry, setRequestedCountry] = useState<string | null>(null);
+  const [researchTicker, setResearchTicker] = useState("MSFT");
 
   useEffect(() => {
     function keyboard(event: KeyboardEvent) {
@@ -209,6 +222,11 @@ export function Workbench({
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       });
     });
+  }
+
+  function openResearch(ticker: string | null | undefined) {
+    if (ticker) setResearchTicker(ticker.toUpperCase());
+    openTab("research");
   }
 
   const applyMarketQuotes = useCallback((quotes: MarketQuote[]) => {
@@ -378,32 +396,13 @@ export function Workbench({
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
+      <header className="app-masthead">
         <div className="brand">
           <div className="brand-mark" aria-hidden="true"><span>A</span></div>
           <div><strong>Aurelian Labs</strong><span>Private investment workbench</span></div>
         </div>
-
-        <nav aria-label="Primary navigation">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                className={activeTab === tab.id ? "active" : ""}
-                onClick={() => openTab(tab.id)}
-                aria-current={activeTab === tab.id ? "page" : undefined}
-                aria-label={tab.label}
-                title={tab.label}
-              >
-                <Icon size={17} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="sidebar-footer">
+        <div className="masthead-controls">
+          <div className="status-pill" role="status"><i />{status}</div>
           <div className="currency-toggle" aria-label="Display currency">
             <button className={displayCurrency === "NOK" ? "active" : ""} onClick={() => setDisplayCurrency("NOK")}>NOK</button>
             <button className={displayCurrency === "EUR" ? "active" : ""} onClick={() => setDisplayCurrency("EUR")}>EUR</button>
@@ -412,7 +411,7 @@ export function Workbench({
             <button className="sidebar-signout" onClick={signOut}><LogOut size={15} /> Sign out</button>
           ) : null}
         </div>
-      </aside>
+      </header>
 
       <section className="workspace">
         <header className="topbar">
@@ -424,7 +423,6 @@ export function Workbench({
             <button className="search-trigger" onClick={() => setSearchOpen(true)}>
               <Search size={16} /><span>Search Aurelian</span><kbd>⌘ K</kbd>
             </button>
-            <div className="status-pill" role="status"><i />{status}</div>
           </div>
         </header>
 
@@ -455,6 +453,21 @@ export function Workbench({
               onSaveTransaction={saveTransaction}
               onDeleteTransaction={deleteTransaction}
               onSaveDecision={saveDecision}
+              onOpenResearch={openResearch}
+            />
+          ) : null}
+          {activeTab === "research" ? (
+            <CompanyResearchView
+              holdings={holdings}
+              selectedTicker={researchTicker}
+              onSelectedTicker={setResearchTicker}
+            />
+          ) : null}
+          {activeTab === "calendar" ? (
+            <EarningsCalendarView
+              holdings={holdings}
+              events={events}
+              onOpenResearch={openResearch}
             />
           ) : null}
           {activeTab === "map" ? (
@@ -479,6 +492,26 @@ export function Workbench({
           ) : null}
         </div>
       </section>
+
+      <nav className="floating-dock" aria-label="Primary navigation">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              className={activeTab === tab.id ? "active" : ""}
+              onClick={() => openTab(tab.id)}
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              aria-label={tab.label}
+              title={tab.label}
+            >
+              <Icon size={17} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+        <button className="dock-search" onClick={() => setSearchOpen(true)} aria-label="Search Aurelian" title="Search Aurelian"><Search size={18} /><span>Search</span></button>
+      </nav>
 
       {searchOpen ? (
         <SearchCommand

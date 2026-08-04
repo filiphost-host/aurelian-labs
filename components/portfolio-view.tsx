@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   CircleDollarSign,
+  FlaskConical,
   Pencil,
   Plus,
   ReceiptText,
@@ -107,6 +108,7 @@ export function PortfolioView({
   onSaveTransaction,
   onDeleteTransaction,
   onSaveDecision,
+  onOpenResearch,
 }: {
   holdings: Holding[];
   transactions: Transaction[];
@@ -121,6 +123,7 @@ export function PortfolioView({
   onSaveTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (transactionId: string) => void;
   onSaveDecision: (decision: HoldingDecision) => void;
+  onOpenResearch: (ticker: string | null | undefined) => void;
 }) {
   const summary = useMemo(
     () => portfolioSummary(holdings, transactions, snapshots),
@@ -264,6 +267,9 @@ export function PortfolioView({
                       <td>{holding.region || "Unclassified"}<span>{holding.sector || "No sector"}</span></td>
                       <td><ProvenanceBadge provenance={holding.price_provenance} compact /></td>
                       <td className="row-actions">
+                        <button className="icon-button" onClick={() => onOpenResearch(holding.ticker)} title="Open company research">
+                          <FlaskConical size={15} />
+                        </button>
                         <button className="icon-button" onClick={() => setDecisionHolding(holding)} title="Decision Memory">
                           <BookOpen size={15} />
                         </button>

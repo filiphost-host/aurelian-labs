@@ -1,45 +1,46 @@
 # Design QA
 
-## Evidence
-
-- Source visual: `/var/folders/nh/9yr_kj256vg2y_m2_bt8mx6w0000gn/T/codex-clipboard-fbbf8c45-a76b-4f9d-a684-f044da9d08bd.png`
-- Full implementation: `/Users/filiphost/Documents/Aurelian Labs/output/playwright/obsidian-portfolio-1600.png`
-- Focused implementation: `/Users/filiphost/Documents/Aurelian Labs/output/playwright/obsidian-portfolio-viewport-1600.png`
-- Mobile implementation: `/Users/filiphost/Documents/Aurelian Labs/output/playwright/obsidian-portfolio-viewport-390.png`
-- Additional screens: `obsidian-insights-1600.png`, `obsidian-map-1600.png`, and `obsidian-stress-1600.png` in `output/playwright/`
-- Index research evidence: `output/playwright/index-research-expanded.png`
-- Hover-intent evidence: `output/playwright/map-egypt-hover-delay.png`
-- Analytical screener evidence: `output/playwright/map-analytical-screener.png` and `output/playwright/map-analytical-screener-mobile.png`
-- Desktop viewport: 1600 x 900 at 1x density
-- Mobile viewport: 390 x 844 at 1x density
-- State: local preview data, NOK display, Norway selected on the map, US Technology Drawdown selected in Stress Test
-
-## Comparison
-
-The reference and implementation were inspected together at original detail. The implementation carries over the reference's near-black canvas, quiet graphite panels, white chart line, divider-led KPI strip, muted labels, compact controls, and restrained green/red status colors. Aurelian gold remains deliberately limited to the brand, selected navigation, and selected states.
-
-The subsequent crimson signal pass adds a subtle burgundy cast to the canvas, short red section rules, red interaction details, and stronger downside emphasis. Red is reserved for attention, risk, and interaction; positive portfolio data remains green and researched-market identity remains gold.
-
-The portfolio is the closest structural match because its transaction-backed history is now the primary visualization directly below the KPI strip. Insights, Global Map, Stress Test, login, dialogs, search, and public snapshots use the same surfaces and hierarchy without imitating a single-stock page where that would reduce usability.
-
-## Findings
-
-- Desktop: no horizontal overflow at 1600 px; the performance chart precedes holdings and finishes its entrance animation as a crisp white path.
-- Mobile: no horizontal overflow at 390 px; navigation uses compact icons and the currency control remains available.
-- Map: researched geography remains distinct, Norway selection is visible, and controls retain sufficient contrast without the previous gold-heavy treatment.
-- Stress Test: preset selection, estimated loss, and explanatory hierarchy remain immediately legible.
-- Market Monitor: index selection opens one full-width research drawer with three benchmark metrics and a horizontally contained constituent table.
-- Map hover intent: Egypt remains closed at 500 ms, opens after 1.15 seconds, and closes after pointer exit.
-- Map navigation: cursor drag changes the geographic viewport and no directional pan controls remain.
-- Market screener: six independent analytical filters reduce the visible market set, with seven corresponding metrics in each selected-country profile.
-- Typography and controls: labels, figures, tables, buttons, and badges remain contained at both tested widths.
-
-## Comparison History
-
-- P1 fixed: mobile navigation labels were compressed in the 390 px header; compact icon-only navigation now preserves spacing.
-- P2 fixed: portfolio chart looked absent in an immediate capture; QA now waits for the intentional chart entrance animation and confirms the rendered SVG path.
-- P2 fixed: gold and green previously competed across most surfaces; both are now scoped to identity, selection, and semantic data.
-- P2 fixed: the first Obsidian pass was visually quiet compared with the reference; controlled crimson details now add energy without reducing data clarity.
-- Open P0/P1/P2 findings: none.
-
 final result: passed
+
+## Scope
+
+- Reference images: four supplied Fey/Mobbin screenshots covering magic-link confirmation, earnings calendar, peer analysis, and earnings analysis.
+- Implemented surfaces: shared application shell, Portfolio entry points, Company Research, Earnings Calendar, and magic-link confirmation.
+- Desktop viewport: 1600 x 900 CSS pixels at DPR 1.
+- Mobile viewport: 390 x 844 CSS pixels at DPR 1.
+
+## Visual Comparison
+
+- Matched the references' near-black canvas, low-contrast panel borders, compact typography, dense analytical tables, restrained crimson signals, and floating navigation.
+- Kept Aurelian's identity and information architecture while adopting the reference hierarchy and interaction patterns.
+- Compared the source and implementation together for the Research and Calendar states.
+- Desktop captures:
+  - `output/playwright/fey-research-desktop.png`
+  - `output/playwright/fey-calendar-desktop.png`
+  - `output/playwright/fey-earnings-desktop.png`
+- Mobile captures:
+  - `output/playwright/fey-research-mobile-full.png`
+  - `output/playwright/fey-calendar-mobile-full.png`
+
+## Functional Checks
+
+- Research company selector and Peers, Earnings, and Thesis modes work.
+- Portfolio research actions open the selected holding.
+- Calendar month controls, holdings filter, ticker filter, and Day, Week, and Month modes work.
+- Calendar events open the corresponding company research view.
+- Floating navigation switches among all primary workbench views.
+- Wide tables use contained horizontal scrolling on narrow screens without widening the document.
+
+## Fixes During QA
+
+- Reduced mobile research mode controls to icon-first labels to prevent crowding.
+- Kept calendar and peer tables internally scrollable while confirming the 390-pixel document width remains stable.
+- Replaced a remaining gold focus treatment with the site's crimson interaction color.
+- Removed native select styling drift and aligned controls with the shared dark surface treatment.
+- Clarified that current company research and calendar figures are illustrative and not live market data.
+
+## Intentional Differences
+
+- Aurelian's masthead remains visible instead of copying the reference's anonymous shell.
+- Generic issuer markers use the existing interface treatment because the source's proprietary logo assets were not supplied.
+- Calendar content is tailored to the sample Aurelian portfolio and August 2026 product context.
