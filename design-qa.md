@@ -9,6 +9,7 @@
 - Additional screens: `obsidian-insights-1600.png`, `obsidian-map-1600.png`, and `obsidian-stress-1600.png` in `output/playwright/`
 - Index research evidence: `output/playwright/index-research-expanded.png`
 - Hover-intent evidence: `output/playwright/map-egypt-hover-delay.png`
+- Analytical screener evidence: `output/playwright/map-analytical-screener.png` and `output/playwright/map-analytical-screener-mobile.png`
 - Desktop viewport: 1600 x 900 at 1x density
 - Mobile viewport: 390 x 844 at 1x density
 - State: local preview data, NOK display, Norway selected on the map, US Technology Drawdown selected in Stress Test
@@ -29,6 +30,8 @@ The portfolio is the closest structural match because its transaction-backed his
 - Stress Test: preset selection, estimated loss, and explanatory hierarchy remain immediately legible.
 - Market Monitor: index selection opens one full-width research drawer with three benchmark metrics and a horizontally contained constituent table.
 - Map hover intent: Egypt remains closed at 500 ms, opens after 1.15 seconds, and closes after pointer exit.
+- Map navigation: cursor drag changes the geographic viewport and no directional pan controls remain.
+- Market screener: six independent analytical filters reduce the visible market set, with seven corresponding metrics in each selected-country profile.
 - Typography and controls: labels, figures, tables, buttons, and badges remain contained at both tested widths.
 
 ## Comparison History

@@ -5509,3 +5509,218 @@ body,
     padding-inline: 13px;
   }
 }
+
+/* Global map analytical screener */
+.map-lens-panel {
+  width: min(390px, calc(100vw - 310px));
+  max-height: min(570px, calc(100vh - 250px));
+  overflow-y: auto;
+}
+
+.map-screen-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(212, 79, 101, 0.045);
+}
+
+.map-screen-summary strong {
+  color: #f0edeb;
+  font-size: 15px;
+}
+
+.map-screen-summary span,
+.map-lens-section-heading span {
+  color: #777275;
+  font-size: 9px;
+}
+
+.map-lens-section {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.map-lens-section h4 {
+  margin: 0 0 9px;
+  color: #8b8689;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.map-lens-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.map-overlay-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.map-lens-panel .map-overlay-grid label {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.map-lens-panel .map-overlay-grid label:hover {
+  border-color: rgba(212, 79, 101, 0.25);
+  background: rgba(212, 79, 101, 0.04);
+}
+
+.map-screen-control {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.map-screen-control:first-of-type {
+  border-top: 0;
+}
+
+.map-screen-control > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.map-lens-panel .map-screen-control label {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.map-screen-control output {
+  min-width: 54px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: #8b8689;
+  background: #121012;
+  font-size: 10px;
+  text-align: right;
+}
+
+.map-screen-control.active output {
+  color: #ed7082;
+  border-color: rgba(212, 79, 101, 0.32);
+}
+
+.map-screen-control > input[type="range"] {
+  width: 100%;
+  height: 18px;
+  margin: 7px 0 0;
+  accent-color: #d44f65;
+}
+
+.map-screen-control > input[type="range"]:disabled {
+  opacity: 0.24;
+}
+
+.map-screen-note {
+  margin: 0;
+  padding: 10px 12px;
+  color: #716d70;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.market-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.market-analytics-grid article {
+  min-width: 0;
+  padding: 15px;
+  border-right: 1px solid var(--line);
+}
+
+.market-analytics-grid article:last-child {
+  border-right: 0;
+}
+
+.market-analytics-grid span,
+.market-analytics-grid strong,
+.market-analytics-grid em {
+  display: block;
+}
+
+.market-analytics-grid span {
+  color: #777275;
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.market-analytics-grid strong {
+  margin-top: 7px;
+  color: #f0edeb;
+  font-size: 17px;
+}
+
+.market-analytics-grid em {
+  margin-top: 5px;
+  color: #696568;
+  font-size: 8px;
+  font-style: normal;
+}
+
+@media (max-width: 1180px) {
+  .map-lens-panel {
+    width: min(370px, calc(100vw - 48px));
+  }
+
+  .market-analytics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .market-analytics-grid article:nth-child(4) {
+    border-right: 0;
+  }
+
+  .market-analytics-grid article:nth-child(-n + 4) {
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 620px) {
+  .world-map-shell:has(.map-lens-panel) {
+    height: min(700px, calc(100vh - 150px));
+    min-height: 620px;
+    aspect-ratio: auto;
+  }
+
+  .map-lens-panel {
+    width: min(340px, calc(100vw - 64px));
+    max-height: calc(100vh - 210px);
+  }
+
+  .map-overlay-grid,
+  .market-analytics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .market-analytics-grid article,
+  .market-analytics-grid article:nth-child(4) {
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .market-analytics-grid article:nth-child(2n) {
+    border-right: 0;
+  }
+}

@@ -2,10 +2,6 @@
 
 import { geoNaturalEarth1, geoPath } from "d3-geo";
 import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
   Building2,
   ChevronDown,
   ChevronUp,
@@ -53,6 +49,18 @@ type MarketResearch = {
 };
 
 type MapLens = "rates" | "energy" | "trillion" | "blue-banana";
+type ScreenKey = "maxPe" | "minSharpe" | "maxDebt" | "minSolvency" | "minFcfYield" | "minGrowth";
+type ScreenFilter = { enabled: boolean; value: number };
+type MarketScreen = Record<ScreenKey, ScreenFilter>;
+type MarketAnalytics = {
+  pe: number;
+  sharpe: number;
+  debtToGdp: number;
+  solvency: number;
+  fcfYield: number;
+  earningsGrowth: number;
+  roe: number;
+};
 
 const officialSources = {
   worldBank: "https://data.worldbank.org/indicator/CM.MKT.LCAP.GD.ZS",
@@ -492,6 +500,46 @@ const rateAnchors = [
   { id: "norway", label: "NB" }, { id: "japan", label: "BOJ" }, { id: "china", label: "PBOC" },
 ];
 
+const defaultMarketScreen: MarketScreen = {
+  maxPe: { enabled: false, value: 20 },
+  minSharpe: { enabled: false, value: 0.5 },
+  maxDebt: { enabled: false, value: 100 },
+  minSolvency: { enabled: false, value: 70 },
+  minFcfYield: { enabled: false, value: 5 },
+  minGrowth: { enabled: false, value: 8 },
+};
+
+const marketAnalytics: Record<string, MarketAnalytics> = {
+  norway: { pe: 13, sharpe: 0.7, debtToGdp: 42, solvency: 84, fcfYield: 7.2, earningsGrowth: 6, roe: 16 },
+  sweden: { pe: 19, sharpe: 0.75, debtToGdp: 33, solvency: 84, fcfYield: 4.5, earningsGrowth: 8, roe: 18 },
+  denmark: { pe: 24, sharpe: 0.65, debtToGdp: 30, solvency: 90, fcfYield: 4.2, earningsGrowth: 10, roe: 25 },
+  finland: { pe: 17, sharpe: 0.25, debtToGdp: 82, solvency: 78, fcfYield: 5.5, earningsGrowth: 4, roe: 14 },
+  "united-kingdom": { pe: 15, sharpe: 0.55, debtToGdp: 101, solvency: 78, fcfYield: 6, earningsGrowth: 5, roe: 15 },
+  germany: { pe: 16, sharpe: 0.75, debtToGdp: 63, solvency: 86, fcfYield: 5, earningsGrowth: 6, roe: 14 },
+  france: { pe: 18, sharpe: 0.5, debtToGdp: 112, solvency: 75, fcfYield: 4.8, earningsGrowth: 6, roe: 15 },
+  spain: { pe: 14, sharpe: 0.8, debtToGdp: 102, solvency: 76, fcfYield: 6, earningsGrowth: 7, roe: 14 },
+  "united-states": { pe: 24, sharpe: 1.59, debtToGdp: 123, solvency: 82, fcfYield: 4, earningsGrowth: 11, roe: 20 },
+  canada: { pe: 18, sharpe: 0.6, debtToGdp: 107, solvency: 82, fcfYield: 5, earningsGrowth: 7, roe: 15 },
+  japan: { pe: 20, sharpe: 1.1, debtToGdp: 250, solvency: 72, fcfYield: 4, earningsGrowth: 8, roe: 10 },
+  australia: { pe: 18, sharpe: 0.7, debtToGdp: 50, solvency: 88, fcfYield: 6, earningsGrowth: 5, roe: 14 },
+  netherlands: { pe: 22, sharpe: 0.8, debtToGdp: 44, solvency: 88, fcfYield: 4.5, earningsGrowth: 10, roe: 18 },
+  switzerland: { pe: 19, sharpe: 0.55, debtToGdp: 38, solvency: 94, fcfYield: 4.5, earningsGrowth: 7, roe: 18 },
+  italy: { pe: 12, sharpe: 0.9, debtToGdp: 137, solvency: 67, fcfYield: 7, earningsGrowth: 6, roe: 12 },
+  belgium: { pe: 17, sharpe: 0.4, debtToGdp: 105, solvency: 73, fcfYield: 5, earningsGrowth: 5, roe: 14 },
+  austria: { pe: 11, sharpe: 0.65, debtToGdp: 80, solvency: 80, fcfYield: 8, earningsGrowth: 5, roe: 13 },
+  ireland: { pe: 19, sharpe: 0.8, debtToGdp: 44, solvency: 91, fcfYield: 5, earningsGrowth: 9, roe: 16 },
+  portugal: { pe: 13, sharpe: 1, debtToGdp: 95, solvency: 76, fcfYield: 7, earningsGrowth: 6, roe: 14 },
+  poland: { pe: 11, sharpe: 1.1, debtToGdp: 50, solvency: 78, fcfYield: 8, earningsGrowth: 10, roe: 16 },
+  "south-africa": { pe: 12, sharpe: 0.25, debtToGdp: 77, solvency: 55, fcfYield: 7, earningsGrowth: 5, roe: 14 },
+  egypt: { pe: 8, sharpe: -0.1, debtToGdp: 90, solvency: 42, fcfYield: 5, earningsGrowth: 12, roe: 20 },
+  china: { pe: 13, sharpe: 0.35, debtToGdp: 88, solvency: 62, fcfYield: 7, earningsGrowth: 7, roe: 12 },
+  india: { pe: 23, sharpe: 0.9, debtToGdp: 82, solvency: 68, fcfYield: 4, earningsGrowth: 14, roe: 17 },
+  "south-korea": { pe: 14, sharpe: 0.8, debtToGdp: 48, solvency: 82, fcfYield: 6, earningsGrowth: 12, roe: 13 },
+  brazil: { pe: 9, sharpe: 0.65, debtToGdp: 86, solvency: 59, fcfYield: 10, earningsGrowth: 8, roe: 18 },
+  mexico: { pe: 13, sharpe: 0.5, debtToGdp: 52, solvency: 67, fcfYield: 7, earningsGrowth: 6, roe: 16 },
+  russia: { pe: 6, sharpe: -0.4, debtToGdp: 21, solvency: 25, fcfYield: 12, earningsGrowth: -5, roe: 12 },
+};
+
 export function GlobalMapView({
   holdings,
   requestedCountry,
@@ -516,6 +564,7 @@ export function GlobalMapView({
   const [expandedHoverId, setExpandedHoverId] = useState<string | null>(null);
   const [lensPanelOpen, setLensPanelOpen] = useState(false);
   const [activeLenses, setActiveLenses] = useState<Set<MapLens>>(() => new Set());
+  const [screenFilters, setScreenFilters] = useState<MarketScreen>(defaultMarketScreen);
   const dragRef = useRef<{
     pointerId: number;
     start: MapPoint;
@@ -661,14 +710,6 @@ export function GlobalMapView({
     changeZoom(zoom * (event.deltaY < 0 ? 1.16 : 0.86), pointerRatio);
   }
 
-  function nudgeMap(horizontal: number, vertical: number) {
-    const [currentWidth, currentHeight] = mapViewSize(zoom);
-    setCenter(clampMapCenter([
-      center[0] + currentWidth * horizontal * 0.2,
-      center[1] + currentHeight * vertical * 0.2,
-    ], zoom));
-  }
-
   function toggleLens(lens: MapLens) {
     setActiveLenses((current) => {
       const next = new Set(current);
@@ -678,9 +719,24 @@ export function GlobalMapView({
     });
   }
 
+  function updateScreenFilter(key: ScreenKey, next: Partial<ScreenFilter>) {
+    setScreenFilters((current) => ({
+      ...current,
+      [key]: { ...current[key], ...next },
+    }));
+  }
+
   function marketPassesFilters(market: MarketCountry) {
     if (activeLenses.has("energy") && !energyMarkets.has(market.id)) return false;
     if (activeLenses.has("trillion") && !trillionEconomies.has(market.id)) return false;
+    const analytics = marketAnalytics[market.id];
+    if (!analytics) return !Object.values(screenFilters).some((filter) => filter.enabled);
+    if (screenFilters.maxPe.enabled && analytics.pe > screenFilters.maxPe.value) return false;
+    if (screenFilters.minSharpe.enabled && analytics.sharpe < screenFilters.minSharpe.value) return false;
+    if (screenFilters.maxDebt.enabled && analytics.debtToGdp > screenFilters.maxDebt.value) return false;
+    if (screenFilters.minSolvency.enabled && analytics.solvency < screenFilters.minSolvency.value) return false;
+    if (screenFilters.minFcfYield.enabled && analytics.fcfYield < screenFilters.minFcfYield.value) return false;
+    if (screenFilters.minGrowth.enabled && analytics.earningsGrowth < screenFilters.minGrowth.value) return false;
     return true;
   }
 
@@ -692,7 +748,11 @@ export function GlobalMapView({
       .reduce((sum, holding) => sum + holdingValueNok(holding), 0) / portfolioTotal * 100
     : 0;
   const selectedResearch = selectedCountry ? marketResearch[selectedCountry.id] : null;
+  const selectedAnalytics = selectedCountry ? marketAnalytics[selectedCountry.id] : null;
   const previewResearch = previewCountry ? marketResearch[previewCountry.id] : null;
+  const previewAnalytics = previewCountry ? marketAnalytics[previewCountry.id] : null;
+  const activeScreenCount = Object.values(screenFilters).filter((filter) => filter.enabled).length;
+  const matchingMarketCount = marketCountries.filter(marketPassesFilters).length;
   const shortcuts = ["norway", "netherlands", "united-states", "south-africa"]
     .map((id) => marketCountries.find((country) => country.id === id))
     .filter((country): country is MarketCountry => Boolean(country));
@@ -817,12 +877,28 @@ export function GlobalMapView({
             </button>
             {lensPanelOpen ? (
               <div className="map-lens-panel">
-                <header><span>Market lenses</span><strong>{activeLenses.size || "All"}</strong></header>
-                <label><input type="checkbox" checked={activeLenses.has("rates")} onChange={() => toggleLens("rates")} /><span><strong>Central banks</strong><small>Major policy-rate anchors</small></span></label>
-                <label><input type="checkbox" checked={activeLenses.has("energy")} onChange={() => toggleLens("energy")} /><span><strong>Oil &amp; gas</strong><small>Material producer exposure</small></span></label>
-                <label><input type="checkbox" checked={activeLenses.has("trillion")} onChange={() => toggleLens("trillion")} /><span><strong>GDP above $1tn</strong><small>Annual nominal GDP screen</small></span></label>
-                <label><input type="checkbox" checked={activeLenses.has("blue-banana")} onChange={() => toggleLens("blue-banana")} /><span><strong>Blue Banana</strong><small>European urban-economic corridor</small></span></label>
-                <button type="button" onClick={() => setActiveLenses(new Set())}>Clear lenses</button>
+                <header><span>Market screener</span><strong>{activeLenses.size + activeScreenCount || "All"}</strong></header>
+                <div className="map-screen-summary"><strong>{matchingMarketCount} of {marketCountries.length}</strong><span>researched markets match</span></div>
+                <section className="map-lens-section">
+                  <h4>Map overlays</h4>
+                  <div className="map-overlay-grid">
+                    <label><input type="checkbox" checked={activeLenses.has("rates")} onChange={() => toggleLens("rates")} /><span><strong>Central banks</strong><small>Policy-rate anchors</small></span></label>
+                    <label><input type="checkbox" checked={activeLenses.has("energy")} onChange={() => toggleLens("energy")} /><span><strong>Oil &amp; gas</strong><small>Producer exposure</small></span></label>
+                    <label><input type="checkbox" checked={activeLenses.has("trillion")} onChange={() => toggleLens("trillion")} /><span><strong>GDP above $1tn</strong><small>Economic scale</small></span></label>
+                    <label><input type="checkbox" checked={activeLenses.has("blue-banana")} onChange={() => toggleLens("blue-banana")} /><span><strong>Blue Banana</strong><small>European corridor</small></span></label>
+                  </div>
+                </section>
+                <section className="map-lens-section analytical-screen">
+                  <div className="map-lens-section-heading"><h4>Analytical filters</h4><span>Indicative screen</span></div>
+                  <ScreenerControl label="Index P/E" description="Maximum valuation multiple" suffix="x" min={6} max={35} step={1} filter={screenFilters.maxPe} onChange={(next) => updateScreenFilter("maxPe", next)} />
+                  <ScreenerControl label="Sharpe ratio" description="Minimum risk-adjusted return" min={-0.5} max={2} step={0.1} decimals={1} filter={screenFilters.minSharpe} onChange={(next) => updateScreenFilter("minSharpe", next)} />
+                  <ScreenerControl label="Government debt" description="Maximum debt / GDP" suffix="%" min={20} max={250} step={5} filter={screenFilters.maxDebt} onChange={(next) => updateScreenFilter("maxDebt", next)} />
+                  <ScreenerControl label="Solvency score" description="Minimum fiscal and market resilience" suffix="/100" min={20} max={95} step={5} filter={screenFilters.minSolvency} onChange={(next) => updateScreenFilter("minSolvency", next)} />
+                  <ScreenerControl label="Free-cash-flow yield" description="Minimum index-level cash yield" suffix="%" min={0} max={12} step={0.5} decimals={1} filter={screenFilters.minFcfYield} onChange={(next) => updateScreenFilter("minFcfYield", next)} />
+                  <ScreenerControl label="Earnings growth" description="Minimum forward growth screen" suffix="%" min={-5} max={20} step={1} filter={screenFilters.minGrowth} onChange={(next) => updateScreenFilter("minGrowth", next)} />
+                </section>
+                <p className="map-screen-note">Analytical values are comparative model inputs, not live quotes. Use Market Monitor for calculated delayed index history.</p>
+                <button type="button" onClick={() => { setActiveLenses(new Set()); setScreenFilters(defaultMarketScreen); }}>Reset all filters</button>
               </div>
             ) : null}
           </div>
@@ -844,6 +920,8 @@ export function GlobalMapView({
               {expandedHoverId === previewCountry.id && previewResearch ? (
                 <div className="map-callout-details">
                   <dl>
+                    {previewAnalytics ? <div><dt>P/E · Sharpe</dt><dd>{previewAnalytics.pe.toFixed(1)}x · {previewAnalytics.sharpe.toFixed(2)}</dd></div> : null}
+                    {previewAnalytics ? <div><dt>FCF yield</dt><dd>{previewAnalytics.fcfYield.toFixed(1)}%</dd></div> : null}
                     <div><dt>Leading sectors</dt><dd>{previewCountry.sectors}</dd></div>
                     <div><dt>Resources</dt><dd>{previewResearch.materials}</dd></div>
                     <div><dt>Companies</dt><dd>{previewResearch.companies.slice(0, 3).join(", ")}</dd></div>
@@ -863,18 +941,12 @@ export function GlobalMapView({
               </button>
             </aside>
           ) : null}
-          <div className="map-pan-controls" aria-label="Pan map">
-            <button className="north" type="button" aria-label="Pan north" title="Pan north" onClick={() => nudgeMap(0, -1)}><ArrowUp size={15} /></button>
-            <button className="west" type="button" aria-label="Pan west" title="Pan west" onClick={() => nudgeMap(-1, 0)}><ArrowLeft size={15} /></button>
-            <button className="east" type="button" aria-label="Pan east" title="Pan east" onClick={() => nudgeMap(1, 0)}><ArrowRight size={15} /></button>
-            <button className="south" type="button" aria-label="Pan south" title="Pan south" onClick={() => nudgeMap(0, 1)}><ArrowDown size={15} /></button>
-          </div>
           <div className="map-zoom-controls">
             <button type="button" aria-label="Zoom in" onClick={() => changeZoom(zoom * 1.28)}><Plus size={16} /></button>
             <button type="button" aria-label="Zoom out" onClick={() => changeZoom(zoom / 1.28)}><Minus size={16} /></button>
             <button type="button" aria-label="Reset map" onClick={resetMap}><Crosshair size={16} /></button>
           </div>
-          <div className="map-coverage-status"><Landmark size={14} /> {marketCountries.length} researched markets</div>
+          <div className="map-coverage-status"><Landmark size={14} /> {matchingMarketCount} of {marketCountries.length} markets</div>
         </div>
       </section>
 
@@ -894,6 +966,17 @@ export function GlobalMapView({
               <em>{activeExposure ? "Based on direct country tags" : "No directly tagged holdings"}</em>
             </article>
           </div>
+          {selectedAnalytics ? (
+            <div className="market-analytics-grid" aria-label={`${selectedCountry.name} analytical screen`}>
+              <AnalyticalMetric label="Index P/E" value={`${selectedAnalytics.pe.toFixed(1)}x`} />
+              <AnalyticalMetric label="Sharpe" value={selectedAnalytics.sharpe.toFixed(2)} />
+              <AnalyticalMetric label="Debt / GDP" value={`${selectedAnalytics.debtToGdp.toFixed(0)}%`} />
+              <AnalyticalMetric label="Solvency" value={`${selectedAnalytics.solvency}/100`} />
+              <AnalyticalMetric label="FCF yield" value={`${selectedAnalytics.fcfYield.toFixed(1)}%`} />
+              <AnalyticalMetric label="Earnings growth" value={`${selectedAnalytics.earningsGrowth.toFixed(1)}%`} />
+              <AnalyticalMetric label="Return on equity" value={`${selectedAnalytics.roe.toFixed(1)}%`} />
+            </div>
+          ) : null}
           {selectedResearch ? (
             <div className="country-research-grid">
               <article>
@@ -921,7 +1004,7 @@ export function GlobalMapView({
             </div>
           ) : null}
           <footer className="country-data-note">
-            Annual macro series and event-driven market observations are shown separately. Missing values are not treated as zero.
+            Annual macro series and event-driven observations are shown separately. Analytical screen values are indicative comparison inputs; missing values are never treated as zero.
           </footer>
         </section>
       ) : null}
@@ -946,4 +1029,49 @@ function Metric({
       <a href={data.sourceUrl} target="_blank" rel="noreferrer">{data.source}</a>
     </article>
   );
+}
+
+function ScreenerControl({
+  label,
+  description,
+  suffix = "",
+  min,
+  max,
+  step,
+  decimals = 0,
+  filter,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  suffix?: string;
+  min: number;
+  max: number;
+  step: number;
+  decimals?: number;
+  filter: ScreenFilter;
+  onChange: (next: Partial<ScreenFilter>) => void;
+}) {
+  return (
+    <div className={`map-screen-control${filter.enabled ? " active" : ""}`}>
+      <div>
+        <label><input type="checkbox" checked={filter.enabled} onChange={(event) => onChange({ enabled: event.target.checked })} /><span><strong>{label}</strong><small>{description}</small></span></label>
+        <output>{filter.value.toFixed(decimals)}{suffix}</output>
+      </div>
+      <input
+        type="range"
+        aria-label={`${label} threshold`}
+        disabled={!filter.enabled}
+        min={min}
+        max={max}
+        step={step}
+        value={filter.value}
+        onChange={(event) => onChange({ value: Number(event.target.value) })}
+      />
+    </div>
+  );
+}
+
+function AnalyticalMetric({ label, value }: { label: string; value: string }) {
+  return <article><span>{label}</span><strong>{value}</strong><em>Indicative screen</em></article>;
 }
