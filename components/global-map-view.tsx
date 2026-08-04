@@ -523,9 +523,8 @@ export function GlobalMapView({
     moved: boolean;
   } | null>(null);
   const suppressClickRef = useRef(false);
+  const hoverOpenRef = useRef<number | null>(null);
   const hoverClearRef = useRef<number | null>(null);
-  const hoverReadyRef = useRef(false);
-  const hoverPointRef = useRef<MapPoint | null>(null);
   const activeId = hoveredId ?? pinnedId;
   const previewCountry = marketCountries.find((country) => country.id === hoveredId) ?? null;
   const selectedCountry = marketCountries.find((country) => country.id === pinnedId) ?? previewCountry;
@@ -546,12 +545,16 @@ export function GlobalMapView({
 
   useEffect(() => {
     return () => {
+      if (hoverOpenRef.current !== null) window.clearTimeout(hoverOpenRef.current);
       if (hoverClearRef.current !== null) window.clearTimeout(hoverClearRef.current);
     };
   }, []);
 
-  function keepPreview(countryId?: string, force = false) {
-    if (!force && !hoverReadyRef.current) return;
+  function keepPreview(countryId?: string) {
+    if (hoverOpenRef.current !== null) {
+      window.clearTimeout(hoverOpenRef.current);
+      hoverOpenRef.current = null;
+    }
     if (hoverClearRef.current !== null) {
       window.clearTimeout(hoverClearRef.current);
       hoverClearRef.current = null;
@@ -562,23 +565,30 @@ export function GlobalMapView({
     }
   }
 
+  function schedulePreview(countryId: string) {
+    if (hoverClearRef.current !== null) {
+      window.clearTimeout(hoverClearRef.current);
+      hoverClearRef.current = null;
+    }
+    if (hoveredId === countryId || hoverOpenRef.current !== null) return;
+    hoverOpenRef.current = window.setTimeout(() => {
+      setHoveredId(countryId);
+      setExpandedHoverId((current) => current === countryId ? current : null);
+      hoverOpenRef.current = null;
+    }, 1_000);
+  }
+
   function clearPreviewSoon() {
+    if (hoverOpenRef.current !== null) {
+      window.clearTimeout(hoverOpenRef.current);
+      hoverOpenRef.current = null;
+    }
     if (hoverClearRef.current !== null) window.clearTimeout(hoverClearRef.current);
     hoverClearRef.current = window.setTimeout(() => {
       setHoveredId(null);
       setExpandedHoverId(null);
       hoverClearRef.current = null;
     }, 160);
-  }
-
-  function previewOnPointerMove(event: ReactPointerEvent<SVGGElement>, countryId: string) {
-    const point: MapPoint = [event.clientX, event.clientY];
-    const previousPoint = hoverPointRef.current;
-    hoverPointRef.current = point;
-    if (dragRef.current || !previousPoint) return;
-    if (Math.hypot(point[0] - previousPoint[0], point[1] - previousPoint[1]) <= 2) return;
-    hoverReadyRef.current = true;
-    keepPreview(countryId);
   }
 
   function selectCountry(country: MarketCountry) {
@@ -764,10 +774,9 @@ export function GlobalMapView({
                   tabIndex={0}
                   aria-pressed={pinnedId === market.id}
                   aria-label={`${pinnedId === market.id ? "Pinned" : "Open"} ${market.name} market profile`}
-                  onMouseEnter={() => keepPreview(market.id)}
-                  onPointerMove={(event) => previewOnPointerMove(event, market.id)}
+                  onMouseEnter={() => schedulePreview(market.id)}
                   onMouseLeave={clearPreviewSoon}
-                  onFocus={() => keepPreview(market.id, true)}
+                  onFocus={() => keepPreview(market.id)}
                   onBlur={clearPreviewSoon}
                   onClick={() => {
                     if (!suppressClickRef.current) selectCountry(market);

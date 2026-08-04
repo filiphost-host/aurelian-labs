@@ -7,6 +7,8 @@
 - Focused implementation: `/Users/filiphost/Documents/Aurelian Labs/output/playwright/obsidian-portfolio-viewport-1600.png`
 - Mobile implementation: `/Users/filiphost/Documents/Aurelian Labs/output/playwright/obsidian-portfolio-viewport-390.png`
 - Additional screens: `obsidian-insights-1600.png`, `obsidian-map-1600.png`, and `obsidian-stress-1600.png` in `output/playwright/`
+- Index research evidence: `output/playwright/index-research-expanded.png`
+- Hover-intent evidence: `output/playwright/map-egypt-hover-delay.png`
 - Desktop viewport: 1600 x 900 at 1x density
 - Mobile viewport: 390 x 844 at 1x density
 - State: local preview data, NOK display, Norway selected on the map, US Technology Drawdown selected in Stress Test
@@ -25,6 +27,8 @@ The portfolio is the closest structural match because its transaction-backed his
 - Mobile: no horizontal overflow at 390 px; navigation uses compact icons and the currency control remains available.
 - Map: researched geography remains distinct, Norway selection is visible, and controls retain sufficient contrast without the previous gold-heavy treatment.
 - Stress Test: preset selection, estimated loss, and explanatory hierarchy remain immediately legible.
+- Market Monitor: index selection opens one full-width research drawer with three benchmark metrics and a horizontally contained constituent table.
+- Map hover intent: Egypt remains closed at 500 ms, opens after 1.15 seconds, and closes after pointer exit.
 - Typography and controls: labels, figures, tables, buttons, and badges remain contained at both tested widths.
 
 ## Comparison History

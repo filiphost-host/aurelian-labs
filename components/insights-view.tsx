@@ -3,16 +3,20 @@
 import {
   ArrowUpRight,
   Activity,
+  Building2,
   Check,
   ChevronDown,
+  ChevronUp,
   Clipboard,
   Compass,
   FileSearch,
+  Gauge,
   Link2,
   MapPinned,
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
   TriangleAlert,
   X,
 } from "lucide-react";
@@ -36,6 +40,30 @@ import { ShareDialog } from "@/components/share-dialog";
 type DeskFocus = "core" | "us" | "europe" | "discover";
 type InsightView = "overview" | "markets" | "signals" | "investors" | "sources";
 type QuoteScope = "indices" | "portfolio";
+
+type IndexResearch = {
+  index: {
+    id: string;
+    symbol: string;
+    name: string;
+    growthPercent: number | null;
+    sharpeRatio: number | null;
+    asOf: string | null;
+  };
+  thresholdPercent: number;
+  trackedCount: number;
+  availableCount: number;
+  companies: Array<{
+    symbol: string;
+    name: string;
+    growthPercent: number | null;
+    sharpeRatio: number | null;
+    debtToEquity: number | null;
+    asOf: string | null;
+  }>;
+  source: string;
+  methodology: string;
+};
 
 const insightViews: Array<{ id: InsightView; label: string; description: string }> = [
   { id: "overview", label: "Daily overview", description: "Market pulse and priority signals" },
@@ -346,6 +374,37 @@ function MarketMonitor({
   onRefresh: () => void;
 }) {
   const visibleQuotes = quotes.filter((quote) => scope === "indices" ? quote.id.startsWith("index-") : !quote.id.startsWith("index-"));
+  const [selectedIndexId, setSelectedIndexId] = useState<string | null>(null);
+  const [research, setResearch] = useState<IndexResearch | null>(null);
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+
+  async function toggleIndexResearch(quote: MarketQuote) {
+    if (selectedIndexId === quote.id) {
+      setSelectedIndexId(null);
+      setResearch(null);
+      setResearchError(null);
+      return;
+    }
+    setSelectedIndexId(quote.id);
+    setResearch(null);
+    setResearchError(null);
+    setResearchLoading(true);
+    try {
+      const response = await fetch("/api/market/index-research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ indexId: quote.id }),
+      });
+      if (!response.ok) throw new Error("Index research is unavailable.");
+      setResearch(await response.json() as IndexResearch);
+    } catch {
+      setResearchError("The delayed history provider is temporarily unavailable. Try refreshing this index later.");
+    } finally {
+      setResearchLoading(false);
+    }
+  }
+
   return (
     <section className="market-monitor wide" aria-labelledby="market-monitor-title">
       <div className="section-heading market-monitor-heading">
@@ -366,18 +425,80 @@ function MarketMonitor({
           <div className="quote-card quote-skeleton" key={index} aria-hidden="true"><i /><i /><i /></div>
         )) : visibleQuotes.map((quote) => {
           const positive = (quote.percentChange ?? 0) >= 0;
+          const expandable = quote.id.startsWith("index-");
           return (
-            <article className="quote-card" key={quote.id}>
+            <article className={`quote-card${selectedIndexId === quote.id ? " expanded" : ""}`} key={quote.id}>
+              {expandable ? (
+                <button
+                  className="quote-card-open"
+                  type="button"
+                  aria-label={`${selectedIndexId === quote.id ? "Close" : "Open"} ${quote.name} index research`}
+                  aria-expanded={selectedIndexId === quote.id}
+                  onClick={() => void toggleIndexResearch(quote)}
+                />
+              ) : null}
               <header><span>{quote.symbol}</span><i className={quote.status} title={quote.status === "live" ? "Live quote" : "Delayed quote"} /></header>
               <strong>{quote.price.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <small>{quote.currency}</small></strong>
               <div><span>{quote.name}</span><em className={positive ? "good" : "bad"}>{quote.percentChange === null ? "-" : `${positive ? "+" : ""}${quote.percentChange.toFixed(2)}%`}</em></div>
-              <footer>{quote.source} · {formatQuoteTime(quote.asOf)}</footer>
+              <footer>
+                <span>{quote.source} · {formatQuoteTime(quote.asOf)}</span>
+                {expandable ? <span className="quote-research-cue">Research {selectedIndexId === quote.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}</span> : null}
+              </footer>
             </article>
           );
         })}
       </div>
+      {selectedIndexId ? (
+        <section className="index-research-panel" aria-live="polite">
+          {researchLoading ? (
+            <div className="index-research-loading"><RefreshCw size={17} className="spinning" /> Calculating trailing growth and risk metrics...</div>
+          ) : researchError ? (
+            <div className="index-research-empty"><TriangleAlert size={17} /><span>{researchError}</span></div>
+          ) : research ? (
+            <>
+              <header className="index-research-heading">
+                <div><span className="eyebrow">Index research</span><h3>{research.index.name}</h3></div>
+                <span>As of {research.index.asOf ?? "latest available"}</span>
+              </header>
+              <div className="index-research-metrics">
+                <article><TrendingUp size={16} /><span>Trailing 1Y growth</span><strong>{research.index.growthPercent === null ? "Unavailable" : `${research.index.growthPercent >= 0 ? "+" : ""}${research.index.growthPercent.toFixed(1)}%`}</strong></article>
+                <article><Gauge size={16} /><span>Sharpe estimate</span><strong>{research.index.sharpeRatio === null ? "Unavailable" : research.index.sharpeRatio.toFixed(2)}</strong></article>
+                <article><Building2 size={16} /><span>Growth screen</span><strong>{research.companies.length} above {research.thresholdPercent}%</strong></article>
+              </div>
+              <div className="index-company-screen">
+                <div className="index-company-screen-title">
+                  <div><span className="eyebrow">Tracked constituents</span><h3>Companies above {research.thresholdPercent}% trailing growth</h3></div>
+                  <span>{research.availableCount} of {research.trackedCount} histories available</span>
+                </div>
+                {research.companies.length ? (
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>Company</th><th>1Y growth</th><th>Debt / equity</th><th>Sharpe</th><th>As of</th></tr></thead>
+                      <tbody>{research.companies.map((company) => (
+                        <tr key={company.symbol}>
+                          <td><strong>{company.name}</strong><span>{company.symbol}</span></td>
+                          <td className="good">+{company.growthPercent?.toFixed(1)}%</td>
+                          <td>{company.debtToEquity === null ? <span className="unavailable-value">Unavailable</span> : `${company.debtToEquity.toFixed(0)}%`}</td>
+                          <td>{company.sharpeRatio === null ? <span className="unavailable-value">Unavailable</span> : company.sharpeRatio.toFixed(2)}</td>
+                          <td>{company.asOf ?? "-"}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="index-research-empty">
+                    <TriangleAlert size={17} />
+                    <span>{research.availableCount ? `No tracked constituents cleared the ${research.thresholdPercent}% threshold.` : "Constituent history is unavailable from the delayed provider right now."}</span>
+                  </div>
+                )}
+              </div>
+              <footer className="index-research-method"><span>{research.methodology}</span><span>{research.source}</span></footer>
+            </>
+          ) : null}
+        </section>
+      ) : null}
       <footer className="market-monitor-footer">
-        <span>{scope === "indices" ? "Global benchmarks" : "Prices are applied to the Portfolio view; manual NOK value overrides remain intact."}</span>
+        <span>{scope === "indices" ? "Select an index for its growth, debt, and Sharpe screen." : "Prices are applied to the Portfolio view; manual NOK value overrides remain intact."}</span>
         <span>{refreshedAt ? `Refreshed ${formatQuoteTime(refreshedAt)}` : "Connecting to market feed"}</span>
       </footer>
     </section>
