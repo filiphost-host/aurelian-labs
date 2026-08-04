@@ -1,11 +1,15 @@
 "use client";
 
 import {
+  ArrowRight,
+  Building2,
   ChevronDown,
   ChevronUp,
   CircleHelp,
   Copy,
+  Gauge,
   Info,
+  Landmark,
   Link2,
   MousePointerClick,
   RotateCcw,
@@ -37,6 +41,11 @@ import {
   totalValueNok,
 } from "@/lib/calculations";
 import { scenarioPresets } from "@/lib/sample-data";
+import {
+  scenarioCategories,
+  scenarioGuides,
+  type ScenarioCategory,
+} from "@/lib/scenario-research";
 import type {
   DisplayCurrency,
   FactorKey,
@@ -48,38 +57,6 @@ import type {
 import { ShareDialog } from "@/components/share-dialog";
 
 const factorKeys = Object.keys(factorLabels) as FactorKey[];
-const scenarioGuides: Record<string, { question: string; meaning: string; review: string }> = {
-  "risk-off": {
-    question: "What if investors suddenly reduce risk across global markets?",
-    meaning: "Equities fall together, credit becomes less forgiving, and the US dollar strengthens against NOK.",
-    review: "Use this to see whether diversification still works when several risks arrive at the same time.",
-  },
-  "us-tech": {
-    question: "What if US technology valuations reset sharply?",
-    meaning: "Technology and US equities fall more than the broader global market, while the dollar provides a small offset.",
-    review: "Use this to reveal overlap between direct technology holdings and technology already owned through the S&P 500 ETF.",
-  },
-  "nok-strengthens": {
-    question: "What if NOK strengthens while the underlying investments do not move?",
-    meaning: "Foreign holdings are translated back into fewer Norwegian kroner even though their local market prices are unchanged.",
-    review: "Use this to separate investment performance from the currency effect in your NOK-reported portfolio.",
-  },
-  "rates-up": {
-    question: "What if interest rates rise by one percentage point?",
-    meaning: "Bond prices are estimated using their stored duration. Equity valuation effects are not automatically guessed.",
-    review: "Use this to understand the rate sensitivity of bonds you add to the portfolio, not to forecast equity markets.",
-  },
-  "credit-wide": {
-    question: "What if company borrowing risk is repriced higher?",
-    meaning: "Corporate bond spreads widen by 1.5 percentage points, affecting credit positions through their stored duration.",
-    review: "Use this to test corporate-bond risk separately from government-rate risk.",
-  },
-  custom: {
-    question: "What combination of market moves do you want to test?",
-    meaning: "Start with no shock, then adjust only the assumptions you have a reason to examine.",
-    review: "Use custom mode after a named test when you want to challenge one assumption at a time.",
-  },
-};
 const darkTooltip = {
   backgroundColor: "rgba(14, 13, 15, 0.97)",
   border: "1px solid rgba(255, 255, 255, 0.14)",
@@ -112,6 +89,9 @@ export function ScenarioView({
   const [shareOpen, setShareOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [scenarioName, setScenarioName] = useState("");
+  const [scenarioCategory, setScenarioCategory] = useState<ScenarioCategory>(
+    scenarioGuides[activePresetId]?.category ?? "Macro",
+  );
   const rows = useMemo(
     () => holdings.map((holding) => scenarioImpact(holding, scenario))
       .sort((a, b) => Math.abs(b.impactNok) - Math.abs(a.impactNok)),
@@ -122,6 +102,13 @@ export function ScenarioView({
   const impactPercent = total ? (impact / total) * 100 : 0;
   const currencies = [...new Set(rows.filter((row) => row.impactNok !== 0).map((row) => row.holding.currency))];
   const activeGuide = scenarioGuides[activePresetId] ?? scenarioGuides.custom;
+  const visiblePresets = scenarioPresets.filter(
+    (preset) => (scenarioGuides[preset.id] ?? scenarioGuides.custom).category === scenarioCategory,
+  );
+  const portfolioOverlap = holdings.filter((holding) => {
+    const ticker = holding.ticker?.toUpperCase() ?? "";
+    return activeGuide.directTickers.includes(ticker);
+  });
   const materialImpact = Math.abs(impactPercent) >= 0.05;
   const topContributor = materialImpact ? rows.find((row) => row.impactNok < 0) ?? rows[0] ?? null : null;
   const resultSummary = !materialImpact
@@ -138,6 +125,7 @@ export function ScenarioView({
     const preset = scenarioPresets.find((item) => item.id === id);
     if (!preset) return;
     setActivePresetId(id);
+    setScenarioCategory((scenarioGuides[id] ?? scenarioGuides.custom).category);
     setScenario({ ...preset.shocks });
   }
 
@@ -187,17 +175,35 @@ export function ScenarioView({
           </ol>
         </section>
 
-        <section className="preset-strip" aria-label="Scenario presets">
-          {scenarioPresets.map((preset) => (
-            <button
-              key={preset.id}
-              className={activePresetId === preset.id ? "active" : ""}
-              onClick={() => selectPreset(preset.id)}
-            >
-              <strong>{preset.name}</strong>
-              <span>{scenarioGuides[preset.id]?.question ?? preset.description}</span>
-            </button>
-          ))}
+        <section className="scenario-library" aria-labelledby="scenario-library-title">
+          <div className="scenario-library-heading">
+            <div><span className="eyebrow">S&amp;P 500 scenario library</span><h2 id="scenario-library-title">Choose the pressure you want to understand</h2></div>
+            <span>{scenarioPresets.length - 1} named tests</span>
+          </div>
+          <div className="scenario-category-tabs" role="tablist" aria-label="Scenario categories">
+            {scenarioCategories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                role="tab"
+                aria-selected={scenarioCategory === category}
+                className={scenarioCategory === category ? "active" : ""}
+                onClick={() => setScenarioCategory(category)}
+              >{category}</button>
+            ))}
+          </div>
+          <div key={scenarioCategory} className="preset-strip" aria-label={`${scenarioCategory} scenarios`}>
+            {visiblePresets.map((preset) => (
+              <button
+                key={preset.id}
+                className={activePresetId === preset.id ? "active" : ""}
+                onClick={() => selectPreset(preset.id)}
+              >
+                <strong>{preset.name}</strong>
+                <span>{preset.description}</span>
+              </button>
+            ))}
+          </div>
         </section>
 
         <section className="scenario-question-card">
@@ -212,6 +218,60 @@ export function ScenarioView({
             <p>{activeGuide.review}</p>
           </div>
         </section>
+
+        <section className="scenario-transmission" aria-labelledby="transmission-title">
+          <div className="scenario-section-heading">
+            <div><span className="eyebrow">How the shock travels</span><h2 id="transmission-title">From event to S&amp;P 500 earnings</h2></div>
+            <span>Linear teaching model</span>
+          </div>
+          <div className="transmission-chain">
+            <article><Landmark size={17} /><span>Trigger</span><strong>{activeGuide.trigger}</strong></article>
+            {activeGuide.transmission.map((step) => (
+              <div className="transmission-step" key={step}><ArrowRight size={15} /><article><span>Transmission</span><strong>{step}</strong></article></div>
+            ))}
+          </div>
+          <div className="scenario-exposure-grid">
+            <article>
+              <span className="scenario-exposure-label bad"><Gauge size={14} /> Likely pressure</span>
+              <ul>{activeGuide.pressure.map((item) => <li key={item}>{item}</li>)}</ul>
+            </article>
+            <article>
+              <span className="scenario-exposure-label good"><ShieldAlert size={14} /> Possible resilience</span>
+              <ul>{activeGuide.support.map((item) => <li key={item}>{item}</li>)}</ul>
+            </article>
+            <article>
+              <span className="scenario-exposure-label"><Building2 size={14} /> Your portfolio overlap</span>
+              {portfolioOverlap.length ? <div className="scenario-overlap-list">{portfolioOverlap.map((holding) => (
+                <span key={holding.id}>{holding.ticker ?? holding.name}</span>
+              ))}</div> : <p>No direct holding is tagged for this channel. SXR8 may still carry broad index exposure.</p>}
+            </article>
+          </div>
+        </section>
+
+        {activeGuide.companies.length ? <section className="scenario-company-screen" aria-labelledby="company-screen-title">
+          <div className="scenario-section-heading">
+            <div><span className="eyebrow">Companies to investigate</span><h2 id="company-screen-title">S&amp;P 500 sensitivity screen</h2></div>
+            <span>Qualitative, not a ranking</span>
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Company</th><th>Sensitivity</th><th>Balance-sheet lens</th><th>Why this scenario matters</th></tr></thead>
+              <tbody>{activeGuide.companies.map((company) => (
+                <tr key={company.ticker}>
+                  <td><strong>{company.ticker}</strong><span>{company.name}</span></td>
+                  <td><span className={`sensitivity-pill ${company.sensitivity.toLowerCase()}`}>{company.sensitivity}</span></td>
+                  <td>{company.balanceSheet}</td>
+                  <td>{company.channel}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div className="scenario-watchlist">
+            <strong>Evidence to watch</strong>
+            {activeGuide.watch.map((item) => <span key={item}>{item}</span>)}
+          </div>
+          <p className="panel-note">The debt labels are analytical screening classifications, not live debt figures. Verify current leverage, maturity schedules, index membership, and filings before drawing a conclusion.</p>
+        </section> : null}
 
         <section className="scenario-result-band">
           <article>

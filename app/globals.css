@@ -5724,3 +5724,206 @@ body,
     border-right: 0;
   }
 }
+
+/* Scenario research library */
+.scenario-library,
+.scenario-transmission,
+.scenario-company-screen {
+  grid-column: 1 / -1;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid rgba(255, 232, 235, 0.075);
+  background: #131012;
+}
+
+.scenario-workbench > * { min-width: 0; }
+
+.scenario-library,
+.scenario-transmission,
+.scenario-company-screen { padding: 18px; }
+
+.scenario-library-heading,
+.scenario-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.scenario-library-heading h2,
+.scenario-section-heading h2 { margin-top: 4px; font-size: 16px; }
+
+.scenario-library-heading > span,
+.scenario-section-heading > span {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.scenario-category-tabs {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 10px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+  overflow-x: auto;
+}
+
+.scenario-category-tabs button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #827d80;
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.scenario-category-tabs button:hover { color: #d7d3d1; background: rgba(255, 255, 255, 0.035); }
+.scenario-category-tabs button.active { color: #f0e9e8; border-color: rgba(212, 79, 101, 0.28); background: #26191d; }
+
+.scenario-library .preset-strip { grid-template-columns: repeat(3, minmax(190px, 1fr)); }
+.scenario-library .preset-strip button { min-height: 94px; }
+
+.transmission-chain {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.85fr) repeat(3, minmax(155px, 1fr));
+  align-items: stretch;
+  gap: 7px;
+}
+
+.transmission-chain article {
+  min-height: 72px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 5px;
+  background: #0e0b0d;
+}
+
+.transmission-chain > article { border-left-color: rgba(212, 79, 101, 0.65); }
+.transmission-chain svg { color: #d44f65; }
+.transmission-chain span,
+.transmission-chain strong { display: block; }
+.transmission-chain span { margin: 7px 0 4px; color: #736f72; font-size: 9px; text-transform: uppercase; }
+.transmission-chain strong { color: #e4dfdd; font-size: 11px; line-height: 1.35; }
+
+.transmission-step {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+}
+
+.transmission-step > svg { color: #665f63; }
+
+.scenario-exposure-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.scenario-exposure-grid > article {
+  min-width: 0;
+  padding: 15px 17px 2px;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.scenario-exposure-grid > article:first-child { padding-left: 0; }
+.scenario-exposure-grid > article:last-child { padding-right: 0; border-right: 0; }
+
+.scenario-exposure-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #aaa4a6;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.scenario-exposure-label.bad { color: #e06376; }
+.scenario-exposure-label.good { color: #5ca582; }
+
+.scenario-exposure-grid ul { display: grid; gap: 7px; margin: 12px 0 0; padding: 0; list-style: none; }
+.scenario-exposure-grid li,
+.scenario-exposure-grid p { color: #aaa4a6; font-size: 10px; line-height: 1.45; }
+
+.scenario-exposure-grid li::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  display: inline-block;
+  margin: 0 8px 2px 0;
+  border-radius: 50%;
+  background: #5f595c;
+}
+
+.scenario-overlap-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.scenario-overlap-list span,
+.scenario-watchlist span {
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: #c9c3c2;
+  background: #0e0b0d;
+  font-size: 9px;
+}
+
+.scenario-company-screen .table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid rgba(255, 255, 255, 0.065); border-radius: 5px; }
+.scenario-company-screen td:first-child strong,
+.scenario-company-screen td:first-child span { display: block; }
+.scenario-company-screen td:first-child span { margin-top: 3px; color: #777174; font-size: 9px; }
+
+.sensitivity-pill {
+  display: inline-flex;
+  min-width: 53px;
+  justify-content: center;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 3px;
+  color: #aaa4a6;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sensitivity-pill.high { color: #e06376; border-color: rgba(212, 79, 101, 0.24); background: rgba(212, 79, 101, 0.06); }
+.sensitivity-pill.medium { color: #d3b66c; border-color: rgba(211, 182, 108, 0.2); }
+.sensitivity-pill.low { color: #65a989; border-color: rgba(101, 169, 137, 0.2); }
+
+.scenario-watchlist { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.scenario-watchlist > strong { margin-right: 5px; color: #7f797c; font-size: 9px; text-transform: uppercase; }
+.scenario-company-screen .panel-note { margin: 12px 0 0; }
+
+@media (max-width: 900px) {
+  .transmission-chain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .transmission-step { grid-template-columns: minmax(0, 1fr); }
+  .transmission-step > svg { display: none; }
+}
+
+@media (max-width: 620px) {
+  .scenario-library,
+  .scenario-transmission,
+  .scenario-company-screen { padding: 14px; }
+  .scenario-library-heading,
+  .scenario-section-heading { align-items: flex-start; }
+  .scenario-library-heading > span,
+  .scenario-section-heading > span { display: none; }
+  .scenario-library .preset-strip { grid-template-columns: repeat(3, 210px); }
+  .transmission-chain { grid-template-columns: 1fr; }
+  .scenario-exposure-grid { grid-template-columns: 1fr; }
+  .scenario-exposure-grid > article,
+  .scenario-exposure-grid > article:first-child,
+  .scenario-exposure-grid > article:last-child {
+    padding: 14px 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .scenario-exposure-grid > article:last-child { border-bottom: 0; }
+}
