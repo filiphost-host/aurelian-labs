@@ -71,12 +71,12 @@ type LocalSearchResult = {
 };
 
 const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
-  { id: "insights", label: "Insights", icon: Newspaper },
   { id: "portfolio", label: "Portfolio", icon: BarChart3 },
+  { id: "map", label: "World Map", icon: Globe2 },
+  { id: "scenarios", label: "Scenarios", icon: SlidersHorizontal },
+  { id: "insights", label: "Insights", icon: Newspaper },
   { id: "research", label: "Research", icon: FlaskConical },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
-  { id: "map", label: "Global Map", icon: Globe2 },
-  { id: "scenarios", label: "Stress Test", icon: SlidersHorizontal },
 ];
 
 function normalizeHolding(holding: Holding): Holding {
@@ -99,7 +99,7 @@ export function Workbench({
 }) {
   const configured = hasSupabaseEnv();
   const supabase = useMemo(() => createClient(), []);
-  const [activeTab, setActiveTab] = useState<Tab>("insights");
+  const [activeTab, setActiveTab] = useState<Tab>("portfolio");
   const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("NOK");
   const [holdings, setHoldings] = useState<Holding[]>(configured ? [] : sampleHoldings);
   const [transactions, setTransactions] = useState<Transaction[]>(configured ? [] : sampleTransactions);

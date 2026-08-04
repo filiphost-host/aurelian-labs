@@ -20,6 +20,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -27,7 +28,6 @@ import {
 } from "recharts";
 import {
   allocationBy,
-  displayValue,
   formatMoney,
   formatPercent,
   portfolioSummary,
@@ -45,6 +45,7 @@ import type {
 import type { RemoteInstrument } from "@/components/search-command";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { InvestorPlaybooks } from "@/components/investor-playbooks";
+import { buildBenchmarkSeries, portfolioMilestones } from "@/lib/portfolio-story";
 
 const chartColors = ["#f0edeb", "#4f9d78", "#b36570", "#6f777c", "#c5a45b", "#587f78"];
 const darkTooltip = {
@@ -136,6 +137,8 @@ export function PortfolioView({
   const [holdingEditor, setHoldingEditor] = useState<{ holding?: Holding; seed?: RemoteInstrument } | null>(null);
   const [transactionOpen, setTransactionOpen] = useState(false);
   const [decisionHolding, setDecisionHolding] = useState<Holding | null>(null);
+  const [openMilestoneId, setOpenMilestoneId] = useState<string | null>("google-entry");
+  const benchmarkSeries = useMemo(() => buildBenchmarkSeries(snapshots), [snapshots]);
 
   const activeHoldingEditor = holdingEditor ?? (instrumentSeed ? { seed: instrumentSeed } : null);
 
@@ -145,10 +148,10 @@ export function PortfolioView({
         <section className="metric-grid portfolio-metrics">
           <Metric label="Portfolio value" value={formatMoney(summary.total, displayCurrency)} />
           <Metric
-            label="Unrealized return"
+            label="Total return"
             value={formatPercent(summary.gainPercent)}
             tone={summary.gainPercent >= 0 ? "good" : "bad"}
-            note="Moving-average cost"
+            note="Since the 2020 opening balance"
           />
           <Metric
             label="Unrealized gain"
@@ -165,47 +168,87 @@ export function PortfolioView({
         <section className="panel wide performance-panel">
           <div className="panel-title-row">
             <div>
-              <span className="eyebrow">Transaction-backed history</span>
-              <h2>Portfolio value and return path</h2>
+              <span className="eyebrow">Portfolio vs. S&amp;P 500</span>
+              <h2>Indexed return since 2020</h2>
             </div>
             <div className="history-status">
-              <span>{snapshots.some((snapshot) => snapshot.source === "legacy_estimate") ? "Legacy estimates present" : "Calculated snapshots"}</span>
+              <span>Portfolio</span>
+              <span className="benchmark-key">S&amp;P 500 reference</span>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={320}>
-            <AreaChart data={snapshots.map((snapshot) => ({
-              date: snapshot.snapshot_date,
-              value: displayValue(snapshot.total_value_nok, displayCurrency),
-              source: snapshot.source,
-            }))}>
+            <AreaChart data={benchmarkSeries}>
               <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" vertical={false} />
               <XAxis dataKey="date" tick={{ fill: "#7f7a7d", fontSize: 11 }} tickFormatter={(value) => String(value).slice(0, 4)} />
               <YAxis
-                width={88}
+                width={58}
                 tick={{ fill: "#7f7a7d", fontSize: 11 }}
-                tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))}
+                tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
               />
               <Tooltip
                 contentStyle={darkTooltip}
-                formatter={(value) => new Intl.NumberFormat("nb-NO", {
-                  style: "currency",
-                  currency: displayCurrency,
-                  maximumFractionDigits: 0,
-                }).format(Number(value))}
+                formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name === "portfolioReturn" ? "Portfolio" : "S&P 500 reference"]}
               />
               <Area
                 type="monotone"
-                dataKey="value"
+                dataKey="portfolioReturn"
                 stroke="#f0edeb"
                 strokeWidth={2}
-                fill="rgba(255, 255, 255, 0.018)"
+                fill="rgba(255, 255, 255, 0.025)"
                 activeDot={{ fill: "#df5268", stroke: "#f0edeb", strokeWidth: 2, r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="benchmarkReturn"
+                stroke="#b94b5e"
+                strokeWidth={1.6}
+                strokeDasharray="5 5"
+                dot={false}
+                activeDot={{ fill: "#b94b5e", stroke: "#f0edeb", strokeWidth: 1, r: 3 }}
               />
             </AreaChart>
           </ResponsiveContainer>
           <p className="panel-note">
-            Legacy points remain clearly marked until daily calculated snapshots replace the original estimated history.
+            Portfolio points are legacy estimates. The S&amp;P 500 line is an indexed reference path, not a live total-return series; replace it with provider data before drawing performance conclusions.
           </p>
+        </section>
+
+        <section className="panel wide portfolio-story-panel">
+          <div className="panel-title-row">
+            <div>
+              <span className="eyebrow">Decision history</span>
+              <h2>Trades worth remembering</h2>
+            </div>
+            <span className="story-count">5 recorded decisions</span>
+          </div>
+          <div className="portfolio-story-grid">
+            {portfolioMilestones.map((milestone) => {
+              const open = openMilestoneId === milestone.id;
+              return (
+                <button
+                  key={milestone.id}
+                  className={`portfolio-story-card ${milestone.accent} ${open ? "open" : ""}`}
+                  onClick={() => setOpenMilestoneId(open ? null : milestone.id)}
+                  aria-expanded={open}
+                >
+                  <span className="story-card-topline">
+                    <i>{milestone.ticker}</i>
+                    <em>{milestone.status}</em>
+                  </span>
+                  <strong>{milestone.instrument}</strong>
+                  <span className="story-action">{milestone.action}</span>
+                  <span className="story-open-label">{open ? "Hide review" : "Review decision"}{open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}</span>
+                  {open ? (
+                    <span className="story-details">
+                      <span><small>Outcome</small>{milestone.outcome}</span>
+                      <span><small>Lesson</small>{milestone.lesson}</span>
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          <p className="panel-note">Entries are based on your recollection and remain qualitative until dates, quantities, fees, and exact fills are added to the transaction ledger.</p>
         </section>
 
         <section className="panel wide holdings-panel">

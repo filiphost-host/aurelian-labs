@@ -24,12 +24,19 @@ final result: passed
 
 ## Functional Checks
 
+- Default navigation order is Portfolio, World Map, Scenarios, followed by secondary research tools.
+- Portfolio opens as the default signed-in workbench view.
+- Portfolio metrics reconcile to NOK 450,000 and a 97.5% legacy total return in preview and private Supabase data.
+- The performance chart compares the same dated portfolio observations with a clearly labelled S&P 500 reference path.
+- Decision-history cards expand and collapse to show outcome and lesson for Alphabet, Novo Nordisk, Tesla, Saab, and Lockheed Martin.
+- Dock items expose descriptive hover labels and use a neutral-grey hover state before selection.
 - Research company selector and Peers, Earnings, and Thesis modes work.
 - Portfolio research actions open the selected holding.
 - Calendar month controls, holdings filter, ticker filter, and Day, Week, and Month modes work.
 - Calendar events open the corresponding company research view.
 - Floating navigation switches among all primary workbench views.
 - Wide tables use contained horizontal scrolling on narrow screens without widening the document.
+- At 390 x 844, the document remains 390 pixels wide and the decision-history rail scrolls internally.
 
 ## Fixes During QA
 
@@ -38,6 +45,8 @@ final result: passed
 - Replaced a remaining gold focus treatment with the site's crimson interaction color.
 - Removed native select styling drift and aligned controls with the shared dark surface treatment.
 - Clarified that current company research and calendar figures are illustrative and not live market data.
+- Kept the S&P 500 benchmark explicitly labelled as an indexed reference estimate until provider-backed total-return data is connected.
+- Added a faint structural grid, inset panel edges, compact crimson dividers, and clearer hover feedback without weakening the flat analytical hierarchy.
 
 ## Intentional Differences
 
