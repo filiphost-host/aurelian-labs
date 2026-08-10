@@ -101,6 +101,7 @@ export type Transaction = {
   fx_to_nok: number;
   split_ratio: number | null;
   note: string | null;
+  import_fingerprint?: string | null;
   created_at?: string;
 };
 

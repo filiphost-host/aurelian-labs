@@ -356,6 +356,30 @@ export function Workbench({
     }
   }
 
+  async function importTransactions(drafts: Transaction[]) {
+    if (!drafts.length) return;
+    setTransactions((current) => [...current, ...drafts]);
+    setStoredBrief(null);
+
+    if (!supabase || !userId) {
+      setStatus(`${drafts.length} imported transactions added to this preview session.`);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("transactions")
+      .insert(drafts.map((draft) => ({ ...draft, user_id: userId })));
+    if (error) {
+      const importedIds = new Set(drafts.map((draft) => draft.id));
+      setTransactions((current) => current.filter((item) => !importedIds.has(item.id)));
+      setStatus(error.code === "23505"
+        ? "Nothing imported: some of these rows are already in the ledger. Reopen the importer to refresh."
+        : `Nothing imported: ${error.message}`);
+      return;
+    }
+    setStatus(`Imported ${drafts.length} transaction${drafts.length === 1 ? "" : "s"}.`);
+  }
+
   async function deleteTransaction(id: string) {
     if (!window.confirm("Delete this ledger entry? Portfolio returns will be recalculated.")) return;
     setTransactions((current) => current.filter((item) => item.id !== id));
@@ -491,6 +515,7 @@ export function Workbench({
               onDeleteHolding={deleteHolding}
               onSaveTransaction={saveTransaction}
               onDeleteTransaction={deleteTransaction}
+              onImportTransactions={importTransactions}
               onSaveDecision={saveDecision}
               onOpenResearch={openResearch}
             />
