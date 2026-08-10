@@ -11,6 +11,7 @@ import {
   Newspaper,
   Search,
   SlidersHorizontal,
+  Target,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -68,8 +69,12 @@ const AnalystDeskView = dynamic(
   () => import("@/components/analyst-desk-view").then((module) => module.AnalystDeskView),
   { ssr: false, loading: () => <div className="view-loading">Loading the analyst desk...</div> },
 );
+const JudgmentView = dynamic(
+  () => import("@/components/judgment-view").then((module) => module.JudgmentView),
+  { ssr: false, loading: () => <div className="view-loading">Loading decision review...</div> },
+);
 
-type Tab = "insights" | "portfolio" | "analyst" | "map" | "scenarios" | "calendar" | "research";
+type Tab = "insights" | "portfolio" | "analyst" | "judgment" | "map" | "scenarios" | "calendar" | "research";
 type LocalSearchResult = {
   id: string;
   type: "holding" | "insight" | "scenario" | "country";
@@ -80,6 +85,7 @@ type LocalSearchResult = {
 const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: "portfolio", label: "Portfolio", icon: BarChart3 },
   { id: "analyst", label: "Analyst Desk", icon: Gauge },
+  { id: "judgment", label: "Judgment", icon: Target },
   { id: "map", label: "World Map", icon: Globe2 },
   { id: "scenarios", label: "Scenarios", icon: SlidersHorizontal },
   { id: "insights", label: "Insights", icon: Newspaper },
@@ -535,6 +541,25 @@ export function Workbench({
               snapshots={snapshots}
               fxRates={fxRates.rates}
               displayCurrency={displayCurrency}
+            />
+          ) : null}
+          {activeTab === "judgment" ? (
+            <JudgmentView
+              holdings={holdings}
+              transactions={transactions}
+              snapshots={snapshots}
+              decisions={decisions}
+              fxRates={fxRates.rates}
+              displayCurrency={displayCurrency}
+              asOf={initialAsOf}
+              onOpenHolding={(holdingId) => {
+                openTab("portfolio");
+                setFocusedHoldingId(holdingId);
+                window.setTimeout(
+                  () => document.getElementById(`holding-${holdingId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }),
+                  100,
+                );
+              }}
             />
           ) : null}
           {activeTab === "research" ? (
