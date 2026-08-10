@@ -3,6 +3,7 @@
 import {
   ArrowUpRight,
   Activity,
+  Bot,
   Building2,
   Check,
   ChevronDown,
@@ -35,7 +36,8 @@ import { buildChatGptPacket, redactHoldingIdentities } from "@/lib/insights";
 import { formatMoney, holdingValueNok } from "@/lib/calculations";
 import type { FxRates } from "@/lib/fx";
 import { DataRoomPanel } from "@/components/data-room-panel";
-import type { DailyBrief, Holding, MarketQuote, ShareOptions } from "@/lib/types";
+import type { DailyBrief, Holding, HoldingDecision, MarketQuote, ShareOptions } from "@/lib/types";
+import { AiAnalystPanel } from "@/components/ai-analyst-panel";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { ShareDialog } from "@/components/share-dialog";
 
@@ -99,6 +101,7 @@ const comparisonAxes = ["Concentration", "Liquidity", "Systematic", "Interventio
 export function InsightsView({
   brief,
   holdings,
+  decisions,
   fxRates,
   fxMeta,
   benchmarkAsOf,
@@ -107,6 +110,7 @@ export function InsightsView({
 }: {
   brief: DailyBrief;
   holdings: Holding[];
+  decisions: HoldingDecision[];
   fxRates: Record<string, number>;
   fxMeta: FxRates;
   benchmarkAsOf: string | null;
@@ -115,6 +119,7 @@ export function InsightsView({
 }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [analystOpen, setAnalystOpen] = useState(false);
   const [chatOptions, setChatOptions] = useState({
     includeHoldings: false,
     includeValues: false,
@@ -225,8 +230,11 @@ export function InsightsView({
             <button className="ghost-button" onClick={() => setShareOpen(true)}>
               <Link2 size={16} /> Share snapshot
             </button>
-            <button className="primary-button" onClick={() => setChatOpen(true)}>
+            <button className="ghost-button" onClick={() => setChatOpen(true)}>
               <Sparkles size={16} /> Analyze in ChatGPT
+            </button>
+            <button className="primary-button" onClick={() => setAnalystOpen(true)}>
+              <Bot size={16} /> Ask the analyst
             </button>
           </div>
         </section>
@@ -299,6 +307,16 @@ export function InsightsView({
           </section>
         ) : null}
       </div>
+
+      {analystOpen ? (
+        <AiAnalystPanel
+          brief={brief}
+          holdings={holdings}
+          decisions={decisions}
+          fxRates={fxRates}
+          onClose={() => setAnalystOpen(false)}
+        />
+      ) : null}
 
       {shareOpen ? (
         <ShareDialog

@@ -503,6 +503,7 @@ export function Workbench({
             <InsightsView
               brief={brief}
               holdings={holdings}
+              decisions={decisions}
               fxRates={fxRates.rates}
               fxMeta={fxRates}
               benchmarkAsOf={benchmarkPrices.at(-1)?.price_date ?? null}

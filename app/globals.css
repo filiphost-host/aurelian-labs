@@ -7173,3 +7173,115 @@ button {
 }
 
 .judgment-tag.undated { color: var(--muted); }
+
+/* AI analyst */
+.analyst-modal {
+  width: min(860px, 100%);
+}
+
+.analyst-privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 12px 0 0;
+  line-height: 1.55;
+}
+
+.analyst-controls {
+  margin-top: 14px;
+}
+
+.analyst-options {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-strong);
+}
+
+.analyst-options legend {
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.analyst-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.analyst-packet {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-strong);
+}
+
+.analyst-packet summary {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.analyst-packet pre {
+  max-height: 260px;
+  margin: 12px 0 0;
+  overflow: auto;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.analyst-answer {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--red);
+  border-radius: 5px;
+  background: var(--panel-strong);
+}
+
+.analyst-answer p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.68;
+}
+
+.analyst-answer p:last-of-type { margin-bottom: 0; }
+
+.analyst-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  margin-left: 2px;
+  background: var(--red-bright);
+  animation: analyst-blink 1s steps(2, start) infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes analyst-blink {
+  to { visibility: hidden; }
+}
+
+.analyst-spin {
+  animation: analyst-rotate 1s linear infinite;
+}
+
+@keyframes analyst-rotate {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analyst-cursor, .analyst-spin { animation: none; }
+}

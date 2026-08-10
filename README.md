@@ -88,6 +88,28 @@ One consequence worth knowing: two genuinely identical trades — same instrumen
 day, quantity, price, and fee — describe themselves identically, so the second one
 arriving in a later file is treated as already imported. Record that one by hand.
 
+## The AI analyst
+
+Insights has an **Ask the analyst** button that writes a narrative across the day's
+insights, or argues the bear case against a recorded thesis.
+
+It runs through the Vercel AI Gateway. On a Vercel deployment the OIDC token is used
+automatically; elsewhere set `AI_GATEWAY_API_KEY`. Without either, the button reports
+that the analyst is not connected and sends nothing. `AI_ANALYST_MODEL` overrides the
+default model.
+
+The rules it works under are enforced in the request, not just requested politely:
+
+- The packet is built in the browser, shown in full before sending, and validated
+  again on the server against a schema with size limits.
+- The same redaction switches as the ChatGPT packet apply, and the packet states
+  what was withheld so the model works with the gap rather than guessing at it.
+- No tools are attached, so the packet is the model's only source. It is instructed
+  never to state a figure the packet does not contain, never to recommend a trade,
+  and never to predict prices.
+- If the model stops part way through, the answer says so rather than ending
+  silently. Nothing the analyst writes is stored.
+
 ## Data policy
 
 - SEC EDGAR, ECB, FRED, World Bank, OpenFIGI, and market-price sources are accessed through server adapters.
