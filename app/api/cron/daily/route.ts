@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { portfolioSummary } from "@/lib/calculations";
+import { fallbackFxToNok, portfolioSummary } from "@/lib/calculations";
+import { type FxRateRow, latestFxRatesFromRows } from "@/lib/fx";
 import { buildDailyBrief } from "@/lib/insights";
-import { fetchDailyClose, fetchEcbFxToNok } from "@/lib/providers";
+import { fetchDailyClose, fetchEcbFxToNok, fetchYahooDailyCloses } from "@/lib/providers";
 import { createAdminClient } from "@/lib/supabase-admin";
 import type {
   Holding,
@@ -29,6 +30,43 @@ export async function GET(request: Request) {
   if (profileError) return NextResponse.json({ message: profileError.message }, { status: 500 });
 
   const fx = await fetchEcbFxToNok();
+
+  const benchmarkSymbols = [
+    { symbol: "^GSPC", currency: "USD" },
+    { symbol: "OSEBX.OL", currency: "NOK" },
+  ];
+  const benchmarks: Array<{ symbol: string; written: number; error: string | null }> = [];
+  for (const benchmark of benchmarkSymbols) {
+    const { count, error: countError } = await admin
+      .from("benchmark_prices")
+      .select("id", { count: "exact", head: true })
+      .eq("symbol", benchmark.symbol);
+    if (countError) {
+      benchmarks.push({ symbol: benchmark.symbol, written: 0, error: countError.message });
+      continue;
+    }
+    const closes = await fetchYahooDailyCloses(benchmark.symbol, null, (count ?? 0) < 100 ? "10y" : "5d");
+    const rows = closes.map((point) => ({
+      symbol: benchmark.symbol,
+      price_date: point.date,
+      close: point.close,
+      currency: benchmark.currency,
+      source: "Yahoo Finance",
+      status: "delayed",
+    }));
+    let written = 0;
+    let failure: string | null = null;
+    for (let index = 0; index < rows.length && failure === null; index += 500) {
+      const chunk = rows.slice(index, index + 500);
+      const { error } = await admin
+        .from("benchmark_prices")
+        .upsert(chunk, { onConflict: "symbol,price_date" });
+      if (error) failure = error.message;
+      else written += chunk.length;
+    }
+    benchmarks.push({ symbol: benchmark.symbol, written, error: failure });
+  }
+
   const results: Array<{ userId: string; refreshed: number; missing: number }> = [];
 
   for (const profile of profiles ?? []) {
@@ -45,7 +83,7 @@ export async function GET(request: Request) {
     let missing = 0;
     for (const holding of holdings) {
       if (!holding.ticker || holding.asset_type === "bond" || holding.asset_type === "cash") continue;
-      const close = await fetchDailyClose(holding.ticker);
+      const close = await fetchDailyClose(holding.ticker, holding.exchange);
       if (!close) {
         missing += 1;
         continue;
@@ -89,7 +127,19 @@ export async function GET(request: Request) {
     const decisions = (decisionsResult.data ?? []) as unknown as HoldingDecision[];
     const events = (eventsResult.data ?? []) as unknown as MarketEvent[];
     const snapshots = (snapshotsResult.data ?? []) as unknown as PortfolioSnapshot[];
-    const summary = portfolioSummary(holdings, transactions, snapshots);
+
+    let profileRates = fx ? { ...fallbackFxToNok, ...fx.rates } : fallbackFxToNok;
+    if (!fx) {
+      const { data: storedFx } = await admin
+        .from("fx_rates")
+        .select("base_currency,quote_currency,rate,as_of,source")
+        .eq("user_id", profile.id)
+        .order("as_of", { ascending: false })
+        .limit(120);
+      profileRates = latestFxRatesFromRows((storedFx ?? []) as FxRateRow[]).rates;
+    }
+
+    const summary = portfolioSummary(holdings, transactions, snapshots, profileRates);
     const brief = buildDailyBrief({
       holdings,
       transactions,
@@ -98,6 +148,7 @@ export async function GET(request: Request) {
       snapshots,
       asOf: today,
       generatedAt: new Date().toISOString(),
+      fxRates: profileRates,
     });
 
     await admin.from("portfolio_snapshots").upsert({
@@ -119,5 +170,12 @@ export async function GET(request: Request) {
     results.push({ userId: profile.id, refreshed, missing });
   }
 
-  return NextResponse.json({ ok: true, asOf: today, fx: fx?.asOf ?? null, results });
+  return NextResponse.json({
+    ok: true,
+    asOf: today,
+    fx: fx?.asOf ?? null,
+    fxSource: fx ? fx.source : "stored or built-in fallback",
+    benchmarks,
+    results,
+  });
 }

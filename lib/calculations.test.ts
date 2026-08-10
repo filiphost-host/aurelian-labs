@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   displayValue,
+  fallbackFxToNok,
   holdingValueNok,
+  portfolioSummary,
   replayTransactions,
   scenarioImpact,
   timeWeightedReturn,
@@ -146,5 +148,30 @@ describe("scenario engine", () => {
     const result = scenarioImpact(baseHolding, { ...blankScenario, rates: 100 });
     expect(result.impactNok).toBe(0);
     expect(result.assumptions).toEqual([]);
+  });
+});
+
+describe("live FX threading", () => {
+  const liveRates = { ...fallbackFxToNok, USD: 10, EUR: 12 };
+
+  it("values foreign holdings with the provided rates", () => {
+    const usdHolding = { ...baseHolding, currency: "USD", quantity: 2, market_price: 50 };
+    expect(holdingValueNok(usdHolding, liveRates)).toBe(1000);
+    expect(holdingValueNok(usdHolding)).toBeCloseTo(2 * 50 * fallbackFxToNok.USD, 8);
+  });
+
+  it("threads rates through the portfolio summary", () => {
+    const usdHolding = { ...baseHolding, currency: "USD" };
+    const summary = portfolioSummary(
+      [usdHolding],
+      [transaction({ quantity: 10, unit_price: 100 })],
+      [],
+      liveRates,
+    );
+    expect(summary.total).toBe(10 * 150 * 10);
+  });
+
+  it("uses the live EUR rate for display conversion", () => {
+    expect(displayValue(1200, "EUR", liveRates)).toBe(100);
   });
 });

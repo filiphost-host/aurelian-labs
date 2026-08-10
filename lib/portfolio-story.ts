@@ -64,13 +64,73 @@ export const portfolioMilestones: PortfolioMilestone[] = [
 
 const sp500ReferenceReturn = [0, 24, 8, 31, 56, 78, 91];
 
-export function buildBenchmarkSeries(snapshots: Array<{ snapshot_date: string; total_value_nok: number }>) {
+export type BenchmarkPricePoint = { price_date: string; close: number };
+
+export type BenchmarkComparison = {
+  series: Array<{ date: string; portfolioReturn: number; benchmarkReturn: number | null }>;
+  benchmarkSource: "stored" | "estimate";
+  benchmarkAsOf: string | null;
+  rebasedAt: string | null;
+};
+
+export function buildBenchmarkComparison(
+  snapshots: Array<{ snapshot_date: string; total_value_nok: number }>,
+  benchmarkPrices: BenchmarkPricePoint[] = [],
+): BenchmarkComparison {
   const ordered = [...snapshots].sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
   const startingValue = ordered[0]?.total_value_nok ?? 0;
+  const prices = [...benchmarkPrices]
+    .filter((point) => Number.isFinite(Number(point.close)) && Number(point.close) > 0)
+    .sort((a, b) => a.price_date.localeCompare(b.price_date));
 
-  return ordered.map((snapshot, index) => ({
-    date: snapshot.snapshot_date,
-    portfolioReturn: startingValue > 0 ? ((snapshot.total_value_nok / startingValue) - 1) * 100 : 0,
-    benchmarkReturn: sp500ReferenceReturn[Math.min(index, sp500ReferenceReturn.length - 1)],
-  }));
+  const closeOnOrBefore = (date: string) => {
+    let match: BenchmarkPricePoint | null = null;
+    for (const point of prices) {
+      if (point.price_date.localeCompare(date) <= 0) match = point;
+      else break;
+    }
+    return match;
+  };
+
+  const portfolioIndexAt = (value: number) => (startingValue > 0 ? (value / startingValue) * 100 : 100);
+
+  let baseline: { close: number; portfolioIndex: number; date: string } | null = null;
+  for (const snapshot of ordered) {
+    const close = closeOnOrBefore(snapshot.snapshot_date);
+    if (close) {
+      baseline = {
+        close: close.close,
+        portfolioIndex: portfolioIndexAt(snapshot.total_value_nok),
+        date: snapshot.snapshot_date,
+      };
+      break;
+    }
+  }
+  const usable = baseline !== null && prices.length >= 2;
+
+  const series = ordered.map((snapshot, index) => {
+    const portfolioReturn = portfolioIndexAt(snapshot.total_value_nok) - 100;
+    if (!usable) {
+      return {
+        date: snapshot.snapshot_date,
+        portfolioReturn,
+        benchmarkReturn: sp500ReferenceReturn[Math.min(index, sp500ReferenceReturn.length - 1)] as number | null,
+      };
+    }
+    const close = closeOnOrBefore(snapshot.snapshot_date);
+    return {
+      date: snapshot.snapshot_date,
+      portfolioReturn,
+      benchmarkReturn: close === null
+        ? null
+        : baseline!.portfolioIndex * (close.close / baseline!.close) - 100,
+    };
+  });
+
+  return {
+    series,
+    benchmarkSource: usable ? "stored" : "estimate",
+    benchmarkAsOf: usable ? prices.at(-1)?.price_date ?? null : null,
+    rebasedAt: usable ? baseline!.date : null,
+  };
 }

@@ -18,7 +18,9 @@ import {
   SearchCommand,
   type RemoteInstrument,
 } from "@/components/search-command";
+import { fallbackFxRates, latestFxRatesFromRows, type FxRateRow, type FxRates } from "@/lib/fx";
 import { buildDailyBrief } from "@/lib/insights";
+import type { BenchmarkPricePoint } from "@/lib/portfolio-story";
 import {
   sampleDecisions,
   sampleEvents,
@@ -79,6 +81,27 @@ const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: "calendar", label: "Calendar", icon: CalendarDays },
 ];
 
+// PostgREST caps an unbounded select (1000 rows by default), which would silently
+// truncate a multi-year benchmark history to its oldest page and freeze the chart.
+async function loadBenchmarkPrices(
+  client: NonNullable<ReturnType<typeof createClient>>,
+  symbol: string,
+) {
+  const pageSize = 1000;
+  const rows: BenchmarkPricePoint[] = [];
+  for (let page = 0; ; page += 1) {
+    const { data, error } = await client
+      .from("benchmark_prices")
+      .select("price_date,close")
+      .eq("symbol", symbol)
+      .order("price_date")
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error) return { data: rows, error };
+    rows.push(...(data ?? []) as BenchmarkPricePoint[]);
+    if ((data?.length ?? 0) < pageSize) return { data: rows, error: null };
+  }
+}
+
 function normalizeHolding(holding: Holding): Holding {
   return {
     ...holding,
@@ -107,6 +130,8 @@ export function Workbench({
   const [decisions, setDecisions] = useState<HoldingDecision[]>(configured ? [] : sampleDecisions);
   const [events, setEvents] = useState<MarketEvent[]>(configured ? [] : sampleEvents);
   const [storedBrief, setStoredBrief] = useState<DailyBrief | null>(null);
+  const [fxRates, setFxRates] = useState<FxRates>(fallbackFxRates);
+  const [benchmarkPrices, setBenchmarkPrices] = useState<BenchmarkPricePoint[]>([]);
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
   const [scenario, setScenario] = useState<Scenario>({ ...scenarioPresets[0].shocks });
   const [activePresetId, setActivePresetId] = useState(scenarioPresets[0].id);
@@ -152,6 +177,8 @@ export function Workbench({
         eventRows,
         briefRows,
         scenarioRows,
+        fxRows,
+        benchmarkRows,
       ] = await Promise.all([
         supabase!.from("holdings").select("*").order("created_at"),
         supabase!.from("transactions").select("*").order("occurred_at"),
@@ -160,6 +187,8 @@ export function Workbench({
         supabase!.from("market_events").select("*").order("event_date"),
         supabase!.from("daily_briefs").select("*").order("brief_date", { ascending: false }).limit(1),
         supabase!.from("saved_scenarios").select("*").order("created_at", { ascending: false }),
+        supabase!.from("fx_rates").select("base_currency,quote_currency,rate,as_of,source").order("as_of", { ascending: false }).limit(120),
+        loadBenchmarkPrices(supabase!, "^GSPC"),
       ]);
 
       const firstError = [
@@ -177,6 +206,12 @@ export function Workbench({
         setStatus("Private workspace · daily close mode");
       }
 
+      if (!fxRows.error) {
+        setFxRates(latestFxRatesFromRows((fxRows.data ?? []) as FxRateRow[]));
+      }
+      if (!benchmarkRows.error) {
+        setBenchmarkPrices((benchmarkRows.data ?? []) as BenchmarkPricePoint[]);
+      }
       setHoldings(((holdingRows.data ?? []) as unknown as Holding[]).map(normalizeHolding));
       setTransactions((transactionRows.data ?? []) as unknown as Transaction[]);
       setSnapshots((snapshotRows.data ?? []) as unknown as PortfolioSnapshot[]);
@@ -209,8 +244,9 @@ export function Workbench({
       snapshots,
       asOf: snapshots.at(-1)?.snapshot_date ?? initialAsOf,
       generatedAt: initialGeneratedAt,
+      fxRates: fxRates.rates,
     }),
-    [decisions, events, holdings, initialAsOf, initialGeneratedAt, snapshots, transactions],
+    [decisions, events, fxRates, holdings, initialAsOf, initialGeneratedAt, snapshots, transactions],
   );
   const brief = storedBrief?.brief_date === calculatedBrief.brief_date ? storedBrief : calculatedBrief;
 
@@ -431,6 +467,7 @@ export function Workbench({
             <InsightsView
               brief={brief}
               holdings={holdings}
+              fxRates={fxRates.rates}
               onQuotesUpdated={applyMarketQuotes}
               onOpenMarket={(country) => {
                 setRequestedCountry(country);
@@ -444,6 +481,8 @@ export function Workbench({
               transactions={transactions}
               snapshots={snapshots}
               decisions={decisions}
+              fxRates={fxRates.rates}
+              benchmarkPrices={benchmarkPrices}
               displayCurrency={displayCurrency}
               focusedHoldingId={focusedHoldingId}
               instrumentSeed={instrumentSeed}
@@ -474,12 +513,14 @@ export function Workbench({
             <GlobalMapView
               key={requestedCountry ?? "default-map"}
               holdings={holdings}
+              fxRates={fxRates.rates}
               requestedCountry={requestedCountry}
             />
           ) : null}
           {activeTab === "scenarios" ? (
             <ScenarioView
               holdings={holdings}
+              fxRates={fxRates.rates}
               displayCurrency={displayCurrency}
               scenario={scenario}
               setScenario={setScenario}

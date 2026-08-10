@@ -16,7 +16,7 @@ Without Supabase variables, the app opens in a clearly labelled preview mode usi
 
 ## Private Supabase setup
 
-1. Create a Supabase project and run both migrations in `supabase/migrations`.
+1. Create a Supabase project and run all migrations in `supabase/migrations` (in filename order).
 2. Pre-create the owner in Supabase Authentication.
 3. Set `OWNER_EMAIL` to that exact address.
 4. Add the app URL and `/auth/callback` to the allowed Auth redirect URLs.
@@ -37,7 +37,10 @@ Optional free-source variables:
 ```dotenv
 OPENFIGI_API_KEY=
 TWELVE_DATA_API_KEY=
+EODHD_API_KEY=
 ```
+
+`EODHD_API_KEY` (free tier, 20 calls/day) gives the daily cron official end-of-day closes for European and Oslo tickers that the Twelve Data free tier does not cover; without it the cron falls back to the delayed Yahoo path.
 
 The service-role key and cron secret are server-only. Never prefix them with `NEXT_PUBLIC_`.
 
@@ -58,6 +61,8 @@ Public snapshot URLs contain random opaque tokens. Only token hashes are stored,
 
 - SEC EDGAR, ECB, FRED, World Bank, OpenFIGI, and market-price sources are accessed through server adapters.
 - Latest quotes prefer Twelve Data when configured and otherwise use a clearly labelled delayed Yahoo Finance fallback cached for five minutes.
+- Daily closes follow the chain Twelve Data → EODHD → Yahoo Finance, and valuations use the latest stored ECB rates (falling back to built-in estimates only when no stored rate exists).
+- Benchmark closes (S&P 500 and OSEBX) are stored daily by the cron and drive the performance comparison; before the first cron run the chart shows a clearly labelled reference estimate instead.
 - Missing data stays missing. Previous observations may remain visible as stale after a provider failure.
 - Manual and estimated values are explicitly labelled.
 - Shared snapshots should omit provider-controlled raw data where redistribution is unclear.

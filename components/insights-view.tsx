@@ -97,11 +97,13 @@ const comparisonAxes = ["Concentration", "Liquidity", "Systematic", "Interventio
 export function InsightsView({
   brief,
   holdings,
+  fxRates,
   onOpenMarket,
   onQuotesUpdated,
 }: {
   brief: DailyBrief;
   holdings: Holding[];
+  fxRates: Record<string, number>;
   onOpenMarket: (country: string) => void;
   onQuotesUpdated: (quotes: MarketQuote[]) => void;
 }) {
@@ -161,7 +163,7 @@ export function InsightsView({
   }, [refreshQuotes]);
 
   async function analyzeInChatGpt() {
-    const packet = buildChatGptPacket(brief, holdings, chatOptions);
+    const packet = buildChatGptPacket(brief, holdings, chatOptions, fxRates);
     const chatWindow = window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
     await navigator.clipboard.writeText(packet);
     setCopied(true);
@@ -196,7 +198,7 @@ export function InsightsView({
         ? holdings.map((holding) => ({
             name: holding.name,
             ticker: holding.ticker,
-            valueNok: options.includeValues ? holdingValueNok(holding) : undefined,
+            valueNok: options.includeValues ? holdingValueNok(holding, fxRates) : undefined,
             currency: holding.currency,
             dataStatus: holding.price_provenance.status,
           }))
@@ -279,7 +281,7 @@ export function InsightsView({
             <div className="data-ledger-grid">
               {holdings.map((holding) => (
                 <article key={holding.id}>
-                  <div><strong>{holding.ticker ?? holding.name}</strong><span>{formatMoney(holdingValueNok(holding))}</span></div>
+                  <div><strong>{holding.ticker ?? holding.name}</strong><span>{formatMoney(holdingValueNok(holding, fxRates), "NOK", fxRates)}</span></div>
                   <ProvenanceBadge provenance={holding.price_provenance} />
                 </article>
               ))}
