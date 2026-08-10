@@ -7285,3 +7285,41 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .analyst-cursor, .analyst-spin { animation: none; }
 }
+
+/* Time machine and projection */
+.time-machine-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 14px 0 10px;
+}
+
+.time-machine-controls button {
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  background: var(--panel-strong);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.time-machine-controls button.active {
+  color: var(--ink);
+  border-color: rgba(212, 79, 101, 0.45);
+  background: var(--red-muted);
+}
+
+.time-machine-controls button:focus-visible,
+.projection-controls input:focus-visible {
+  outline: 2px solid var(--red-bright);
+  outline-offset: 2px;
+}
+
+.projection-controls {
+  margin: 14px 0 4px;
+}
+
+.projection-panel .analyst-callouts strong {
+  font-size: 17px;
+}
