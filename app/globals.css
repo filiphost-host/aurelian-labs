@@ -6986,3 +6986,57 @@ button {
 @media (max-width: 900px) {
   .import-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Data room */
+.data-room-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin: 14px 0 16px;
+}
+
+.data-room-metrics article {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-strong);
+}
+
+.data-room-metrics span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.data-room-metrics strong {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.data-room-metrics em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.data-room .panel-note {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.data-room a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--red);
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .data-room-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

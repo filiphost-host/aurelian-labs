@@ -492,6 +492,8 @@ export function Workbench({
               brief={brief}
               holdings={holdings}
               fxRates={fxRates.rates}
+              fxMeta={fxRates}
+              benchmarkAsOf={benchmarkPrices.at(-1)?.price_date ?? null}
               onQuotesUpdated={applyMarketQuotes}
               onOpenMarket={(country) => {
                 setRequestedCountry(country);

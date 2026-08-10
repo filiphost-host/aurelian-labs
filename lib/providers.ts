@@ -2,6 +2,7 @@ import "server-only";
 
 import { type CallBudget, parseEodhdClose, parseYahooCloses } from "@/lib/market-data";
 import { eodhdSymbol, marketDataSymbol } from "@/lib/market-symbols";
+import { parseNorgesBankPolicyRate, parseNorgesBankRates } from "@/lib/norges-bank";
 import type { MarketQuote } from "@/lib/types";
 
 export type InstrumentSearchResult = {
@@ -312,6 +313,29 @@ export async function fetchLatestQuote(
     ? await fetchTwelveDataQuote(instrument)
     : null;
   return twelveData ?? await fetchYahooChartQuote(instrument);
+}
+
+async function fetchNorgesBankText(path: string, fresh: boolean) {
+  const response = await fetch(`https://data.norges-bank.no/api/data/${path}`, {
+    signal: AbortSignal.timeout(8_000),
+    ...(fresh ? { cache: "no-store" as const } : { next: { revalidate: 21_600 } }),
+  }).catch(() => null);
+  if (!response?.ok) return null;
+  return await response.text().catch(() => null);
+}
+
+/** Official NOK rates, published by Norges Bank without a key. */
+export async function fetchNorgesBankFxToNok(options?: { fresh?: boolean }) {
+  const csv = await fetchNorgesBankText(
+    "EXR/B.USD+EUR+SEK+DKK+GBP+CHF.NOK.SP?lastNObservations=1&format=csv&locale=en",
+    options?.fresh ?? false,
+  );
+  return csv ? parseNorgesBankRates(csv) : null;
+}
+
+export async function fetchNorgesBankPolicyRate() {
+  const csv = await fetchNorgesBankText("IR/B.KPRA.SD.?lastNObservations=1&format=csv&locale=en", false);
+  return csv ? parseNorgesBankPolicyRate(csv) : null;
 }
 
 export async function fetchEcbFxToNok() {

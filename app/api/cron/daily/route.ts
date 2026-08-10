@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { fallbackFxToNok, portfolioSummary } from "@/lib/calculations";
 import { type FxRateRow, latestFxRatesFromRows } from "@/lib/fx";
 import { buildDailyBrief } from "@/lib/insights";
-import { fetchDailyClose, fetchEcbFxToNok, fetchYahooDailyCloses } from "@/lib/providers";
+import {
+  fetchDailyClose,
+  fetchEcbFxToNok,
+  fetchNorgesBankFxToNok,
+  fetchYahooDailyCloses,
+} from "@/lib/providers";
 import { createAdminClient } from "@/lib/supabase-admin";
 import type {
   Holding,
@@ -29,7 +34,9 @@ export async function GET(request: Request) {
   const { data: profiles, error: profileError } = await admin.from("profiles").select("id");
   if (profileError) return NextResponse.json({ message: profileError.message }, { status: 500 });
 
-  const fx = await fetchEcbFxToNok();
+  // Norges Bank publishes the official NOK rates; the ECB cross-rates stand in
+  // only when it is unavailable.
+  const fx = await fetchNorgesBankFxToNok({ fresh: true }) ?? await fetchEcbFxToNok();
 
   const benchmarkSymbols = [
     { symbol: "^GSPC", currency: "USD" },
