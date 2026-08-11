@@ -140,15 +140,30 @@ export function buildDailyBrief(input: {
 export function redactHoldingIdentities(value: string, holdings: Holding[]) {
   return holdings.reduce((redacted, holding, index) => {
     const replacement = `Holding ${index + 1}`;
-    const identities = [holding.name, holding.ticker].filter(
-      (identity): identity is string => Boolean(identity),
-    );
+    // Identifiers as well as names: an ISIN or FIGI names the company just as
+    // plainly. Longest first, so "Alphabet Inc Class C" is replaced whole rather
+    // than leaving its tail behind once "Alphabet" has matched.
+    const identities = [holding.name, holding.ticker, holding.isin, holding.figi, holding.issuer]
+      .filter((identity): identity is string => Boolean(identity?.trim()))
+      .sort((left, right) => right.length - left.length);
 
     return identities.reduce((text, identity) => {
-      const escaped = identity.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const escaped = identity.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return text.replace(new RegExp(escaped, "gi"), replacement);
     }, redacted);
   }, value);
+}
+
+/**
+ * Removes money amounts and percentages from prose. The brief writes figures into
+ * its own sentences, so withholding the values column alone would leave the same
+ * numbers visible one line above it.
+ */
+export function redactFigures(value: string) {
+  return value
+    .replace(/(?:kr|nok|usd|eur|gbp|sek|dkk|chf)\s?-?[\d\s .,]*\d/gi, "an amount")
+    .replace(/-?[\d\s .,]*\d\s?(?:kr|nok|usd|eur|gbp|sek|dkk|chf)\b/gi, "an amount")
+    .replace(/-?\d[\d\s .,]*\s?%/g, "a share");
 }
 
 export function buildChatGptPacket(
