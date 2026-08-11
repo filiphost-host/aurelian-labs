@@ -542,9 +542,11 @@ const marketAnalytics: Record<string, MarketAnalytics> = {
 
 export function GlobalMapView({
   holdings,
+  fxRates,
   requestedCountry,
 }: {
   holdings: Holding[];
+  fxRates: Record<string, number>;
   requestedCountry: string | null;
 }) {
   const requestedMarket = marketCountries.find((item) =>
@@ -580,7 +582,7 @@ export function GlobalMapView({
   const previewShape = previewCountry
     ? worldCountries.find((country) => country.name === previewCountry.atlasName)
     : null;
-  const portfolioTotal = totalValueNok(holdings);
+  const portfolioTotal = totalValueNok(holdings, fxRates);
 
   const [viewWidth, viewHeight] = mapViewSize(zoom);
   const viewX = Math.max(0, Math.min(900 - viewWidth, center[0] - viewWidth / 2));
@@ -745,7 +747,7 @@ export function GlobalMapView({
     : [];
   const activeExposure = selectedCountry && portfolioTotal
     ? holdings.filter((holding) => holding.country === selectedCountry.name)
-      .reduce((sum, holding) => sum + holdingValueNok(holding), 0) / portfolioTotal * 100
+      .reduce((sum, holding) => sum + holdingValueNok(holding, fxRates), 0) / portfolioTotal * 100
     : 0;
   const selectedResearch = selectedCountry ? marketResearch[selectedCountry.id] : null;
   const selectedAnalytics = selectedCountry ? marketAnalytics[selectedCountry.id] : null;

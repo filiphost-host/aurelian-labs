@@ -66,6 +66,7 @@ const darkTooltip = {
 
 export function ScenarioView({
   holdings,
+  fxRates,
   displayCurrency,
   scenario,
   setScenario,
@@ -76,6 +77,7 @@ export function ScenarioView({
   onDeleteScenario,
 }: {
   holdings: Holding[];
+  fxRates: Record<string, number>;
   displayCurrency: DisplayCurrency;
   scenario: Scenario;
   setScenario: (scenario: Scenario) => void;
@@ -93,11 +95,11 @@ export function ScenarioView({
     scenarioGuides[activePresetId]?.category ?? "Macro",
   );
   const rows = useMemo(
-    () => holdings.map((holding) => scenarioImpact(holding, scenario))
+    () => holdings.map((holding) => scenarioImpact(holding, scenario, fxRates))
       .sort((a, b) => Math.abs(b.impactNok) - Math.abs(a.impactNok)),
-    [holdings, scenario],
+    [fxRates, holdings, scenario],
   );
-  const total = totalValueNok(holdings);
+  const total = totalValueNok(holdings, fxRates);
   const impact = rows.reduce((sum, row) => sum + row.impactNok, 0);
   const impactPercent = total ? (impact / total) * 100 : 0;
   const currencies = [...new Set(rows.filter((row) => row.impactNok !== 0).map((row) => row.holding.currency))];
@@ -114,8 +116,8 @@ export function ScenarioView({
   const resultSummary = !materialImpact
     ? "This test has almost no effect with the exposures currently stored in your portfolio."
     : impact < 0
-      ? `Under these assumptions, the portfolio falls from ${formatMoney(total, displayCurrency)} to ${formatMoney(total + impact, displayCurrency)}.`
-      : `Under these assumptions, the portfolio rises from ${formatMoney(total, displayCurrency)} to ${formatMoney(total + impact, displayCurrency)}.`;
+      ? `Under these assumptions, the portfolio falls from ${formatMoney(total, displayCurrency, fxRates)} to ${formatMoney(total + impact, displayCurrency, fxRates)}.`
+      : `Under these assumptions, the portfolio rises from ${formatMoney(total, displayCurrency, fxRates)} to ${formatMoney(total + impact, displayCurrency, fxRates)}.`;
   const beforeAfter = [
     { name: "Current", value: total },
     { name: "Scenario", value: total + impact },
@@ -131,7 +133,7 @@ export function ScenarioView({
 
   function shareContent(options: ShareOptions) {
     return {
-      summary: `${scenarioPresets.find((item) => item.id === activePresetId)?.name ?? "Custom scenario"} estimates ${formatMoney(impact, displayCurrency)} (${formatPercent(impactPercent)}) of portfolio impact.`,
+      summary: `${scenarioPresets.find((item) => item.id === activePresetId)?.name ?? "Custom scenario"} estimates ${formatMoney(impact, displayCurrency, fxRates)} (${formatPercent(impactPercent)}) of portfolio impact.`,
       scenario,
       assumptions: "Linear factor estimate. Interest-rate and credit shocks are expressed in basis points.",
       contributors: options.includeHoldings
@@ -276,18 +278,18 @@ export function ScenarioView({
         <section className="scenario-result-band">
           <article>
             <span>Estimated change</span>
-            <strong className={impact >= 0 ? "good" : "bad"}>{formatMoney(impact, displayCurrency)}</strong>
+            <strong className={impact >= 0 ? "good" : "bad"}>{formatMoney(impact, displayCurrency, fxRates)}</strong>
             <em>{formatPercent(impactPercent)} of current value</em>
           </article>
           <article>
             <span>Estimated value after shock</span>
-            <strong>{formatMoney(total + impact, displayCurrency)}</strong>
-            <em>Currently {formatMoney(total, displayCurrency)}</em>
+            <strong>{formatMoney(total + impact, displayCurrency, fxRates)}</strong>
+            <em>Currently {formatMoney(total, displayCurrency, fxRates)}</em>
           </article>
           <article>
             <span>Main source of impact</span>
             <strong>{topContributor?.holding.ticker ?? topContributor?.holding.name ?? "None"}</strong>
-            <em>{topContributor ? formatMoney(topContributor.impactNok, displayCurrency) : "No active exposure"}</em>
+            <em>{topContributor ? formatMoney(topContributor.impactNok, displayCurrency, fxRates) : "No active exposure"}</em>
           </article>
         </section>
 
@@ -367,7 +369,7 @@ export function ScenarioView({
               <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" horizontal={false} />
               <XAxis type="number" tick={{ fill: "#7f7a7d", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
               <YAxis dataKey="name" type="category" width={70} tick={{ fill: "#d7d3d1", fontSize: 10 }} />
-              <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
+              <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency, fxRates)} />
               <Bar dataKey="impact" radius={3}>
                 {rows.map((row) => <Cell key={row.holding.id} fill={row.impactNok >= 0 ? "#4f9d78" : "#b65f69"} />)}
                 <LabelList
@@ -389,7 +391,7 @@ export function ScenarioView({
               <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" vertical={false} />
               <XAxis dataKey="name" tick={{ fill: "#d7d3d1", fontSize: 10 }} />
               <YAxis tick={{ fill: "#7f7a7d", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
-              <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
+              <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency, fxRates)} />
               <Bar dataKey="value" radius={[3, 3, 0, 0]}>
                 <Cell fill="#767276" /><Cell fill={impact >= 0 ? "#4f9d78" : "#b65f69"} />
               </Bar>
@@ -409,9 +411,9 @@ export function ScenarioView({
                 {rows.map((row) => (
                   <tr key={row.holding.id}>
                     <td><strong>{row.holding.name}</strong><span>{formatPercent(row.impactPercent)}</span></td>
-                    <td>{formatMoney(row.value, displayCurrency)}</td>
-                    <td className={row.impactNok >= 0 ? "good" : "bad"}>{formatMoney(row.impactNok, displayCurrency)}</td>
-                    <td>{formatMoney(row.postValue, displayCurrency)}</td>
+                    <td>{formatMoney(row.value, displayCurrency, fxRates)}</td>
+                    <td className={row.impactNok >= 0 ? "good" : "bad"}>{formatMoney(row.impactNok, displayCurrency, fxRates)}</td>
+                    <td>{formatMoney(row.postValue, displayCurrency, fxRates)}</td>
                     <td>{row.assumptions.length ? row.assumptions.join(" · ") : "No active factor exposure"}</td>
                   </tr>
                 ))}
@@ -430,11 +432,11 @@ export function ScenarioView({
           {savedScenarios.length ? (
             <div className="saved-scenario-list">
               {savedScenarios.map((saved) => {
-                const savedImpact = holdings.reduce((sum, holding) => sum + scenarioImpact(holding, saved.shocks).impactNok, 0);
+                const savedImpact = holdings.reduce((sum, holding) => sum + scenarioImpact(holding, saved.shocks, fxRates).impactNok, 0);
                 return (
                   <article key={saved.id}>
                     <div><strong>{saved.name}</strong><span>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(saved.created_at))}</span></div>
-                    <strong className={savedImpact >= 0 ? "good" : "bad"}>{formatMoney(savedImpact, displayCurrency)}</strong>
+                    <strong className={savedImpact >= 0 ? "good" : "bad"}>{formatMoney(savedImpact, displayCurrency, fxRates)}</strong>
                     <button className="icon-button" title="Load a copy" onClick={() => {
                       setScenario({ ...saved.shocks });
                       setActivePresetId("custom");

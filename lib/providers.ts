@@ -1,6 +1,7 @@
 import "server-only";
 
-import { marketDataSymbol } from "@/lib/market-symbols";
+import { type CallBudget, parseEodhdClose, parseYahooCloses } from "@/lib/market-data";
+import { eodhdSymbol, marketDataSymbol } from "@/lib/market-symbols";
 import type { MarketQuote } from "@/lib/types";
 
 export type InstrumentSearchResult = {
@@ -15,12 +16,20 @@ export type InstrumentSearchResult = {
   source: "OpenFIGI" | "Twelve Data";
 };
 
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> {
+// `fresh` bypasses the Next.js data cache. The daily cron must never be served a
+// cached payload: its revalidation window is as long as its own period, so a
+// cache hit would persist yesterday's close as today's.
+type FetchOptions = RequestInit & { fresh?: boolean };
+
+async function fetchJson<T>(url: string, init?: FetchOptions): Promise<T | null> {
+  const { fresh, ...requestInit } = init ?? {};
   try {
     const response = await fetch(url, {
-      ...init,
+      ...requestInit,
       signal: AbortSignal.timeout(8_000),
-      next: init?.next ?? { revalidate: 86_400 },
+      ...(fresh
+        ? { cache: "no-store" as const }
+        : { next: requestInit.next ?? { revalidate: 86_400 } }),
     });
     if (!response.ok) return null;
     return await response.json() as T;
@@ -145,19 +154,60 @@ export async function searchInstruments(query: string) {
   }).slice(0, 12);
 }
 
-export async function fetchDailyClose(symbol: string) {
+async function fetchTwelveDataClose(symbol: string, exchange?: string | null) {
   if (!process.env.TWELVE_DATA_API_KEY) return null;
   const response = await fetchJson<{ close?: string; datetime?: string; status?: string }>(
-    `https://api.twelvedata.com/eod?symbol=${encodeURIComponent(symbol)}`,
-    { headers: { Authorization: `apikey ${process.env.TWELVE_DATA_API_KEY}` } },
+    `https://api.twelvedata.com/eod?symbol=${encodeURIComponent(symbol)}${exchange ? `&exchange=${encodeURIComponent(exchange)}` : ""}`,
+    { headers: { Authorization: `apikey ${process.env.TWELVE_DATA_API_KEY}` }, fresh: true },
   );
-  if (!response?.close) return null;
+  if (!response?.close || response.status === "error") return null;
+  const close = Number(response.close);
+  if (!Number.isFinite(close) || close <= 0) return null;
   return {
-    close: Number(response.close),
+    close,
     asOf: response.datetime ?? new Date().toISOString().slice(0, 10),
     source: "Twelve Data",
     status: "delayed" as const,
   };
+}
+
+async function fetchEodhdClose(symbol: string, exchange?: string | null) {
+  if (!process.env.EODHD_API_KEY) return null;
+  const providerSymbol = eodhdSymbol(symbol, exchange);
+  if (!providerSymbol) return null;
+  const payload = await fetchJson<unknown>(
+    `https://eodhd.com/api/eod/${encodeURIComponent(providerSymbol)}?api_token=${process.env.EODHD_API_KEY}&fmt=json&order=d&limit=1`,
+    { fresh: true },
+  );
+  const parsed = parseEodhdClose(payload);
+  if (!parsed) return null;
+  return { close: parsed.close, asOf: parsed.date, source: "EODHD", status: "delayed" as const };
+}
+
+export async function fetchYahooDailyCloses(
+  symbol: string,
+  exchange?: string | null,
+  range: "5d" | "10y" = "5d",
+) {
+  const providerSymbol = marketDataSymbol(symbol, exchange);
+  const payload = await fetchJson<unknown>(
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(providerSymbol)}?interval=1d&range=${range}`,
+    { headers: { "User-Agent": "Aurelian-Labs/1.0" }, fresh: true },
+  );
+  return parseYahooCloses(payload);
+}
+
+async function fetchYahooClose(symbol: string, exchange?: string | null) {
+  const closes = await fetchYahooDailyCloses(symbol, exchange, "5d");
+  const last = closes.at(-1);
+  if (!last) return null;
+  return { close: last.close, asOf: last.date, source: "Yahoo Finance", status: "delayed" as const };
+}
+
+export async function fetchDailyClose(symbol: string, exchange?: string | null) {
+  return await fetchTwelveDataClose(symbol, exchange) ??
+    await fetchEodhdClose(symbol, exchange) ??
+    await fetchYahooClose(symbol, exchange);
 }
 
 type QuoteRequest = {
@@ -254,14 +304,20 @@ async function fetchYahooChartQuote(instrument: QuoteRequest): Promise<MarketQuo
   };
 }
 
-export async function fetchLatestQuote(instrument: QuoteRequest) {
-  return await fetchTwelveDataQuote(instrument) ?? await fetchYahooChartQuote(instrument);
+export async function fetchLatestQuote(
+  instrument: QuoteRequest,
+  options?: { twelveDataBudget?: CallBudget },
+) {
+  const twelveData = options?.twelveDataBudget === undefined || options.twelveDataBudget.take()
+    ? await fetchTwelveDataQuote(instrument)
+    : null;
+  return twelveData ?? await fetchYahooChartQuote(instrument);
 }
 
 export async function fetchEcbFxToNok() {
   const response = await fetch(
     "https://data-api.ecb.europa.eu/service/data/EXR/D.NOK+USD.EUR.SP00.A?lastNObservations=1&format=csvdata",
-    { signal: AbortSignal.timeout(8_000), next: { revalidate: 86_400 } },
+    { signal: AbortSignal.timeout(8_000), cache: "no-store" },
   ).catch(() => null);
   if (!response?.ok) return null;
   const rows = (await response.text()).trim().split("\n");

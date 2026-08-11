@@ -30,3 +30,43 @@ export function marketDataSymbol(symbol: string, exchange?: string | null) {
   const suffix = exchange ? exchangeSuffixes[exchange.trim().toUpperCase()] : undefined;
   return suffix ? `${normalizedSymbol}${suffix}` : normalizedSymbol;
 }
+
+const eodhdExchangeCodes: Record<string, string> = {
+  XETRA: "XETRA",
+  XTRA: "XETRA",
+  FRANKFURT: "F",
+  LONDON: "LSE",
+  LSE: "LSE",
+  OSLO: "OL",
+  OSL: "OL",
+  STOCKHOLM: "ST",
+  COPENHAGEN: "CO",
+  HELSINKI: "HE",
+  EURONEXT: "AS",
+};
+
+const yahooToEodhdSuffix: Record<string, string> = {
+  DE: "XETRA",
+  F: "F",
+  L: "LSE",
+  OL: "OL",
+  ST: "ST",
+  CO: "CO",
+  HE: "HE",
+  AS: "AS",
+  PA: "PA",
+};
+
+export function eodhdSymbol(symbol: string, exchange?: string | null) {
+  const normalized = symbol.trim().toUpperCase();
+  if (!normalized || normalized.startsWith("^")) return null;
+  const dotIndex = normalized.lastIndexOf(".");
+  if (dotIndex > 0) {
+    const base = normalized.slice(0, dotIndex);
+    const suffix = normalized.slice(dotIndex + 1);
+    const mapped = yahooToEodhdSuffix[suffix];
+    return mapped ? `${base}.${mapped}` : normalized;
+  }
+  const code = exchange ? eodhdExchangeCodes[exchange.trim().toUpperCase()] : undefined;
+  return `${normalized}.${code ?? "US"}`;
+}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createCallBudget } from "@/lib/market-data";
 import { majorMarketInstruments } from "@/lib/market-symbols";
 import { fetchLatestQuote } from "@/lib/providers";
 
@@ -24,8 +25,13 @@ export async function POST(request: Request) {
       currency: typeof item.currency === "string" ? item.currency.slice(0, 8) : null,
     }];
   });
-  const requests = [...majorMarketInstruments, ...holdings];
-  const quotes = (await Promise.all(requests.map((instrument) => fetchLatestQuote(instrument)))).filter(Boolean);
+  // Holdings come first so the owner's own positions get the metered Twelve Data
+  // calls; indices fall through to the delayed public feed once the budget is spent.
+  const requests = [...holdings, ...majorMarketInstruments];
+  const twelveDataBudget = createCallBudget(8);
+  const quotes = (await Promise.all(
+    requests.map((instrument) => fetchLatestQuote(instrument, { twelveDataBudget })),
+  )).filter(Boolean);
   return NextResponse.json({
     quotes,
     provider: process.env.TWELVE_DATA_API_KEY ? "Twelve Data with delayed fallback" : "Delayed public market feed",

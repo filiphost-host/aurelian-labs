@@ -52,4 +52,26 @@ describe("daily brief", () => {
       redactHoldingIdentities("MSFT and Microsoft are both mentioned.", sampleHoldings),
     ).toBe("Holding 1 and Holding 1 are both mentioned.");
   });
+
+  it("values the brief with the provided FX rates instead of built-in estimates", () => {
+    const marketPricedUsdHolding = {
+      ...sampleHoldings[0],
+      id: "fx-test-holding",
+      manual_value_nok: null,
+      currency: "USD",
+      quantity: 10,
+      market_price: 100,
+    };
+    const build = (fxRates?: Record<string, number>) => buildDailyBrief({
+      holdings: [marketPricedUsdHolding],
+      transactions: [],
+      decisions: [],
+      events: [],
+      snapshots: sampleSnapshots,
+      asOf: "2026-07-30",
+      fxRates,
+    });
+    const inflated = build({ NOK: 1, USD: 20, EUR: 20, SEK: 2, DKK: 3, GBP: 25, CHF: 24 });
+    expect(inflated.summary).not.toBe(build(undefined).summary);
+  });
 });

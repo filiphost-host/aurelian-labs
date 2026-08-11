@@ -79,16 +79,24 @@ export function holdingValueNok(holding: Holding, rates: Record<string, number> 
   return holding.quantity * holding.market_price * fx;
 }
 
-export function displayValue(valueNok: number, currency: DisplayCurrency) {
-  return currency === "NOK" ? valueNok : valueNok / fallbackFxToNok.EUR;
+export function displayValue(
+  valueNok: number,
+  currency: DisplayCurrency,
+  rates: Record<string, number> = fallbackFxToNok,
+) {
+  return currency === "NOK" ? valueNok : valueNok / (rates.EUR || fallbackFxToNok.EUR);
 }
 
-export function formatMoney(valueNok: number, currency: DisplayCurrency = "NOK") {
+export function formatMoney(
+  valueNok: number,
+  currency: DisplayCurrency = "NOK",
+  rates: Record<string, number> = fallbackFxToNok,
+) {
   return new Intl.NumberFormat("nb-NO", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
-  }).format(displayValue(valueNok, currency));
+  }).format(displayValue(valueNok, currency, rates));
 }
 
 export function formatPercent(value: number, digits = 1) {
@@ -101,20 +109,21 @@ export function formatShock(key: FactorKey, value: number) {
   return `${sign}${value}${unit === "bps" ? " bps" : "%"}`;
 }
 
-export function totalValueNok(holdings: Holding[]) {
-  return holdings.reduce((sum, holding) => sum + holdingValueNok(holding), 0);
+export function totalValueNok(holdings: Holding[], rates: Record<string, number> = fallbackFxToNok) {
+  return holdings.reduce((sum, holding) => sum + holdingValueNok(holding, rates), 0);
 }
 
 export function allocationBy(
   holdings: Holding[],
   key: "asset_type" | "region" | "sector" | "currency",
+  rates: Record<string, number> = fallbackFxToNok,
 ) {
-  const total = totalValueNok(holdings) || 1;
+  const total = totalValueNok(holdings, rates) || 1;
   const groups = new Map<string, number>();
 
   holdings.forEach((holding) => {
     const label = key === "asset_type" ? assetLabel(holding.asset_type) : holding[key] || "Unclassified";
-    groups.set(label, (groups.get(label) ?? 0) + holdingValueNok(holding));
+    groups.set(label, (groups.get(label) ?? 0) + holdingValueNok(holding, rates));
   });
 
   return Array.from(groups.entries())
@@ -131,7 +140,11 @@ export function assetLabel(assetType: Holding["asset_type"]) {
   }[assetType];
 }
 
-export function replayTransactions(holdings: Holding[], transactions: Transaction[]): LedgerPosition[] {
+export function replayTransactions(
+  holdings: Holding[],
+  transactions: Transaction[],
+  rates: Record<string, number> = fallbackFxToNok,
+): LedgerPosition[] {
   const holdingById = new Map(holdings.map((holding) => [holding.id, holding]));
   const state = new Map<string, { quantity: number; averageCost: number; realizedGainNok: number }>();
   const ordered = [...transactions].sort((a, b) => a.occurred_at.localeCompare(b.occurred_at));
@@ -175,7 +188,7 @@ export function replayTransactions(holdings: Holding[], transactions: Transactio
     const ledger = state.get(holding.id);
     const quantity = ledger?.quantity ?? holding.quantity;
     const averageCost = ledger?.averageCost ?? holding.average_cost;
-    const fx = fxRate(holding.currency) || 1;
+    const fx = fxRate(holding.currency, rates) || 1;
     const marketValueNok = holding.manual_value_nok ??
       (holding.market_price === null ? 0 : quantity * holding.market_price * fx);
     const costNok = quantity * averageCost * fx;
@@ -252,8 +265,9 @@ export function portfolioSummary(
   holdings: Holding[],
   transactions: Transaction[] = [],
   snapshots: PortfolioSnapshot[] = [],
+  rates: Record<string, number> = fallbackFxToNok,
 ) {
-  const positions = replayTransactions(holdings, transactions);
+  const positions = replayTransactions(holdings, transactions, rates);
   const total = positions.reduce((sum, position) => sum + position.marketValueNok, 0);
   const cost = positions.reduce((sum, position) => sum + position.costNok, 0);
   const unrealizedGain = positions.reduce((sum, position) => sum + position.unrealizedGainNok, 0);
@@ -274,8 +288,12 @@ export function portfolioSummary(
   };
 }
 
-export function scenarioImpact(holding: Holding, scenario: Scenario) {
-  const value = holdingValueNok(holding);
+export function scenarioImpact(
+  holding: Holding,
+  scenario: Scenario,
+  rates: Record<string, number> = fallbackFxToNok,
+) {
+  const value = holdingValueNok(holding, rates);
   const assumptions: string[] = [];
   let impactPercent = 0;
 
@@ -310,13 +328,17 @@ export function scenarioImpact(holding: Holding, scenario: Scenario) {
   };
 }
 
-export function targetRows(holdings: Holding[], targets: AllocationTarget[]) {
+export function targetRows(
+  holdings: Holding[],
+  targets: AllocationTarget[],
+  rates: Record<string, number> = fallbackFxToNok,
+) {
   const sources = {
-    asset_type: allocationBy(holdings, "asset_type"),
-    region: allocationBy(holdings, "region"),
-    sector: allocationBy(holdings, "sector"),
-    currency: allocationBy(holdings, "currency"),
-    cash: allocationBy(holdings, "asset_type").filter((row) => row.name === "Cash"),
+    asset_type: allocationBy(holdings, "asset_type", rates),
+    region: allocationBy(holdings, "region", rates),
+    sector: allocationBy(holdings, "sector", rates),
+    currency: allocationBy(holdings, "currency", rates),
+    cash: allocationBy(holdings, "asset_type", rates).filter((row) => row.name === "Cash"),
   };
 
   return targets.map((target) => {

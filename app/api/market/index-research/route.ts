@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { parseYahooCloses } from "@/lib/market-data";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 
@@ -139,19 +141,8 @@ async function fetchHistoryMetric(symbol: string): Promise<HistoryMetric> {
     },
   ).catch(() => null);
   if (!response?.ok) return { growthPercent: null, sharpeRatio: null, asOf: null };
-  const payload = await response.json().catch(() => null) as {
-    chart?: { result?: Array<{ timestamp?: number[]; indicators?: { quote?: Array<{ close?: Array<number | null> }> } }> };
-  } | null;
-  const result = payload?.chart?.result?.[0];
-  const timestamps = result?.timestamp ?? [];
-  const values = result?.indicators?.quote?.[0]?.close ?? [];
-  const closes = values.flatMap((close, index) => {
-    const timestamp = timestamps[index];
-    return typeof close === "number" && Number.isFinite(close) && timestamp
-      ? [{ date: new Date(timestamp * 1000).toISOString().slice(0, 10), close }]
-      : [];
-  });
-  return metricFromCloses(closes);
+  const payload = await response.json().catch(() => null);
+  return metricFromCloses(parseYahooCloses(payload));
 }
 
 function latestSecValue(facts: Record<string, { units?: { USD?: Array<{ val?: number; filed?: string }> } }> | undefined, tags: string[]) {
@@ -166,9 +157,42 @@ function latestSecValue(facts: Record<string, { units?: { USD?: Array<{ val?: nu
   return null;
 }
 
+const SEC_CACHE_TTL_MS = 86_400_000;
+
+async function readStoredSecDebt(cik: string) {
+  const admin = createAdminClient();
+  if (!admin) return null;
+  const { data } = await admin
+    .from("sec_metric_cache")
+    .select("value,expires_at")
+    .eq("cik", cik)
+    .eq("metric", "debt_to_equity")
+    .maybeSingle();
+  const expiresAt = data ? new Date(data.expires_at).getTime() : 0;
+  if (!data || expiresAt <= Date.now()) return null;
+  return { value: data.value === null ? null : Number(data.value), expiresAt };
+}
+
+async function storeSecDebt(cik: string, value: number | null, expiresAt: number) {
+  const admin = createAdminClient();
+  if (!admin) return;
+  await admin.from("sec_metric_cache").upsert({
+    cik,
+    metric: "debt_to_equity",
+    value,
+    computed_at: new Date().toISOString(),
+    expires_at: new Date(expiresAt).toISOString(),
+  }, { onConflict: "cik,metric" });
+}
+
 async function fetchSecDebtToEquity(cik: string) {
   const cached = secDebtCache.get(cik);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
+  const stored = await readStoredSecDebt(cik);
+  if (stored) {
+    secDebtCache.set(cik, { value: stored.value, expiresAt: stored.expiresAt });
+    return stored.value;
+  }
   const response = await fetch(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`, {
     headers: { "User-Agent": process.env.SEC_USER_AGENT ?? "Aurelian Labs https://aurelian-labs.vercel.app" },
     signal: AbortSignal.timeout(8_000),
@@ -193,7 +217,9 @@ async function fetchSecDebtToEquity(cik: string) {
   const value = !debtParts.length || equity === null || equity <= 0
     ? null
     : debtParts.reduce((sum, item) => sum + item, 0) / equity * 100;
-  secDebtCache.set(cik, { value, expiresAt: Date.now() + 86_400_000 });
+  const expiresAt = Date.now() + SEC_CACHE_TTL_MS;
+  secDebtCache.set(cik, { value, expiresAt });
+  await storeSecDebt(cik, value, expiresAt);
   return value;
 }
 
@@ -232,8 +258,10 @@ async function fetchDebtToEquity(company: Constituent) {
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as { indexId?: unknown } | null;
   const indexId = typeof body?.indexId === "string" ? body.indexId : "";
+  if (!Object.hasOwn(trackedIndices, indexId)) {
+    return NextResponse.json({ error: "Unsupported index" }, { status: 404 });
+  }
   const index = trackedIndices[indexId];
-  if (!index) return NextResponse.json({ error: "Unsupported index" }, { status: 404 });
 
   const [benchmark, ...companies] = await Promise.all([
     fetchHistoryMetric(index.symbol),

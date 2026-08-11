@@ -1,4 +1,4 @@
-import { allocationBy, formatMoney, holdingValueNok, portfolioSummary } from "@/lib/calculations";
+import { allocationBy, fallbackFxToNok, formatMoney, holdingValueNok, portfolioSummary } from "@/lib/calculations";
 import type {
   DailyBrief,
   Holding,
@@ -24,12 +24,14 @@ export function buildDailyBrief(input: {
   snapshots: PortfolioSnapshot[];
   asOf?: string;
   generatedAt?: string;
+  fxRates?: Record<string, number>;
 }): DailyBrief {
   const asOf = input.asOf ?? new Date().toISOString().slice(0, 10);
-  const summary = portfolioSummary(input.holdings, input.transactions, input.snapshots);
+  const rates = input.fxRates ?? fallbackFxToNok;
+  const summary = portfolioSummary(input.holdings, input.transactions, input.snapshots, rates);
   const insights: Insight[] = [];
   const values = input.holdings
-    .map((holding) => ({ holding, value: holdingValueNok(holding) }))
+    .map((holding) => ({ holding, value: holdingValueNok(holding, rates) }))
     .sort((a, b) => b.value - a.value);
   const top = values[0];
   const topWeight = top && summary.total ? (top.value / summary.total) * 100 : 0;
@@ -68,7 +70,7 @@ export function buildDailyBrief(input: {
     }));
   }
 
-  const currency = allocationBy(input.holdings, "currency");
+  const currency = allocationBy(input.holdings, "currency", rates);
   const foreign = currency.filter((row) => row.name !== "NOK");
   if (foreign.length) {
     const foreignWeight = foreign.reduce((sum, row) => sum + row.percent, 0);
@@ -153,6 +155,7 @@ export function buildChatGptPacket(
   brief: DailyBrief,
   holdings: Holding[],
   options: { includeHoldings: boolean; includeValues: boolean; includeCommentary: boolean },
+  rates: Record<string, number> = fallbackFxToNok,
 ) {
   const packetInsights = options.includeHoldings
     ? brief.insights
@@ -170,7 +173,7 @@ export function buildChatGptPacket(
         ticker: holding.ticker,
         assetType: holding.asset_type,
         currency: holding.currency,
-        valueNok: options.includeValues ? holdingValueNok(holding) : undefined,
+        valueNok: options.includeValues ? holdingValueNok(holding, rates) : undefined,
         note: options.includeCommentary ? holding.account_note : undefined,
         dataAsOf: holding.price_provenance.as_of,
         dataStatus: holding.price_provenance.status,

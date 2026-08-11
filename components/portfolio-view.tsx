@@ -45,7 +45,7 @@ import type {
 import type { RemoteInstrument } from "@/components/search-command";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { InvestorPlaybooks } from "@/components/investor-playbooks";
-import { buildBenchmarkSeries, portfolioMilestones } from "@/lib/portfolio-story";
+import { buildBenchmarkComparison, portfolioMilestones, type BenchmarkPricePoint } from "@/lib/portfolio-story";
 
 const chartColors = ["#f0edeb", "#4f9d78", "#b36570", "#6f777c", "#c5a45b", "#587f78"];
 const darkTooltip = {
@@ -100,6 +100,8 @@ export function PortfolioView({
   transactions,
   decisions,
   snapshots,
+  fxRates,
+  benchmarkPrices,
   displayCurrency,
   focusedHoldingId,
   instrumentSeed,
@@ -115,6 +117,8 @@ export function PortfolioView({
   transactions: Transaction[];
   decisions: HoldingDecision[];
   snapshots: PortfolioSnapshot[];
+  fxRates: Record<string, number>;
+  benchmarkPrices: BenchmarkPricePoint[];
   displayCurrency: DisplayCurrency;
   focusedHoldingId: string | null;
   instrumentSeed: RemoteInstrument | null;
@@ -127,18 +131,21 @@ export function PortfolioView({
   onOpenResearch: (ticker: string | null | undefined) => void;
 }) {
   const summary = useMemo(
-    () => portfolioSummary(holdings, transactions, snapshots),
-    [holdings, snapshots, transactions],
+    () => portfolioSummary(holdings, transactions, snapshots, fxRates),
+    [fxRates, holdings, snapshots, transactions],
   );
   const effectiveHoldings = summary.positions.map((position) => position.holding);
-  const assetAllocation = allocationBy(effectiveHoldings, "asset_type");
-  const regionAllocation = allocationBy(effectiveHoldings, "region");
-  const sectorAllocation = allocationBy(effectiveHoldings, "sector").slice(0, 8);
+  const assetAllocation = allocationBy(effectiveHoldings, "asset_type", fxRates);
+  const regionAllocation = allocationBy(effectiveHoldings, "region", fxRates);
+  const sectorAllocation = allocationBy(effectiveHoldings, "sector", fxRates).slice(0, 8);
   const [holdingEditor, setHoldingEditor] = useState<{ holding?: Holding; seed?: RemoteInstrument } | null>(null);
   const [transactionOpen, setTransactionOpen] = useState(false);
   const [decisionHolding, setDecisionHolding] = useState<Holding | null>(null);
   const [openMilestoneId, setOpenMilestoneId] = useState<string | null>("google-entry");
-  const benchmarkSeries = useMemo(() => buildBenchmarkSeries(snapshots), [snapshots]);
+  const comparison = useMemo(
+    () => buildBenchmarkComparison(snapshots, benchmarkPrices),
+    [benchmarkPrices, snapshots],
+  );
 
   const activeHoldingEditor = holdingEditor ?? (instrumentSeed ? { seed: instrumentSeed } : null);
 
@@ -146,7 +153,7 @@ export function PortfolioView({
     <>
       <div className="portfolio-layout portfolio-workbench">
         <section className="metric-grid portfolio-metrics">
-          <Metric label="Portfolio value" value={formatMoney(summary.total, displayCurrency)} />
+          <Metric label="Portfolio value" value={formatMoney(summary.total, displayCurrency, fxRates)} />
           <Metric
             label="Total return"
             value={formatPercent(summary.gainPercent)}
@@ -155,7 +162,7 @@ export function PortfolioView({
           />
           <Metric
             label="Unrealized gain"
-            value={formatMoney(summary.unrealizedGain, displayCurrency)}
+            value={formatMoney(summary.unrealizedGain, displayCurrency, fxRates)}
             tone={summary.unrealizedGain >= 0 ? "good" : "bad"}
           />
           <Metric
@@ -173,11 +180,13 @@ export function PortfolioView({
             </div>
             <div className="history-status">
               <span>Portfolio</span>
-              <span className="benchmark-key">S&amp;P 500 reference</span>
+              <span className="benchmark-key">
+                {comparison.benchmarkSource === "stored" ? "S&P 500 (stored closes)" : "S&P 500 reference"}
+              </span>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={320}>
-            <AreaChart data={benchmarkSeries}>
+            <AreaChart data={comparison.series}>
               <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" vertical={false} />
               <XAxis dataKey="date" tick={{ fill: "#7f7a7d", fontSize: 11 }} tickFormatter={(value) => String(value).slice(0, 4)} />
               <YAxis
@@ -209,7 +218,9 @@ export function PortfolioView({
             </AreaChart>
           </ResponsiveContainer>
           <p className="panel-note">
-            Portfolio points are legacy estimates. The S&amp;P 500 line is an indexed reference path, not a live total-return series; replace it with provider data before drawing performance conclusions.
+            {comparison.benchmarkSource === "stored"
+              ? `The S&P 500 line is computed from stored daily closes (Yahoo Finance, delayed), indexed to the portfolio where their histories first overlap${comparison.rebasedAt ? ` (${comparison.rebasedAt})` : ""}. Latest close ${comparison.benchmarkAsOf ?? "unknown"}. Price return, not total return: dividends are excluded.`
+              : "Portfolio points are legacy estimates. The S&P 500 line is an indexed reference path, not a live total-return series; it is replaced automatically once stored benchmark closes exist."}
           </p>
         </section>
 
@@ -303,9 +314,9 @@ export function PortfolioView({
                           ? "Unavailable"
                           : `${holding.market_price.toLocaleString("nb-NO", { maximumFractionDigits: 2 })} ${holding.currency}`}
                       </td>
-                      <td><strong>{formatMoney(position.marketValueNok, displayCurrency)}</strong></td>
+                      <td><strong>{formatMoney(position.marketValueNok, displayCurrency, fxRates)}</strong></td>
                       <td className={position.unrealizedGainNok >= 0 ? "good" : "bad"}>
-                        {formatMoney(position.unrealizedGainNok, displayCurrency)}
+                        {formatMoney(position.unrealizedGainNok, displayCurrency, fxRates)}
                       </td>
                       <td>{holding.region || "Unclassified"}<span>{holding.sector || "No sector"}</span></td>
                       <td><ProvenanceBadge provenance={holding.price_provenance} compact /></td>
@@ -355,6 +366,7 @@ export function PortfolioView({
           transactions={transactions}
           holdings={holdings}
           displayCurrency={displayCurrency}
+          fxRates={fxRates}
           onAdd={() => setTransactionOpen(true)}
           onDelete={onDeleteTransaction}
         />
@@ -366,7 +378,11 @@ export function PortfolioView({
         />
 
         {effectiveHoldings.some((holding) => holding.asset_type === "bond") ? (
-          <BondPanel holdings={effectiveHoldings.filter((holding) => holding.asset_type === "bond")} displayCurrency={displayCurrency} />
+          <BondPanel
+            holdings={effectiveHoldings.filter((holding) => holding.asset_type === "bond")}
+            displayCurrency={displayCurrency}
+            fxRates={fxRates}
+          />
         ) : null}
       </div>
 
@@ -717,12 +733,14 @@ function TransactionLedger({
   transactions,
   holdings,
   displayCurrency,
+  fxRates,
   onAdd,
   onDelete,
 }: {
   transactions: Transaction[];
   holdings: Holding[];
   displayCurrency: DisplayCurrency;
+  fxRates: Record<string, number>;
   onAdd: () => void;
   onDelete: (id: string) => void;
 }) {
@@ -749,7 +767,7 @@ function TransactionLedger({
                   <td><strong>{transaction.type.replaceAll("_", " ")}</strong></td>
                   <td>{holding?.ticker ?? holding?.name ?? "Portfolio cash"}</td>
                   <td>{transaction.quantity ?? "—"}</td>
-                  <td>{formatMoney(rawAmount * transaction.fx_to_nok, displayCurrency)}</td>
+                  <td>{formatMoney(rawAmount * transaction.fx_to_nok, displayCurrency, fxRates)}</td>
                   <td>{transaction.fx_to_nok.toFixed(2)}</td>
                   <td>{transaction.note ?? "—"}</td>
                   <td><button className="icon-button danger" onClick={() => onDelete(transaction.id)} title="Delete transaction"><Trash2 size={14} /></button></td>
@@ -884,8 +902,16 @@ function DecisionEditor({
   );
 }
 
-function BondPanel({ holdings, displayCurrency }: { holdings: Holding[]; displayCurrency: DisplayCurrency }) {
-  const rows = replayTransactions(holdings, []);
+function BondPanel({
+  holdings,
+  displayCurrency,
+  fxRates,
+}: {
+  holdings: Holding[];
+  displayCurrency: DisplayCurrency;
+  fxRates: Record<string, number>;
+}) {
+  const rows = replayTransactions(holdings, [], fxRates);
   return (
     <section className="panel wide">
       <div className="panel-title-row">
@@ -896,7 +922,7 @@ function BondPanel({ holdings, displayCurrency }: { holdings: Holding[]; display
         {rows.map(({ holding, marketValueNok }) => (
           <article key={holding.id}>
             <strong>{holding.issuer || holding.name}</strong>
-            <span>{formatMoney(marketValueNok, displayCurrency)}</span>
+            <span>{formatMoney(marketValueNok, displayCurrency, fxRates)}</span>
             <dl>
               <div><dt>Coupon</dt><dd>{holding.coupon_rate ?? "—"}%</dd></div>
               <div><dt>Maturity</dt><dd>{holding.maturity_date ?? "—"}</dd></div>
