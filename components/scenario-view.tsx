@@ -50,11 +50,15 @@ import type {
   DisplayCurrency,
   FactorKey,
   Holding,
+  LedgerPosition,
   SavedScenario,
   Scenario,
   ShareOptions,
 } from "@/lib/types";
+import type { BenchmarkPricePoint } from "@/lib/portfolio-story";
 import { ShareDialog } from "@/components/share-dialog";
+import { TimeMachinePanel } from "@/components/time-machine-panel";
+import { ProjectionPanel } from "@/components/projection-panel";
 
 const factorKeys = Object.keys(factorLabels) as FactorKey[];
 const darkTooltip = {
@@ -66,6 +70,8 @@ const darkTooltip = {
 
 export function ScenarioView({
   holdings,
+  positions,
+  benchmarkPrices,
   fxRates,
   displayCurrency,
   scenario,
@@ -77,6 +83,8 @@ export function ScenarioView({
   onDeleteScenario,
 }: {
   holdings: Holding[];
+  positions: LedgerPosition[];
+  benchmarkPrices: BenchmarkPricePoint[];
   fxRates: Record<string, number>;
   displayCurrency: DisplayCurrency;
   scenario: Scenario;
@@ -164,6 +172,19 @@ export function ScenarioView({
             <button className="primary-button" onClick={() => setShareOpen(true)}><Link2 size={15} /> Share</button>
           </div>
         </section>
+
+        <TimeMachinePanel
+          positions={positions}
+          benchmarkPrices={benchmarkPrices}
+          displayCurrency={displayCurrency}
+          fxRates={fxRates}
+        />
+
+        <ProjectionPanel
+          startValueNok={positions.reduce((sum, position) => sum + Math.max(0, position.marketValueNok), 0)}
+          displayCurrency={displayCurrency}
+          fxRates={fxRates}
+        />
 
         <section className="scenario-how-to" aria-labelledby="scenario-how-title">
           <div className="scenario-how-heading">

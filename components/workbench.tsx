@@ -20,6 +20,7 @@ import {
   SearchCommand,
   type RemoteInstrument,
 } from "@/components/search-command";
+import { replayTransactions } from "@/lib/calculations";
 import { fallbackFxRates, latestFxRatesFromRows, type FxRateRow, type FxRates } from "@/lib/fx";
 import { buildDailyBrief } from "@/lib/insights";
 import type { BenchmarkPricePoint } from "@/lib/portfolio-story";
@@ -246,6 +247,11 @@ export function Workbench({
 
     loadWorkspace();
   }, [configured, supabase]);
+
+  const scenarioPositions = useMemo(
+    () => replayTransactions(holdings, transactions, fxRates.rates),
+    [fxRates, holdings, transactions],
+  );
 
   const calculatedBrief = useMemo(
     () => buildDailyBrief({
@@ -588,6 +594,8 @@ export function Workbench({
           {activeTab === "scenarios" ? (
             <ScenarioView
               holdings={holdings}
+              positions={scenarioPositions}
+              benchmarkPrices={benchmarkPrices}
               fxRates={fxRates.rates}
               displayCurrency={displayCurrency}
               scenario={scenario}
