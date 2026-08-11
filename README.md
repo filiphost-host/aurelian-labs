@@ -57,6 +57,37 @@ http://localhost:3000/auth/callback
 
 Public snapshot URLs contain random opaque tokens. Only token hashes are stored, snapshots expire by default after seven days, can be revoked immediately, and contain a frozen user-selected payload rather than live portfolio access.
 
+## Importing broker transactions
+
+The transaction ledger accepts a CSV or tab-separated export from any broker. The
+file is parsed in the browser and never uploaded; only the rows confirmed in the
+preview are written to the ledger.
+
+Columns are detected automatically from common Norwegian and English headers and
+can be remapped by hand. A row is listed instead of guessed when its date, type,
+numbers, or instrument cannot be read with certainty. That includes:
+
+- a buy or sell missing either a quantity or a unit price
+- a value such as `1.000`, which is either one thousand or one point zero, in a
+  file where no other cell reveals which separator marks decimals
+- a sale, dividend, fee, or cash flow in a foreign currency with no exchange-rate
+  column, because its value in NOK cannot be known from the file alone
+- a stock split, whose ratio has to be entered by hand
+
+Decimal separators and day-first or month-first dates are decided once per file
+from cells that settle the question, never cell by cell. Withholding tax is
+imported as a cost rather than as a dividend, and a negative deposit is read as a
+withdrawal.
+
+Every imported row stores an `import_fingerprint`, a canonical description of that
+row. A unique index makes re-importing the same file a no-op, so it is safe to add
+a missing holding and import the file again. Rows that resemble an existing manual
+entry start unticked and need a deliberate click.
+
+One consequence worth knowing: two genuinely identical trades — same instrument,
+day, quantity, price, and fee — describe themselves identically, so the second one
+arriving in a later file is treated as already imported. Record that one by hand.
+
 ## Data policy
 
 - SEC EDGAR, ECB, FRED, World Bank, OpenFIGI, and market-price sources are accessed through server adapters.

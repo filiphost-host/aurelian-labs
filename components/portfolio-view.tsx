@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   CircleDollarSign,
+  FileUp,
   FlaskConical,
   Pencil,
   Plus,
@@ -42,6 +43,7 @@ import type {
   Transaction,
   TransactionType,
 } from "@/lib/types";
+import { CsvImportDialog } from "@/components/csv-import-dialog";
 import type { RemoteInstrument } from "@/components/search-command";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { InvestorPlaybooks } from "@/components/investor-playbooks";
@@ -110,6 +112,7 @@ export function PortfolioView({
   onDeleteHolding,
   onSaveTransaction,
   onDeleteTransaction,
+  onImportTransactions,
   onSaveDecision,
   onOpenResearch,
 }: {
@@ -127,6 +130,7 @@ export function PortfolioView({
   onDeleteHolding: (holdingId: string) => void;
   onSaveTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (transactionId: string) => void;
+  onImportTransactions: (transactions: Transaction[]) => void;
   onSaveDecision: (decision: HoldingDecision) => void;
   onOpenResearch: (ticker: string | null | undefined) => void;
 }) {
@@ -140,6 +144,7 @@ export function PortfolioView({
   const sectorAllocation = allocationBy(effectiveHoldings, "sector", fxRates).slice(0, 8);
   const [holdingEditor, setHoldingEditor] = useState<{ holding?: Holding; seed?: RemoteInstrument } | null>(null);
   const [transactionOpen, setTransactionOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [decisionHolding, setDecisionHolding] = useState<Holding | null>(null);
   const [openMilestoneId, setOpenMilestoneId] = useState<string | null>("google-entry");
   const comparison = useMemo(
@@ -368,6 +373,7 @@ export function PortfolioView({
           displayCurrency={displayCurrency}
           fxRates={fxRates}
           onAdd={() => setTransactionOpen(true)}
+          onImport={() => setImportOpen(true)}
           onDelete={onDeleteTransaction}
         />
 
@@ -408,6 +414,17 @@ export function PortfolioView({
           onSave={(transaction) => {
             onSaveTransaction(transaction);
             setTransactionOpen(false);
+          }}
+        />
+      ) : null}
+      {importOpen ? (
+        <CsvImportDialog
+          holdings={holdings}
+          transactions={transactions}
+          onClose={() => setImportOpen(false)}
+          onImport={(drafts) => {
+            onImportTransactions(drafts);
+            setImportOpen(false);
           }}
         />
       ) : null}
@@ -735,6 +752,7 @@ function TransactionLedger({
   displayCurrency,
   fxRates,
   onAdd,
+  onImport,
   onDelete,
 }: {
   transactions: Transaction[];
@@ -742,6 +760,7 @@ function TransactionLedger({
   displayCurrency: DisplayCurrency;
   fxRates: Record<string, number>;
   onAdd: () => void;
+  onImport: () => void;
   onDelete: (id: string) => void;
 }) {
   const holdingById = new Map(holdings.map((holding) => [holding.id, holding]));
@@ -751,7 +770,10 @@ function TransactionLedger({
     <section className="panel wide">
       <div className="panel-title-row">
         <div><span className="eyebrow">Source of truth</span><h2>Transaction ledger</h2></div>
-        <button className="ghost-button" onClick={onAdd}><Plus size={16} /> Record transaction</button>
+        <div className="panel-actions">
+          <button className="ghost-button" onClick={onImport}><FileUp size={16} /> Import from broker</button>
+          <button className="ghost-button" onClick={onAdd}><Plus size={16} /> Record transaction</button>
+        </div>
       </div>
       <div className="table-wrap">
         <table>
