@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CircleGauge,
   FlaskConical,
+  Gauge,
   Globe2,
   LogOut,
   Newspaper,
@@ -63,8 +64,12 @@ const CompanyResearchView = dynamic(
   () => import("@/components/company-research-view").then((module) => module.CompanyResearchView),
   { ssr: false, loading: () => <div className="view-loading">Loading company research...</div> },
 );
+const AnalystDeskView = dynamic(
+  () => import("@/components/analyst-desk-view").then((module) => module.AnalystDeskView),
+  { ssr: false, loading: () => <div className="view-loading">Loading the analyst desk...</div> },
+);
 
-type Tab = "insights" | "portfolio" | "map" | "scenarios" | "calendar" | "research";
+type Tab = "insights" | "portfolio" | "analyst" | "map" | "scenarios" | "calendar" | "research";
 type LocalSearchResult = {
   id: string;
   type: "holding" | "insight" | "scenario" | "country";
@@ -74,6 +79,7 @@ type LocalSearchResult = {
 
 const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: "portfolio", label: "Portfolio", icon: BarChart3 },
+  { id: "analyst", label: "Analyst Desk", icon: Gauge },
   { id: "map", label: "World Map", icon: Globe2 },
   { id: "scenarios", label: "Scenarios", icon: SlidersHorizontal },
   { id: "insights", label: "Insights", icon: Newspaper },
@@ -520,6 +526,15 @@ export function Workbench({
               onImportTransactions={importTransactions}
               onSaveDecision={saveDecision}
               onOpenResearch={openResearch}
+            />
+          ) : null}
+          {activeTab === "analyst" ? (
+            <AnalystDeskView
+              holdings={holdings}
+              transactions={transactions}
+              snapshots={snapshots}
+              fxRates={fxRates.rates}
+              displayCurrency={displayCurrency}
             />
           ) : null}
           {activeTab === "research" ? (
