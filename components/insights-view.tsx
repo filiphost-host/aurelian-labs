@@ -33,6 +33,8 @@ import {
 } from "recharts";
 import { buildChatGptPacket, redactHoldingIdentities } from "@/lib/insights";
 import { formatMoney, holdingValueNok } from "@/lib/calculations";
+import type { FxRates } from "@/lib/fx";
+import { DataRoomPanel } from "@/components/data-room-panel";
 import type { DailyBrief, Holding, MarketQuote, ShareOptions } from "@/lib/types";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { ShareDialog } from "@/components/share-dialog";
@@ -98,12 +100,16 @@ export function InsightsView({
   brief,
   holdings,
   fxRates,
+  fxMeta,
+  benchmarkAsOf,
   onOpenMarket,
   onQuotesUpdated,
 }: {
   brief: DailyBrief;
   holdings: Holding[];
   fxRates: Record<string, number>;
+  fxMeta: FxRates;
+  benchmarkAsOf: string | null;
   onOpenMarket: (country: string) => void;
   onQuotesUpdated: (quotes: MarketQuote[]) => void;
 }) {
@@ -271,6 +277,10 @@ export function InsightsView({
             limit={insightView === "overview" ? 3 : undefined}
             onViewAll={() => setInsightView("signals")}
           />
+        ) : null}
+
+        {insightView === "sources" ? (
+          <DataRoomPanel fxRates={fxMeta} benchmarkAsOf={benchmarkAsOf} holdings={holdings} />
         ) : null}
 
         {insightView === "sources" ? (

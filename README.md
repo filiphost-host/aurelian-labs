@@ -92,7 +92,9 @@ arriving in a later file is treated as already imported. Record that one by hand
 
 - SEC EDGAR, ECB, FRED, World Bank, OpenFIGI, and market-price sources are accessed through server adapters.
 - Latest quotes prefer Twelve Data when configured and otherwise use a clearly labelled delayed Yahoo Finance fallback cached for five minutes.
-- Daily closes follow the chain Twelve Data → EODHD → Yahoo Finance, and valuations use the latest stored ECB rates (falling back to built-in estimates only when no stored rate exists).
+- Exchange rates come from Norges Bank, the rates of record for NOK, with the ECB cross-rates as a fallback. Valuations use the latest stored rate and fall back to built-in estimates only when nothing is stored.
+- Daily closes follow the chain Twelve Data → EODHD → Yahoo Finance.
+- The Data room, under Insights → Data sources, lists every source, whether it is connected, and how fresh the stored rates and benchmark closes are.
 - Benchmark closes (S&P 500 and OSEBX) are stored daily by the cron and drive the performance comparison; before the first cron run the chart shows a clearly labelled reference estimate instead.
 - Missing data stays missing. Previous observations may remain visible as stale after a provider failure.
 - Manual and estimated values are explicitly labelled.
