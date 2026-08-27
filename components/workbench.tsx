@@ -1,17 +1,12 @@
 "use client";
 
 import {
-  BarChart3,
-  CalendarDays,
   CircleGauge,
-  FlaskConical,
-  Gauge,
   Globe2,
   LogOut,
   Newspaper,
   Search,
   SlidersHorizontal,
-  Target,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -84,14 +79,9 @@ type LocalSearchResult = {
 };
 
 const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
-  { id: "portfolio", label: "Portfolio", icon: BarChart3 },
-  { id: "analyst", label: "Analyst Desk", icon: Gauge },
-  { id: "judgment", label: "Judgment", icon: Target },
-  { id: "map", label: "World Map", icon: Globe2 },
+  { id: "map", label: "Aurelian Atlas", icon: Globe2 },
   { id: "scenarios", label: "Scenarios", icon: SlidersHorizontal },
   { id: "insights", label: "Insights", icon: Newspaper },
-  { id: "research", label: "Research", icon: FlaskConical },
-  { id: "calendar", label: "Calendar", icon: CalendarDays },
 ];
 
 // PostgREST caps an unbounded select (1000 rows by default), which would silently
@@ -135,7 +125,7 @@ export function Workbench({
 }) {
   const configured = hasSupabaseEnv();
   const supabase = useMemo(() => createClient(), []);
-  const [activeTab, setActiveTab] = useState<Tab>("portfolio");
+  const [activeTab, setActiveTab] = useState<Tab>("map");
   const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("NOK");
   const [holdings, setHoldings] = useState<Holding[]>(configured ? [] : sampleHoldings);
   const [transactions, setTransactions] = useState<Transaction[]>(configured ? [] : sampleTransactions);

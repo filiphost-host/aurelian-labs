@@ -20,6 +20,7 @@
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
 }
 
+
 * {
   box-sizing: border-box;
 }
@@ -7322,4 +7323,98 @@ button {
 
 .projection-panel .analyst-callouts strong {
   font-size: 17px;
+}
+
+/* Final Atlas overrides remain last so the restored application theme cannot dilute them. */
+.atlas-layout { gap: 14px; }
+.atlas-layout .map-toolbar { align-items: end; }
+.atlas-layout .map-toolbar h2 { margin-bottom: 4px; font-size: clamp(24px, 3vw, 38px); }
+.atlas-layout .map-toolbar > div:first-child > p { max-width: 620px; margin: 0; color: #8f9891; font-size: 11px; }
+
+.atlas-workspace {
+  position: relative;
+  overflow: hidden;
+  min-height: min(72vh, 760px);
+  padding: 0;
+  border-color: rgba(168, 178, 171, 0.16);
+  border-radius: 2px;
+  background: #080b0a;
+}
+
+.atlas-workspace:fullscreen { width: 100vw; height: 100vh; padding: 18px; background: #080b0a; }
+.atlas-workspace:fullscreen .world-map-shell { height: 100%; }
+.atlas-workspace .world-map-shell {
+  min-height: min(72vh, 760px);
+  border: 0;
+  border-radius: 0;
+  background: radial-gradient(circle at 42% 48%, rgba(36, 59, 48, 0.24), transparent 44%), linear-gradient(145deg, #090d0b, #050706 68%);
+}
+.atlas-workspace .world-map {
+  width: 100%;
+  height: 100%;
+  min-height: min(72vh, 760px);
+  transition: width 320ms cubic-bezier(.2,.8,.2,1), margin 320ms cubic-bezier(.2,.8,.2,1), filter 180ms ease;
+}
+.atlas-workspace .world-map-shell.filters-open .world-map { width: calc(100% - 370px); margin-right: 370px; }
+.atlas-workspace .map-land.muted { fill: rgba(98, 112, 103, 0.14); stroke: rgba(154, 166, 158, 0.18); }
+.atlas-workspace .map-land.market-country { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7)); }
+.atlas-workspace .map-land.market-country.active,
+.atlas-workspace .map-land.market-country.pinned { filter: drop-shadow(0 0 3px rgba(212, 175, 55, 0.5)) drop-shadow(0 3px 2px rgba(0, 0, 0, 0.72)); }
+.atlas-workspace .map-lens-control { top: 16px; right: 16px; bottom: auto; }
+.atlas-workspace .map-lens-panel {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  bottom: auto;
+  width: 350px;
+  max-height: calc(min(72vh, 760px) - 60px);
+  overflow-y: auto;
+  border-radius: 2px;
+  background: rgba(10, 13, 12, 0.97);
+  box-shadow: -18px 0 36px rgba(0, 0, 0, 0.28);
+}
+.atlas-workspace:fullscreen .map-lens-panel { max-height: calc(100vh - 92px); }
+.atlas-workspace .map-zoom-controls { right: 16px; bottom: 16px; }
+.country-dashboard { border-radius: 2px; }
+
+.economic-marker { pointer-events: none; }
+.economic-marker-halo { fill: rgba(206, 66, 73, 0.09); stroke: rgba(213, 75, 82, 0.42); stroke-width: .8; vector-effect: non-scaling-stroke; }
+.economic-marker-dot { fill: #cf4249; stroke: #f3d9d6; stroke-width: .7; vector-effect: non-scaling-stroke; }
+.economic-marker.offshore .economic-marker-dot { fill: #d4af37; }
+.economic-marker text { fill: #e7e9e5; paint-order: stroke; stroke: #080b0a; stroke-width: 2.5px; font-size: 7px; font-weight: 650; letter-spacing: 0; }
+
+.scenario-portfolio-lab {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  border: 1px solid rgba(199, 169, 93, 0.2);
+  border-radius: 4px;
+  background: rgba(11, 13, 12, 0.72);
+}
+.scenario-portfolio-lab > .scenario-section-heading { padding: 18px 20px; border-bottom: 1px solid rgba(199, 169, 93, 0.16); }
+.scenario-leader-row { display: grid; grid-template-columns: 1.4fr .65fr .75fr; border-bottom: 1px solid rgba(199, 169, 93, 0.14); }
+.scenario-leader-row article { min-width: 0; padding: 18px 20px; border-right: 1px solid rgba(199, 169, 93, 0.14); }
+.scenario-leader-row article:last-child { border-right: 0; }
+.scenario-leader-row span, .scenario-leader-row p { color: #89928b; font-size: 9px; }
+.scenario-leader-row strong { display: block; margin: 7px 0; color: #e5cc83; font-size: 18px; }
+.scenario-leader-row p { margin: 0; line-height: 1.5; }
+.scenario-portfolio-grid { display: grid; grid-template-columns: minmax(280px, .75fr) minmax(560px, 1.45fr); min-width: 0; }
+.scenario-ranking-chart { min-width: 0; padding: 18px 10px 8px 0; border-right: 1px solid rgba(199, 169, 93, 0.14); }
+.scenario-portfolio-table { min-width: 0; }
+.scenario-portfolio-table table { min-width: 720px; }
+.scenario-portfolio-table td:first-child { max-width: 250px; }
+.scenario-portfolio-lab > .panel-note { margin: 0; padding: 12px 20px; border-top: 1px solid rgba(199, 169, 93, 0.12); }
+
+@media (max-width: 980px) {
+  .atlas-workspace .world-map-shell.filters-open .world-map { width: 100%; margin-right: 0; opacity: .42; }
+  .atlas-workspace .map-lens-panel { width: min(350px, calc(100vw - 76px)); }
+  .scenario-portfolio-grid { grid-template-columns: 1fr; }
+  .scenario-ranking-chart { border-right: 0; border-bottom: 1px solid rgba(199, 169, 93, 0.14); }
+}
+
+@media (max-width: 620px) {
+  .atlas-layout .map-toolbar { align-items: stretch; }
+  .atlas-workspace, .atlas-workspace .world-map-shell, .atlas-workspace .world-map { min-height: 540px; }
+  .economic-marker text { display: none; }
+  .scenario-leader-row { grid-template-columns: 1fr; }
+  .scenario-leader-row article { border-right: 0; border-bottom: 1px solid rgba(199, 169, 93, 0.14); }
 }

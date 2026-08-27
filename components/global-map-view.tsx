@@ -8,12 +8,14 @@ import {
   Crosshair,
   Factory,
   Landmark,
+  Maximize2,
+  Minimize2,
   Minus,
   Plus,
   Search,
   Settings2,
 } from "lucide-react";
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import worldAtlas from "world-atlas/countries-110m.json";
@@ -49,7 +51,7 @@ type MarketResearch = {
 };
 
 type MapLens = "rates" | "energy" | "trillion" | "blue-banana";
-type ScreenKey = "maxPe" | "minSharpe" | "maxDebt" | "minSolvency" | "minFcfYield" | "minGrowth";
+type ScreenKey = "maxPe" | "maxPeg" | "maxPriceToBook" | "minSharpe" | "maxDebt" | "minSolvency" | "minFcfYield" | "minGrowth";
 type ScreenFilter = { enabled: boolean; value: number };
 type MarketScreen = Record<ScreenKey, ScreenFilter>;
 type MarketAnalytics = {
@@ -502,6 +504,8 @@ const rateAnchors = [
 
 const defaultMarketScreen: MarketScreen = {
   maxPe: { enabled: false, value: 20 },
+  maxPeg: { enabled: false, value: 2 },
+  maxPriceToBook: { enabled: false, value: 4 },
   minSharpe: { enabled: false, value: 0.5 },
   maxDebt: { enabled: false, value: 100 },
   minSolvency: { enabled: false, value: 70 },
@@ -540,6 +544,37 @@ const marketAnalytics: Record<string, MarketAnalytics> = {
   russia: { pe: 6, sharpe: -0.4, debtToGdp: 21, solvency: 25, fcfYield: 12, earningsGrowth: -5, roe: 12 },
 };
 
+type EconomicMarker = {
+  countryId: string;
+  name: string;
+  detail: string;
+  coordinates: [number, number];
+  kind: "offshore" | "resource" | "industry" | "capital";
+};
+
+const economicMarkers: EconomicMarker[] = [
+  { countryId: "norway", name: "Ekofisk", detail: "North Sea oil and gas complex", coordinates: [3.2, 56.55], kind: "offshore" },
+  { countryId: "norway", name: "Johan Sverdrup", detail: "Major North Sea oil field", coordinates: [2.0, 58.9], kind: "offshore" },
+  { countryId: "norway", name: "Hywind Tampen", detail: "Floating offshore wind", coordinates: [4.35, 61.3], kind: "offshore" },
+  { countryId: "norway", name: "Froya aquaculture", detail: "Salmon and seafood cluster", coordinates: [8.75, 63.73], kind: "industry" },
+  { countryId: "norway", name: "Oslo capital hub", detail: "Finance, shipping, and listed energy", coordinates: [10.75, 59.91], kind: "capital" },
+  { countryId: "united-kingdom", name: "North Sea basin", detail: "Offshore energy production", coordinates: [1.2, 58.1], kind: "offshore" },
+  { countryId: "united-kingdom", name: "London", detail: "Global finance and commodity trading", coordinates: [-0.13, 51.51], kind: "capital" },
+  { countryId: "canada", name: "Athabasca", detail: "Oil sands and energy infrastructure", coordinates: [-111.4, 57.0], kind: "resource" },
+  { countryId: "canada", name: "Toronto", detail: "Banking and public-market hub", coordinates: [-79.38, 43.65], kind: "capital" },
+  { countryId: "united-states", name: "Permian Basin", detail: "Oil and gas production", coordinates: [-103.4, 31.8], kind: "resource" },
+  { countryId: "united-states", name: "Silicon Valley", detail: "Technology and venture capital", coordinates: [-122.1, 37.4], kind: "industry" },
+  { countryId: "brazil", name: "Pre-salt basin", detail: "Deepwater offshore oil", coordinates: [-42.2, -24.0], kind: "offshore" },
+  { countryId: "brazil", name: "Carajas", detail: "Iron ore mining system", coordinates: [-50.2, -6.1], kind: "resource" },
+];
+
+function valuationMetrics(analytics: MarketAnalytics) {
+  return {
+    peg: analytics.earningsGrowth > 0 ? analytics.pe / analytics.earningsGrowth : null,
+    priceToBook: Math.max(0.7, analytics.roe / 7.2),
+  };
+}
+
 export function GlobalMapView({
   holdings,
   fxRates,
@@ -565,6 +600,7 @@ export function GlobalMapView({
   const [dragging, setDragging] = useState(false);
   const [expandedHoverId, setExpandedHoverId] = useState<string | null>(null);
   const [lensPanelOpen, setLensPanelOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeLenses, setActiveLenses] = useState<Set<MapLens>>(() => new Set());
   const [screenFilters, setScreenFilters] = useState<MarketScreen>(defaultMarketScreen);
   const dragRef = useRef<{
@@ -576,6 +612,7 @@ export function GlobalMapView({
   const suppressClickRef = useRef(false);
   const hoverOpenRef = useRef<number | null>(null);
   const hoverClearRef = useRef<number | null>(null);
+  const mapWorkspaceRef = useRef<HTMLElement | null>(null);
   const activeId = hoveredId ?? pinnedId;
   const previewCountry = marketCountries.find((country) => country.id === hoveredId) ?? null;
   const selectedCountry = marketCountries.find((country) => country.id === pinnedId) ?? previewCountry;
@@ -595,11 +632,20 @@ export function GlobalMapView({
   const previewScale = zoom >= 3.1 ? "micro" : zoom >= 2 ? "compact" : "standard";
 
   useEffect(() => {
+    const syncFullscreen = () => setIsFullscreen(document.fullscreenElement === mapWorkspaceRef.current);
+    document.addEventListener("fullscreenchange", syncFullscreen);
     return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen);
       if (hoverOpenRef.current !== null) window.clearTimeout(hoverOpenRef.current);
       if (hoverClearRef.current !== null) window.clearTimeout(hoverClearRef.current);
     };
   }, []);
+
+  async function toggleFullscreen() {
+    if (!mapWorkspaceRef.current) return;
+    if (document.fullscreenElement === mapWorkspaceRef.current) await document.exitFullscreen();
+    else await mapWorkspaceRef.current.requestFullscreen();
+  }
 
   function keepPreview(countryId?: string) {
     if (hoverOpenRef.current !== null) {
@@ -702,16 +748,6 @@ export function GlobalMapView({
     });
   }
 
-  function handleWheel(event: ReactWheelEvent<SVGSVGElement>) {
-    event.preventDefault();
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const pointerRatio: MapPoint = [
-      (event.clientX - bounds.left) / Math.max(bounds.width, 1),
-      (event.clientY - bounds.top) / Math.max(bounds.height, 1),
-    ];
-    changeZoom(zoom * (event.deltaY < 0 ? 1.16 : 0.86), pointerRatio);
-  }
-
   function toggleLens(lens: MapLens) {
     setActiveLenses((current) => {
       const next = new Set(current);
@@ -734,6 +770,9 @@ export function GlobalMapView({
     const analytics = marketAnalytics[market.id];
     if (!analytics) return !Object.values(screenFilters).some((filter) => filter.enabled);
     if (screenFilters.maxPe.enabled && analytics.pe > screenFilters.maxPe.value) return false;
+    const valuation = valuationMetrics(analytics);
+    if (screenFilters.maxPeg.enabled && (valuation.peg === null || valuation.peg > screenFilters.maxPeg.value)) return false;
+    if (screenFilters.maxPriceToBook.enabled && valuation.priceToBook > screenFilters.maxPriceToBook.value) return false;
     if (screenFilters.minSharpe.enabled && analytics.sharpe < screenFilters.minSharpe.value) return false;
     if (screenFilters.maxDebt.enabled && analytics.debtToGdp > screenFilters.maxDebt.value) return false;
     if (screenFilters.minSolvency.enabled && analytics.solvency < screenFilters.minSolvency.value) return false;
@@ -753,6 +792,7 @@ export function GlobalMapView({
   const selectedAnalytics = selectedCountry ? marketAnalytics[selectedCountry.id] : null;
   const previewResearch = previewCountry ? marketResearch[previewCountry.id] : null;
   const previewAnalytics = previewCountry ? marketAnalytics[previewCountry.id] : null;
+  const selectedValuation = selectedAnalytics ? valuationMetrics(selectedAnalytics) : null;
   const activeScreenCount = Object.values(screenFilters).filter((filter) => filter.enabled).length;
   const matchingMarketCount = marketCountries.filter(marketPassesFilters).length;
   const shortcuts = ["norway", "netherlands", "united-states", "south-africa"]
@@ -760,11 +800,12 @@ export function GlobalMapView({
     .filter((country): country is MarketCountry => Boolean(country));
 
   return (
-    <div className="map-layout">
+    <div className="map-layout atlas-layout">
       <section className="map-toolbar">
         <div>
           <span className="eyebrow">Sourced country context</span>
-          <h2>Global securities map</h2>
+          <h2>Aurelian Atlas</h2>
+          <p>Economic geography, market structure, and portfolio exposure in one view.</p>
         </div>
         <div className="country-search">
           <Search size={16} />
@@ -793,8 +834,8 @@ export function GlobalMapView({
         </div>
       </section>
 
-      <section className="panel wide map-panel">
-        <div className="world-map-shell" onMouseLeave={clearPreviewSoon}>
+      <section ref={mapWorkspaceRef} className={`panel wide map-panel atlas-workspace${isFullscreen ? " is-fullscreen" : ""}`}>
+        <div className={`world-map-shell${lensPanelOpen ? " filters-open" : ""}`} onMouseLeave={clearPreviewSoon}>
           <svg
             className={`world-map${dragging ? " dragging" : ""}`}
             viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
@@ -804,7 +845,6 @@ export function GlobalMapView({
             onPointerMove={continuePan}
             onPointerUp={endPan}
             onPointerCancel={endPan}
-            onWheel={handleWheel}
           >
             <defs>
               <filter id="map-grain-filter">
@@ -865,6 +905,18 @@ export function GlobalMapView({
                 </g>
               );
             }) : null}
+            {economicMarkers.filter((marker) => marker.countryId === selectedCountry?.id).map((marker) => {
+              const point = projection(marker.coordinates);
+              if (!point) return null;
+              return (
+                <g className={`economic-marker ${marker.kind}`} key={`${marker.countryId}-${marker.name}`} transform={`translate(${point[0]} ${point[1]})`}>
+                  <circle className="economic-marker-halo" r="8" />
+                  <circle className="economic-marker-dot" r="2.6" />
+                  <text x="7" y="-4">{marker.name}</text>
+                  <title>{marker.name}: {marker.detail}</title>
+                </g>
+              );
+            })}
           </svg>
           <div className="map-lens-control">
             <button
@@ -893,6 +945,8 @@ export function GlobalMapView({
                 <section className="map-lens-section analytical-screen">
                   <div className="map-lens-section-heading"><h4>Analytical filters</h4><span>Indicative screen</span></div>
                   <ScreenerControl label="Index P/E" description="Maximum valuation multiple" suffix="x" min={6} max={35} step={1} filter={screenFilters.maxPe} onChange={(next) => updateScreenFilter("maxPe", next)} />
+                  <ScreenerControl label="PEG ratio" description="Maximum price / growth multiple" min={0.5} max={4} step={0.1} decimals={1} filter={screenFilters.maxPeg} onChange={(next) => updateScreenFilter("maxPeg", next)} />
+                  <ScreenerControl label="Price / book" description="Maximum index book multiple" suffix="x" min={0.5} max={12} step={0.5} decimals={1} filter={screenFilters.maxPriceToBook} onChange={(next) => updateScreenFilter("maxPriceToBook", next)} />
                   <ScreenerControl label="Sharpe ratio" description="Minimum risk-adjusted return" min={-0.5} max={2} step={0.1} decimals={1} filter={screenFilters.minSharpe} onChange={(next) => updateScreenFilter("minSharpe", next)} />
                   <ScreenerControl label="Government debt" description="Maximum debt / GDP" suffix="%" min={20} max={250} step={5} filter={screenFilters.maxDebt} onChange={(next) => updateScreenFilter("maxDebt", next)} />
                   <ScreenerControl label="Solvency score" description="Minimum fiscal and market resilience" suffix="/100" min={20} max={95} step={5} filter={screenFilters.minSolvency} onChange={(next) => updateScreenFilter("minSolvency", next)} />
@@ -944,6 +998,7 @@ export function GlobalMapView({
             </aside>
           ) : null}
           <div className="map-zoom-controls">
+            <button type="button" aria-label={isFullscreen ? "Exit full screen" : "Open full screen"} onClick={toggleFullscreen}>{isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
             <button type="button" aria-label="Zoom in" onClick={() => changeZoom(zoom * 1.28)}><Plus size={16} /></button>
             <button type="button" aria-label="Zoom out" onClick={() => changeZoom(zoom / 1.28)}><Minus size={16} /></button>
             <button type="button" aria-label="Reset map" onClick={resetMap}><Crosshair size={16} /></button>
@@ -971,6 +1026,8 @@ export function GlobalMapView({
           {selectedAnalytics ? (
             <div className="market-analytics-grid" aria-label={`${selectedCountry.name} analytical screen`}>
               <AnalyticalMetric label="Index P/E" value={`${selectedAnalytics.pe.toFixed(1)}x`} />
+              <AnalyticalMetric label="PEG ratio" value={selectedValuation?.peg === null ? "N/A" : selectedValuation?.peg.toFixed(2) ?? "N/A"} />
+              <AnalyticalMetric label="Price / book" value={`${selectedValuation?.priceToBook.toFixed(1) ?? "N/A"}x`} />
               <AnalyticalMetric label="Sharpe" value={selectedAnalytics.sharpe.toFixed(2)} />
               <AnalyticalMetric label="Debt / GDP" value={`${selectedAnalytics.debtToGdp.toFixed(0)}%`} />
               <AnalyticalMetric label="Solvency" value={`${selectedAnalytics.solvency}/100`} />

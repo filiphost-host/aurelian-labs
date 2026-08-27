@@ -46,6 +46,7 @@ import {
   scenarioGuides,
   type ScenarioCategory,
 } from "@/lib/scenario-research";
+import { rankModelPortfolios } from "@/lib/scenario-portfolios";
 import type {
   DisplayCurrency,
   FactorKey,
@@ -130,6 +131,8 @@ export function ScenarioView({
     { name: "Current", value: total },
     { name: "Scenario", value: total + impact },
   ];
+  const portfolioRanking = useMemo(() => rankModelPortfolios(scenario), [scenario]);
+  const scenarioLeader = portfolioRanking[0];
 
   function selectPreset(id: string) {
     const preset = scenarioPresets.find((item) => item.id === id);
@@ -240,6 +243,71 @@ export function ScenarioView({
             <span>What this helps you understand</span>
             <p>{activeGuide.review}</p>
           </div>
+        </section>
+
+        <section className="scenario-portfolio-lab" aria-labelledby="portfolio-lab-title">
+          <div className="scenario-section-heading">
+            <div>
+              <span className="eyebrow">Portfolio laboratory</span>
+              <h2 id="portfolio-lab-title">Which construction holds up best?</h2>
+            </div>
+            <span>Ranked by estimated post-shock Sharpe</span>
+          </div>
+          <div className="scenario-leader-row">
+            <article>
+              <span>Model leader</span>
+              <strong>{scenarioLeader.name}</strong>
+              <p>{scenarioLeader.mandate}</p>
+            </article>
+            <article>
+              <span>Post-shock Sharpe</span>
+              <strong>{scenarioLeader.postShockSharpe.toFixed(2)}</strong>
+              <p>{scenarioLeader.shockReturn >= 0 ? "+" : ""}{scenarioLeader.shockReturn.toFixed(1)}% modeled shock return</p>
+            </article>
+            <article>
+              <span>Valuation profile</span>
+              <strong>{scenarioLeader.pe.toFixed(1)}x P/E</strong>
+              <p>{scenarioLeader.peg.toFixed(2)} PEG · {scenarioLeader.priceToBook.toFixed(1)}x book</p>
+            </article>
+          </div>
+          <div className="scenario-portfolio-grid">
+            <div className="scenario-ranking-chart">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart layout="vertical" data={portfolioRanking} margin={{ left: 12, right: 42 }}>
+                  <CartesianGrid stroke="rgba(255, 255, 255, 0.055)" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: "#7f7a7d", fontSize: 10 }} />
+                  <YAxis dataKey="name" type="category" width={126} tick={{ fill: "#d7d3d1", fontSize: 10 }} />
+                  <Tooltip
+                    contentStyle={darkTooltip}
+                    formatter={(value) => Number(value).toFixed(2)}
+                    labelFormatter={(label) => `${label} · post-shock Sharpe`}
+                  />
+                  <Bar dataKey="postShockSharpe" radius={[0, 3, 3, 0]}>
+                    {portfolioRanking.map((portfolio, index) => (
+                      <Cell key={portfolio.id} fill={index === 0 ? "#d4af37" : portfolio.postShockSharpe >= 0 ? "#4f9d78" : "#b65f69"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="table-wrap scenario-portfolio-table">
+              <table>
+                <thead><tr><th>Portfolio</th><th>Shock</th><th>Sharpe</th><th>P/E</th><th>PEG</th><th>P/B</th><th>Debt</th></tr></thead>
+                <tbody>{portfolioRanking.map((portfolio, index) => (
+                  <tr key={portfolio.id}>
+                    <td><strong>#{index + 1} {portfolio.name}</strong><span>{portfolio.mandate}</span></td>
+                    <td className={portfolio.shockReturn >= 0 ? "good" : "bad"}>{portfolio.shockReturn >= 0 ? "+" : ""}{portfolio.shockReturn.toFixed(1)}%</td>
+                    <td><strong>{portfolio.postShockSharpe.toFixed(2)}</strong><span>was {portfolio.sharpe.toFixed(2)}</span></td>
+                    <td>{portfolio.pe.toFixed(1)}x</td>
+                    <td>{portfolio.peg.toFixed(2)}</td>
+                    <td>{portfolio.priceToBook.toFixed(1)}x</td>
+                    <td>{portfolio.netDebtToEbitda.toFixed(1)}x</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          </div>
+          <p className="panel-note">Comparative teaching model using fixed factor sensitivities and a 3.5% risk-free assumption. It is useful for examining portfolio construction, not forecasting the winning strategy.</p>
         </section>
 
         <section className="scenario-transmission" aria-labelledby="transmission-title">

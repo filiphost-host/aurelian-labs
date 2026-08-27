@@ -401,6 +401,18 @@ export const scenarioPresets: ScenarioPreset[] = [
     shocks: { ...blank, globalEquity: -5, usEquity: -7, europeEquity: -9, technology: -6, industrials: -10, defense: 5, usdNok: 5, rates: 50, credit: 60 },
   },
   {
+    id: "middle-east-escalation",
+    name: "Middle East Escalation",
+    description: "A wider conflict disrupts energy and shipping while defense demand and the US dollar rise.",
+    shocks: { ...blank, globalEquity: -8, usEquity: -7, europeEquity: -11, technology: -7, industrials: -9, defense: 14, usdNok: 7, rates: 50, credit: 90 },
+  },
+  {
+    id: "middle-east-deescalation",
+    name: "Middle East De-escalation",
+    description: "Risk premia ease, shipping normalizes, and energy and defense momentum cools.",
+    shocks: { ...blank, globalEquity: 5, usEquity: 4, europeEquity: 6, technology: 3, industrials: 6, defense: -8, usdNok: -4, rates: -25, credit: -45 },
+  },
+  {
     id: "nok-strengthens",
     name: "NOK Strengthening",
     description: "NOK appreciates against USD and EUR while local assets are unchanged.",
