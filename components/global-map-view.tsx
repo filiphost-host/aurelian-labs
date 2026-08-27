@@ -50,7 +50,7 @@ type MarketResearch = {
   takeaways: string[];
 };
 
-type MapLens = "rates" | "energy" | "trillion" | "blue-banana";
+type MapLens = "rates" | "energy" | "economic-sites" | "trillion" | "blue-banana";
 type ScreenKey = "maxPe" | "maxPeg" | "maxPriceToBook" | "minSharpe" | "maxDebt" | "minSolvency" | "minFcfYield" | "minGrowth";
 type ScreenFilter = { enabled: boolean; value: number };
 type MarketScreen = Record<ScreenKey, ScreenFilter>;
@@ -905,7 +905,7 @@ export function GlobalMapView({
                 </g>
               );
             }) : null}
-            {economicMarkers.filter((marker) => marker.countryId === selectedCountry?.id).map((marker) => {
+            {activeLenses.has("economic-sites") ? economicMarkers.filter((marker) => marker.countryId === selectedCountry?.id).map((marker) => {
               const point = projection(marker.coordinates);
               if (!point) return null;
               return (
@@ -916,7 +916,7 @@ export function GlobalMapView({
                   <title>{marker.name}: {marker.detail}</title>
                 </g>
               );
-            })}
+            }) : null}
           </svg>
           <div className="map-lens-control">
             <button
@@ -938,6 +938,7 @@ export function GlobalMapView({
                   <div className="map-overlay-grid">
                     <label><input type="checkbox" checked={activeLenses.has("rates")} onChange={() => toggleLens("rates")} /><span><strong>Central banks</strong><small>Policy-rate anchors</small></span></label>
                     <label><input type="checkbox" checked={activeLenses.has("energy")} onChange={() => toggleLens("energy")} /><span><strong>Oil &amp; gas</strong><small>Producer exposure</small></span></label>
+                    <label><input type="checkbox" checked={activeLenses.has("economic-sites")} onChange={() => toggleLens("economic-sites")} /><span><strong>Economic sites</strong><small>Offshore fields and key hubs</small></span></label>
                     <label><input type="checkbox" checked={activeLenses.has("trillion")} onChange={() => toggleLens("trillion")} /><span><strong>GDP above $1tn</strong><small>Economic scale</small></span></label>
                     <label><input type="checkbox" checked={activeLenses.has("blue-banana")} onChange={() => toggleLens("blue-banana")} /><span><strong>Blue Banana</strong><small>European corridor</small></span></label>
                   </div>
