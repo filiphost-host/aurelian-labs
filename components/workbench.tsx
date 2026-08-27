@@ -11,6 +11,7 @@ import {
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { InsightsView } from "@/components/insights-view";
+import { BrandMark } from "@/components/brand-mark";
 import {
   SearchCommand,
   type RemoteInstrument,
@@ -466,8 +467,8 @@ export function Workbench({
     <main className="app-shell">
       <header className="app-masthead">
         <div className="brand">
-          <div className="brand-mark" aria-hidden="true"><span>A</span></div>
-          <div><strong>Aurelian Labs</strong><span>Private investment workbench</span></div>
+          <BrandMark priority />
+          <div><strong>Aurelian Capital</strong><span>Private investment intelligence</span></div>
         </div>
         <div className="masthead-controls">
           <div className="status-pill" role="status"><i />{status}</div>

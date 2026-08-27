@@ -1,4 +1,4 @@
-# Aurelian Labs
+# Aurelian Capital
 
 A private investment workbench for a single owner. It combines a manual transaction ledger, daily portfolio insights, decision memory, sourced market context, country research, and transparent scenario analysis.
 

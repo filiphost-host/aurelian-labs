@@ -123,7 +123,7 @@ export function SearchCommand({
     <div className="command-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.currentTarget === event.target) onClose();
     }}>
-      <section className="command-menu" role="dialog" aria-modal="true" aria-label="Search Aurelian Labs">
+      <section className="command-menu" role="dialog" aria-modal="true" aria-label="Search Aurelian Capital">
         <div className="command-input">
           <Search size={19} />
           <input

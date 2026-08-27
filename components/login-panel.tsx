@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, Mail, X } from "lucide-react";
 import { getAuthSignInErrorMessage } from "@/lib/auth-errors";
 import { createClient, hasSupabaseEnv } from "@/lib/supabase";
+import { BrandMark } from "@/components/brand-mark";
 
 export function LoginPanel({ initialMessage = "" }: { initialMessage?: string }) {
   const [email, setEmail] = useState("");
@@ -48,11 +49,12 @@ export function LoginPanel({ initialMessage = "" }: { initialMessage?: string })
     <main className="login-shell">
       <section className={`login-panel${sent ? " login-sent" : ""}`}>
         {sent ? <button className="login-close" onClick={() => setSent(false)} aria-label="Back to sign in"><X size={17} /></button> : null}
+        <BrandMark className="login-brand-mark" priority />
         <div className="brand-lock">
           <LockKeyhole size={20} />
           <span>Private workspace</span>
         </div>
-        <h1>{sent ? "Check your inbox" : "Aurelian Labs"}</h1>
+        <h1>{sent ? "Check your inbox" : "Aurelian Capital"}</h1>
         <p>{sent ? "We sent a secure sign-in link. Open the newest email to authenticate your account; no numeric code is required." : "Sign in to your portfolio workbench with a secure email link."}</p>
 
         {sent ? (

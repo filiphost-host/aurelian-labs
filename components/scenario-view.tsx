@@ -563,7 +563,7 @@ export function ScenarioView({
 
       {shareOpen ? (
         <ShareDialog
-          title={`${scenarioPresets.find((item) => item.id === activePresetId)?.name ?? "Custom scenario"} · Aurelian Labs`}
+          title={`${scenarioPresets.find((item) => item.id === activePresetId)?.name ?? "Custom scenario"} · Aurelian Capital`}
           kind="scenario"
           content={shareContent}
           onClose={() => setShareOpen(false)}

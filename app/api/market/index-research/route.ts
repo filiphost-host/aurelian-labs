@@ -194,7 +194,7 @@ async function fetchSecDebtToEquity(cik: string) {
     return stored.value;
   }
   const response = await fetch(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`, {
-    headers: { "User-Agent": process.env.SEC_USER_AGENT ?? "Aurelian Labs https://aurelian-labs.vercel.app" },
+    headers: { "User-Agent": process.env.SEC_USER_AGENT ?? "Aurelian Capital https://aurelian-labs.vercel.app" },
     signal: AbortSignal.timeout(8_000),
     cache: "no-store",
   }).catch(() => null);
