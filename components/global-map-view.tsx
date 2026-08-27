@@ -273,6 +273,30 @@ const marketCountries: MarketCountry[] = [
     note: "The semiconductor cycle, China demand, governance reform, and regional security are key variables.",
   },
   {
+    id: "singapore", name: "Singapore", atlasName: "Singapore", currency: "SGD", keyIndex: "Straits Times Index",
+    sectors: "Financials, industrials, property, transport",
+    policyRate: { value: "Exchange-rate policy", asOf: "Event-driven", source: "Monetary Authority of Singapore", sourceUrl: "https://www.mas.gov.sg/monetary-policy" },
+    debtToGdp: { value: "High gross, asset-backed public debt", asOf: "Annual series", source: "IMF", sourceUrl: officialSources.imfDebt },
+    marketCapToGdp: { value: "Deep regional financial centre", asOf: "Latest available", source: "World Bank", sourceUrl: officialSources.worldBank },
+    note: "A regional capital, shipping, and wealth-management hub whose listed market is more mature and income-oriented than much of Asia.",
+  },
+  {
+    id: "taiwan", name: "Taiwan", atlasName: "Taiwan", currency: "TWD", keyIndex: "TAIEX",
+    sectors: "Semiconductors, electronics, hardware, financials",
+    policyRate: { value: "Independent CBC policy", asOf: "Event-driven", source: "Central Bank of the Republic of China", sourceUrl: "https://www.cbc.gov.tw/en/mp-2.html" },
+    debtToGdp: { value: "Moderate public debt", asOf: "Annual series", source: "IMF", sourceUrl: officialSources.imfDebt },
+    marketCapToGdp: { value: "Very large technology-heavy market", asOf: "Latest available", source: "World Bank", sourceUrl: officialSources.worldBank },
+    note: "Semiconductor concentration, the global electronics cycle, currency policy, and cross-strait risk dominate the investment profile.",
+  },
+  {
+    id: "indonesia", name: "Indonesia", atlasName: "Indonesia", currency: "IDR", keyIndex: "Jakarta Composite",
+    sectors: "Financials, consumer, materials, telecom, energy",
+    policyRate: { value: "Independent BI policy", asOf: "Event-driven", source: "Bank Indonesia", sourceUrl: "https://www.bi.go.id/en/fungsi-utama/moneter/default.aspx" },
+    debtToGdp: { value: "Moderate public debt", asOf: "Annual series", source: "IMF", sourceUrl: officialSources.imfDebt },
+    marketCapToGdp: { value: "Large developing market", asOf: "Latest available", source: "World Bank", sourceUrl: officialSources.worldBank },
+    note: "Domestic consumption, bank credit, nickel processing, commodity exports, and rupiah stability shape this large emerging market.",
+  },
+  {
     id: "brazil", name: "Brazil", atlasName: "Brazil", currency: "BRL", keyIndex: "Ibovespa",
     sectors: "Financials, energy, mining, agriculture",
     policyRate: { value: "Independent BCB policy", asOf: "Event-driven", source: "Banco Central do Brasil", sourceUrl: "https://www.bcb.gov.br/en/monetarypolicy" },
@@ -449,6 +473,24 @@ const marketResearch: Record<string, MarketResearch> = {
     policyWatch: "Corporate governance reform, semiconductor policy, North Korea, and China-US trade friction.",
     takeaways: ["Semiconductors create powerful earnings cyclicality.", "The won and global electronics cycle can amplify each other."],
   },
+  singapore: {
+    companies: ["DBS Group", "Sea Limited", "Singapore Airlines", "Keppel"],
+    materials: "Major refining, LNG, shipping, and commodity-trading hub",
+    policyWatch: "Exchange-rate policy, housing controls, China exposure, global trade, and financial regulation.",
+    takeaways: ["The market is a gateway to Southeast Asian capital flows.", "Banks, property, and transport make rates and trade more important than headline technology exposure."],
+  },
+  taiwan: {
+    companies: ["TSMC", "Hon Hai Precision", "MediaTek", "Fubon Financial"],
+    materials: "Resource importer with world-leading semiconductor fabrication",
+    policyWatch: "Cross-strait security, US technology controls, currency management, energy security, and industrial policy.",
+    takeaways: ["TSMC creates exceptional index concentration.", "The semiconductor cycle and geopolitical risk must be evaluated together."],
+  },
+  indonesia: {
+    companies: ["Bank Central Asia", "Bank Rakyat Indonesia", "Telkom Indonesia", "Astra International"],
+    materials: "Nickel, coal, palm oil, natural gas, copper, and tin",
+    policyWatch: "Rupiah stability, nickel policy, fuel subsidies, infrastructure, and institutional reform.",
+    takeaways: ["Domestic demand provides a different engine from export-led North Asia.", "Commodity processing policy can reshape both capital needs and trade relationships."],
+  },
   brazil: {
     companies: ["Petrobras", "Vale", "Itaú Unibanco", "WEG"],
     materials: "Iron ore, oil, soybeans, sugar, coffee, pulp",
@@ -492,11 +534,14 @@ const worldCountries = countryCollection.features
     centroid: mapPath.centroid(country),
   }))
   .filter((country) => country.path && country.name !== "Antarctica");
+const pointMarketCoordinates: Record<string, [number, number]> = {
+  singapore: [103.82, 1.35],
+};
 const marketByAtlasName = new Map(marketCountries.map((country) => [country.atlasName, country]));
 const DEFAULT_ZOOM = 1.12;
 const DEFAULT_CENTER: MapPoint = [465, 205];
 const energyMarkets = new Set(["norway", "united-kingdom", "united-states", "canada", "australia", "brazil", "mexico", "china", "egypt", "russia"]);
-const trillionEconomies = new Set(["united-states", "china", "germany", "japan", "india", "united-kingdom", "france", "italy", "brazil", "canada", "russia", "south-korea", "australia", "spain", "mexico", "netherlands"]);
+const trillionEconomies = new Set(["united-states", "china", "germany", "japan", "india", "united-kingdom", "france", "italy", "brazil", "canada", "russia", "south-korea", "australia", "spain", "mexico", "netherlands", "indonesia"]);
 const rateAnchors = [
   { id: "united-states", label: "FED" }, { id: "germany", label: "ECB" }, { id: "united-kingdom", label: "BOE" },
   { id: "norway", label: "NB" }, { id: "japan", label: "BOJ" }, { id: "china", label: "PBOC" },
@@ -539,6 +584,9 @@ const marketAnalytics: Record<string, MarketAnalytics> = {
   china: { pe: 13, sharpe: 0.35, debtToGdp: 88, solvency: 62, fcfYield: 7, earningsGrowth: 7, roe: 12 },
   india: { pe: 23, sharpe: 0.9, debtToGdp: 82, solvency: 68, fcfYield: 4, earningsGrowth: 14, roe: 17 },
   "south-korea": { pe: 14, sharpe: 0.8, debtToGdp: 48, solvency: 82, fcfYield: 6, earningsGrowth: 12, roe: 13 },
+  singapore: { pe: 14, sharpe: 0.7, debtToGdp: 168, solvency: 92, fcfYield: 5.8, earningsGrowth: 6, roe: 13 },
+  taiwan: { pe: 22, sharpe: 1.05, debtToGdp: 28, solvency: 79, fcfYield: 4.2, earningsGrowth: 13, roe: 20 },
+  indonesia: { pe: 16, sharpe: 0.55, debtToGdp: 40, solvency: 67, fcfYield: 5.5, earningsGrowth: 10, roe: 15 },
   brazil: { pe: 9, sharpe: 0.65, debtToGdp: 86, solvency: 59, fcfYield: 10, earningsGrowth: 8, roe: 18 },
   mexico: { pe: 13, sharpe: 0.5, debtToGdp: 52, solvency: 67, fcfYield: 7, earningsGrowth: 6, roe: 16 },
   russia: { pe: 6, sharpe: -0.4, debtToGdp: 21, solvency: 25, fcfYield: 12, earningsGrowth: -5, roe: 12 },
@@ -575,6 +623,14 @@ function valuationMetrics(analytics: MarketAnalytics) {
   };
 }
 
+function marketCentroid(market: MarketCountry | null | undefined): MapPoint | null {
+  if (!market) return null;
+  const shape = worldCountries.find((country) => country.name === market.atlasName);
+  if (shape) return shape.centroid as MapPoint;
+  const coordinates = pointMarketCoordinates[market.id];
+  return coordinates ? projection(coordinates) as MapPoint : null;
+}
+
 export function GlobalMapView({
   holdings,
   fxRates,
@@ -587,14 +643,12 @@ export function GlobalMapView({
   const requestedMarket = marketCountries.find((item) =>
     item.name.toLowerCase() === requestedCountry?.toLowerCase(),
   );
-  const requestedShape = requestedMarket
-    ? worldCountries.find((item) => item.name === requestedMarket.atlasName)
-    : null;
+  const requestedCentroid = marketCentroid(requestedMarket);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(requestedMarket?.id ?? "norway");
   const [zoom, setZoom] = useState(requestedMarket ? 2.2 : DEFAULT_ZOOM);
   const [center, setCenter] = useState<MapPoint>(
-    requestedShape ? requestedShape.centroid as MapPoint : DEFAULT_CENTER,
+    requestedCentroid ?? DEFAULT_CENTER,
   );
   const [query, setQuery] = useState(requestedMarket?.name ?? "");
   const [dragging, setDragging] = useState(false);
@@ -616,15 +670,17 @@ export function GlobalMapView({
   const activeId = hoveredId ?? pinnedId;
   const previewCountry = marketCountries.find((country) => country.id === hoveredId) ?? null;
   const selectedCountry = marketCountries.find((country) => country.id === pinnedId) ?? previewCountry;
-  const previewShape = previewCountry
-    ? worldCountries.find((country) => country.name === previewCountry.atlasName)
+  const activeCountry = marketCountries.find((country) => country.id === activeId) ?? null;
+  const activeShape = activeCountry
+    ? worldCountries.find((country) => country.name === activeCountry.atlasName)
     : null;
+  const activeCentroid = marketCentroid(activeCountry);
   const portfolioTotal = totalValueNok(holdings, fxRates);
 
   const [viewWidth, viewHeight] = mapViewSize(zoom);
   const viewX = Math.max(0, Math.min(900 - viewWidth, center[0] - viewWidth / 2));
   const viewY = Math.max(0, Math.min(460 - viewHeight, center[1] - viewHeight / 2));
-  const previewCentroid = previewShape?.centroid ?? [450, 230];
+  const previewCentroid = marketCentroid(previewCountry) ?? [450, 230];
   const previewLeft = Math.max(4, Math.min(96, (previewCentroid[0] - viewX) / viewWidth * 100));
   const previewTop = Math.max(8, Math.min(92, (previewCentroid[1] - viewY) / viewHeight * 100));
   const previewSide = previewLeft > 64 ? "left" : "right";
@@ -672,7 +728,7 @@ export function GlobalMapView({
       setHoveredId(countryId);
       setExpandedHoverId((current) => current === countryId ? current : null);
       hoverOpenRef.current = null;
-    }, 1_000);
+    }, 700);
   }
 
   function clearPreviewSoon() {
@@ -689,12 +745,12 @@ export function GlobalMapView({
   }
 
   function selectCountry(country: MarketCountry) {
-    const shape = worldCountries.find((item) => item.name === country.atlasName);
+    const nextCenter = marketCentroid(country);
     setPinnedId(country.id);
     setHoveredId(null);
     setQuery(country.name);
     const nextZoom = Math.max(zoom, 2.35);
-    if (shape) setCenter(clampMapCenter(shape.centroid as MapPoint, nextZoom));
+    if (nextCenter) setCenter(clampMapCenter(nextCenter, nextZoom));
     setZoom(nextZoom);
   }
 
@@ -893,6 +949,52 @@ export function GlobalMapView({
                 </g>
               );
             })}
+            {marketCountries.filter((market) => pointMarketCoordinates[market.id]).map((market) => {
+              const point = marketCentroid(market);
+              if (!point) return null;
+              const active = market.id === activeId;
+              const filteredOut = !marketPassesFilters(market);
+              return (
+                <g
+                  className="point-market"
+                  key={market.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={pinnedId === market.id}
+                  aria-label={`${pinnedId === market.id ? "Pinned" : "Open"} ${market.name} market profile`}
+                  onMouseEnter={() => schedulePreview(market.id)}
+                  onMouseLeave={clearPreviewSoon}
+                  onFocus={() => keepPreview(market.id)}
+                  onBlur={clearPreviewSoon}
+                  onClick={() => {
+                    if (!suppressClickRef.current) selectCountry(market);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") selectCountry(market);
+                  }}
+                >
+                  <circle className="market-hit-target" cx={point[0]} cy={point[1]} r="12" />
+                  <circle className={`point-market-ring${active ? " active" : ""}${filteredOut ? " filtered-out" : ""}`} cx={point[0]} cy={point[1]} r="5.5" />
+                  <circle className={`market-pulse${active ? " active" : ""}${filteredOut ? " filtered-out" : ""}`} cx={point[0]} cy={point[1]} r="3.5" />
+                </g>
+              );
+            })}
+            {activeShape ? (
+              <path
+                className={`country-focus-overlay${hoveredId ? " hovered" : " pinned"}`}
+                d={activeShape.path}
+                aria-hidden="true"
+              />
+            ) : null}
+            {!activeShape && activeCountry && activeCentroid ? (
+              <circle
+                className={`point-market-focus${hoveredId ? " hovered" : " pinned"}`}
+                cx={activeCentroid[0]}
+                cy={activeCentroid[1]}
+                r="7"
+                aria-hidden="true"
+              />
+            ) : null}
             {activeLenses.has("blue-banana") ? <path className="blue-banana-corridor" d={blueBananaPath} /> : null}
             {activeLenses.has("rates") ? rateAnchors.map((anchor) => {
               const market = marketCountries.find((country) => country.id === anchor.id);

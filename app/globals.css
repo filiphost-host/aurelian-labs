@@ -7383,6 +7383,49 @@ button {
 .economic-marker.offshore .economic-marker-dot { fill: #d4af37; }
 .economic-marker text { fill: #e7e9e5; paint-order: stroke; stroke: #080b0a; stroke-width: 2.5px; font-size: 7px; font-weight: 650; letter-spacing: 0; }
 
+.country-focus-overlay {
+  pointer-events: none;
+  transform: translateY(-1.5px) scale(1.012);
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: rgba(68, 102, 82, 0.42);
+  stroke: rgba(216, 188, 108, 0.88);
+  stroke-width: 1.15;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.72)) drop-shadow(0 0 4px rgba(212, 175, 55, 0.22));
+  animation: atlas-country-rise 190ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.country-focus-overlay.hovered {
+  transform: translateY(-3px) scale(1.028);
+  fill: rgba(78, 119, 93, 0.54);
+  stroke: #d8bc6c;
+  filter: drop-shadow(0 7px 3px rgba(0, 0, 0, 0.78)) drop-shadow(0 0 6px rgba(212, 175, 55, 0.32));
+}
+
+.point-market-ring,
+.point-market-focus {
+  pointer-events: none;
+  fill: rgba(8, 12, 10, 0.82);
+  stroke: rgba(216, 188, 108, 0.74);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.point-market-ring.active,
+.point-market-focus {
+  fill: rgba(66, 105, 80, 0.7);
+  stroke: #d8bc6c;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.82)) drop-shadow(0 0 5px rgba(212, 175, 55, 0.32));
+}
+
+.point-market-ring.filtered-out { opacity: .16; }
+.point-market-focus.hovered { transform: translateY(-2px) scale(1.18); transform-box: fill-box; transform-origin: center; }
+
+@keyframes atlas-country-rise {
+  from { opacity: .45; transform: translateY(0) scale(1); }
+}
+
 .scenario-portfolio-lab {
   grid-column: 1 / -1;
   overflow: hidden;
