@@ -7422,6 +7422,65 @@ button {
 .point-market-ring.filtered-out { opacity: .16; }
 .point-market-focus.hovered { transform: translateY(-2px) scale(1.18); transform-box: fill-box; transform-origin: center; }
 
+.atlas-comparison {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(199, 169, 93, 0.18);
+  border-radius: 3px;
+  background: rgba(9, 12, 10, 0.7);
+}
+
+.atlas-comparison > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(199, 169, 93, 0.14);
+}
+
+.atlas-comparison > header > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.atlas-comparison > header svg { color: #c7a95d; }
+.atlas-comparison h3 { margin: 3px 0 0; color: #e6e3dc; font-size: 16px; }
+.atlas-comparison label { display: grid; gap: 5px; min-width: min(260px, 100%); }
+.atlas-comparison label > span { color: #858d87; font-size: 9px; text-transform: uppercase; }
+
+.atlas-comparison select {
+  width: 100%;
+  height: 36px;
+  border: 1px solid rgba(199, 169, 93, 0.2);
+  border-radius: 3px;
+  padding: 0 32px 0 10px;
+  background: #121512;
+  color: #d9dcd8;
+  font: inherit;
+  cursor: pointer;
+}
+
+.atlas-comparison table { min-width: 700px; }
+.atlas-comparison th,
+.atlas-comparison td { padding: 11px 18px; }
+.atlas-comparison th { color: #777f79; font-size: 9px; text-transform: uppercase; }
+.atlas-comparison td { border-top: 1px solid rgba(255, 255, 255, 0.045); color: #bdc3be; }
+.atlas-comparison td:first-child { color: #e2e3df; }
+.atlas-comparison td:last-child { color: #8d958f; }
+.atlas-comparison td .good { color: #63b58c; }
+.atlas-comparison td .bad { color: #d46774; }
+
+.atlas-comparison > p {
+  margin: 0;
+  padding: 10px 18px;
+  border-top: 1px solid rgba(199, 169, 93, 0.1);
+  color: #747c76;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
 @keyframes atlas-country-rise {
   from { opacity: .45; transform: translateY(0) scale(1); }
 }
@@ -7458,6 +7517,8 @@ button {
   .atlas-layout .map-toolbar { align-items: stretch; }
   .atlas-workspace, .atlas-workspace .world-map-shell, .atlas-workspace .world-map { min-height: 540px; }
   .economic-marker text { display: none; }
+  .atlas-comparison > header { align-items: stretch; flex-direction: column; }
+  .atlas-comparison label { min-width: 0; }
   .scenario-leader-row { grid-template-columns: 1fr; }
   .scenario-leader-row article { border-right: 0; border-bottom: 1px solid rgba(199, 169, 93, 0.14); }
 }

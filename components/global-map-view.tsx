@@ -2,6 +2,7 @@
 
 import { geoNaturalEarth1, geoPath } from "d3-geo";
 import {
+  ArrowLeftRight,
   Building2,
   ChevronDown,
   ChevronUp,
@@ -657,6 +658,7 @@ export function GlobalMapView({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeLenses, setActiveLenses] = useState<Set<MapLens>>(() => new Set());
   const [screenFilters, setScreenFilters] = useState<MarketScreen>(defaultMarketScreen);
+  const [comparisonId, setComparisonId] = useState("united-states");
   const dragRef = useRef<{
     pointerId: number;
     start: MapPoint;
@@ -849,9 +851,15 @@ export function GlobalMapView({
   const previewResearch = previewCountry ? marketResearch[previewCountry.id] : null;
   const previewAnalytics = previewCountry ? marketAnalytics[previewCountry.id] : null;
   const selectedValuation = selectedAnalytics ? valuationMetrics(selectedAnalytics) : null;
+  const effectiveComparisonId = selectedCountry?.id === comparisonId
+    ? selectedCountry.id === "united-states" ? "germany" : "united-states"
+    : comparisonId;
+  const comparisonCountry = marketCountries.find((country) => country.id === effectiveComparisonId) ?? null;
+  const comparisonAnalytics = comparisonCountry ? marketAnalytics[comparisonCountry.id] : null;
+  const comparisonValuation = comparisonAnalytics ? valuationMetrics(comparisonAnalytics) : null;
   const activeScreenCount = Object.values(screenFilters).filter((filter) => filter.enabled).length;
   const matchingMarketCount = marketCountries.filter(marketPassesFilters).length;
-  const shortcuts = ["norway", "netherlands", "united-states", "south-africa"]
+  const shortcuts = ["norway", "netherlands", "united-states", "india", "singapore", "south-africa"]
     .map((id) => marketCountries.find((country) => country.id === id))
     .filter((country): country is MarketCountry => Boolean(country));
 
@@ -1139,6 +1147,40 @@ export function GlobalMapView({
               <AnalyticalMetric label="Return on equity" value={`${selectedAnalytics.roe.toFixed(1)}%`} />
             </div>
           ) : null}
+          {selectedAnalytics && selectedValuation && comparisonCountry && comparisonAnalytics && comparisonValuation ? (
+            <section className="atlas-comparison" aria-labelledby="atlas-comparison-title">
+              <header>
+                <div>
+                  <ArrowLeftRight size={16} />
+                  <div><span className="eyebrow">Relative market lens</span><h3 id="atlas-comparison-title">Compare {selectedCountry.name}</h3></div>
+                </div>
+                <label>
+                  <span>Against</span>
+                  <select value={effectiveComparisonId} onChange={(event) => setComparisonId(event.target.value)}>
+                    {marketCountries.filter((country) => country.id !== selectedCountry.id && marketAnalytics[country.id]).map((country) => (
+                      <option key={country.id} value={country.id}>{country.name} · {country.keyIndex}</option>
+                    ))}
+                  </select>
+                </label>
+              </header>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Metric</th><th>{selectedCountry.name}</th><th>{comparisonCountry.name}</th><th>Reading</th></tr></thead>
+                  <tbody>
+                    <ComparisonRow label="Index P/E" primary={selectedAnalytics.pe} comparison={comparisonAnalytics.pe} suffix="x" lowerIsBetter />
+                    <ComparisonRow label="PEG ratio" primary={selectedValuation.peg} comparison={comparisonValuation.peg} lowerIsBetter />
+                    <ComparisonRow label="Price / book" primary={selectedValuation.priceToBook} comparison={comparisonValuation.priceToBook} suffix="x" lowerIsBetter />
+                    <ComparisonRow label="Sharpe ratio" primary={selectedAnalytics.sharpe} comparison={comparisonAnalytics.sharpe} />
+                    <ComparisonRow label="Government debt / GDP" primary={selectedAnalytics.debtToGdp} comparison={comparisonAnalytics.debtToGdp} suffix="%" lowerIsBetter />
+                    <ComparisonRow label="Free-cash-flow yield" primary={selectedAnalytics.fcfYield} comparison={comparisonAnalytics.fcfYield} suffix="%" />
+                    <ComparisonRow label="Earnings growth" primary={selectedAnalytics.earningsGrowth} comparison={comparisonAnalytics.earningsGrowth} suffix="%" />
+                    <ComparisonRow label="Return on equity" primary={selectedAnalytics.roe} comparison={comparisonAnalytics.roe} suffix="%" />
+                  </tbody>
+                </table>
+              </div>
+              <p>Indicative screen only. A lower multiple or debt ratio is not automatically better; market composition, accounting standards, and the observation period matter.</p>
+            </section>
+          ) : null}
           {selectedResearch ? (
             <div className="country-research-grid">
               <article>
@@ -1236,4 +1278,34 @@ function ScreenerControl({
 
 function AnalyticalMetric({ label, value }: { label: string; value: string }) {
   return <article><span>{label}</span><strong>{value}</strong><em>Indicative screen</em></article>;
+}
+
+function ComparisonRow({
+  label,
+  primary,
+  comparison,
+  suffix = "",
+  lowerIsBetter = false,
+}: {
+  label: string;
+  primary: number | null;
+  comparison: number | null;
+  suffix?: string;
+  lowerIsBetter?: boolean;
+}) {
+  const difference = primary !== null && comparison !== null ? primary - comparison : null;
+  const favorable = difference === null ? null : lowerIsBetter ? difference < 0 : difference > 0;
+  const reading = difference === null || Math.abs(difference) < 0.05
+    ? "Broadly similar"
+    : `${Math.abs(difference).toFixed(1)}${suffix} ${difference > 0 ? "higher" : "lower"}`;
+  const format = (value: number | null) => value === null ? "N/A" : `${value.toFixed(value >= 100 ? 0 : 1)}${suffix}`;
+
+  return (
+    <tr>
+      <td><strong>{label}</strong></td>
+      <td>{format(primary)}</td>
+      <td>{format(comparison)}</td>
+      <td><span className={favorable === null ? "" : favorable ? "good" : "bad"}>{reading}</span></td>
+    </tr>
+  );
 }
