@@ -7350,34 +7350,31 @@ button {
   background: #0e1213;
 }
 .atlas-workspace .world-map {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   min-height: min(72vh, 760px);
   transition: width 320ms cubic-bezier(.2,.8,.2,1), margin 320ms cubic-bezier(.2,.8,.2,1), filter 180ms ease;
 }
 .atlas-workspace .world-map-shell.filters-open .world-map { width: calc(100% - 370px); margin-right: 370px; }
-.atlas-workspace .map-ocean { fill: #101617; }
-.atlas-workspace .map-grain { fill: #aeb7b4; opacity: .075; }
+.atlas-workspace .map-ocean { fill: transparent; }
+.atlas-workspace .map-grain { fill: #aeb7b4; opacity: .025; }
 .atlas-workspace .map-grid-lines { pointer-events: none; }
 .atlas-workspace .map-grid-lines line { stroke: rgba(169, 182, 176, .055); }
 .atlas-workspace .map-land.muted { fill: #182a21; stroke: rgba(96, 132, 108, .42); opacity: .92; }
 .atlas-workspace .map-land.market-country { fill: #27543a; stroke: #669274; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7)); }
 .atlas-workspace .map-land.market-country.active,
 .atlas-workspace .map-land.market-country.pinned { filter: drop-shadow(0 0 3px rgba(212, 175, 55, 0.5)) drop-shadow(0 3px 2px rgba(0, 0, 0, 0.72)); }
-.ocean-topography { opacity: 0; pointer-events: none; transition: opacity 100ms ease; }
-.ocean-topography.active { opacity: 1; }
-.ocean-topography ellipse {
-  fill: rgba(59, 100, 81, .025);
-  stroke: rgba(133, 177, 157, .25);
-  stroke-width: .8;
-  vector-effect: non-scaling-stroke;
+.ocean-particle-canvas {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  display: block;
+  pointer-events: none;
+  background: #101617;
 }
-.ocean-topography ellipse:nth-child(2) { fill: rgba(63, 108, 87, .035); stroke: rgba(139, 184, 163, .29); }
-.ocean-topography ellipse:nth-child(3) { fill: rgba(69, 119, 94, .045); stroke: rgba(145, 192, 169, .34); }
-.ocean-topography ellipse:nth-child(4) { fill: rgba(76, 132, 103, .06); stroke: rgba(154, 202, 178, .4); }
-.ocean-topography ellipse:nth-child(5) { fill: rgba(84, 145, 113, .08); stroke: rgba(166, 213, 188, .48); }
-.ocean-topography ellipse:nth-child(6) { fill: rgba(96, 159, 125, .12); stroke: rgba(182, 224, 200, .58); }
-.ocean-topography path { fill: none; stroke: rgba(200, 233, 216, .7); stroke-width: .9; vector-effect: non-scaling-stroke; }
 .atlas-workspace .map-lens-control { top: 16px; right: 16px; bottom: auto; }
 .atlas-workspace .map-lens-panel {
   position: absolute;
