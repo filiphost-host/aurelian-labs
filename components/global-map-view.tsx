@@ -22,6 +22,12 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import worldAtlas from "world-atlas/countries-110m.json";
 import { formatPercent, holdingValueNok, totalValueNok } from "@/lib/calculations";
 import {
+  industryLabels,
+  marketsForIndustry,
+  scoreIndustryMarket,
+  type HeadToHeadIndustry,
+} from "@/lib/head-to-head";
+import {
   clampMapCenter,
   mapViewSize,
   panMapCenter,
@@ -659,6 +665,10 @@ export function GlobalMapView({
   const [activeLenses, setActiveLenses] = useState<Set<MapLens>>(() => new Set());
   const [screenFilters, setScreenFilters] = useState<MarketScreen>(defaultMarketScreen);
   const [comparisonId, setComparisonId] = useState("united-states");
+  const [comparisonMode, setComparisonMode] = useState<"country" | "industry">("country");
+  const [comparisonIndustry, setComparisonIndustry] = useState<HeadToHeadIndustry>("oil-gas");
+  const [industryPrimaryId, setIndustryPrimaryId] = useState("united-states");
+  const [industryComparisonId, setIndustryComparisonId] = useState("india");
   const dragRef = useRef<{
     pointerId: number;
     start: MapPoint;
@@ -857,6 +867,15 @@ export function GlobalMapView({
   const comparisonCountry = marketCountries.find((country) => country.id === effectiveComparisonId) ?? null;
   const comparisonAnalytics = comparisonCountry ? marketAnalytics[comparisonCountry.id] : null;
   const comparisonValuation = comparisonAnalytics ? valuationMetrics(comparisonAnalytics) : null;
+  const industryOptions = marketsForIndustry(comparisonIndustry);
+  const industryPrimary = industryOptions.find((market) => market.countryId === industryPrimaryId) ?? industryOptions[0];
+  const effectiveIndustryComparisonId = industryPrimary?.countryId === industryComparisonId
+    ? industryOptions.find((market) => market.countryId !== industryPrimary.countryId)?.countryId
+    : industryComparisonId;
+  const industryComparison = industryOptions.find((market) => market.countryId === effectiveIndustryComparisonId)
+    ?? industryOptions.find((market) => market.countryId !== industryPrimary?.countryId);
+  const industryPrimaryScore = industryPrimary ? scoreIndustryMarket(industryPrimary) : null;
+  const industryComparisonScore = industryComparison ? scoreIndustryMarket(industryComparison) : null;
   const activeScreenCount = Object.values(screenFilters).filter((filter) => filter.enabled).length;
   const matchingMarketCount = marketCountries.filter(marketPassesFilters).length;
   const shortcuts = ["norway", "netherlands", "united-states", "india", "singapore", "south-africa"]
@@ -1147,38 +1166,70 @@ export function GlobalMapView({
               <AnalyticalMetric label="Return on equity" value={`${selectedAnalytics.roe.toFixed(1)}%`} />
             </div>
           ) : null}
-          {selectedAnalytics && selectedValuation && comparisonCountry && comparisonAnalytics && comparisonValuation ? (
+          {selectedAnalytics && selectedValuation ? (
             <section className="atlas-comparison" aria-labelledby="atlas-comparison-title">
               <header>
                 <div>
                   <ArrowLeftRight size={16} />
-                  <div><span className="eyebrow">Relative market lens</span><h3 id="atlas-comparison-title">Compare {selectedCountry.name}</h3></div>
+                  <div><span className="eyebrow">Head-to-head</span><h3 id="atlas-comparison-title">Where is the stronger setup?</h3></div>
                 </div>
-                <label>
-                  <span>Against</span>
-                  <select value={effectiveComparisonId} onChange={(event) => setComparisonId(event.target.value)}>
-                    {marketCountries.filter((country) => country.id !== selectedCountry.id && marketAnalytics[country.id]).map((country) => (
-                      <option key={country.id} value={country.id}>{country.name} · {country.keyIndex}</option>
-                    ))}
-                  </select>
-                </label>
+                <div className="atlas-comparison-mode" role="tablist" aria-label="Comparison type">
+                  <button type="button" role="tab" aria-selected={comparisonMode === "country"} className={comparisonMode === "country" ? "active" : ""} onClick={() => setComparisonMode("country")}>Whole market</button>
+                  <button type="button" role="tab" aria-selected={comparisonMode === "industry"} className={comparisonMode === "industry" ? "active" : ""} onClick={() => setComparisonMode("industry")}>Same industry</button>
+                </div>
               </header>
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>Metric</th><th>{selectedCountry.name}</th><th>{comparisonCountry.name}</th><th>Reading</th></tr></thead>
-                  <tbody>
-                    <ComparisonRow label="Index P/E" primary={selectedAnalytics.pe} comparison={comparisonAnalytics.pe} suffix="x" lowerIsBetter />
-                    <ComparisonRow label="PEG ratio" primary={selectedValuation.peg} comparison={comparisonValuation.peg} lowerIsBetter />
-                    <ComparisonRow label="Price / book" primary={selectedValuation.priceToBook} comparison={comparisonValuation.priceToBook} suffix="x" lowerIsBetter />
-                    <ComparisonRow label="Sharpe ratio" primary={selectedAnalytics.sharpe} comparison={comparisonAnalytics.sharpe} />
-                    <ComparisonRow label="Government debt / GDP" primary={selectedAnalytics.debtToGdp} comparison={comparisonAnalytics.debtToGdp} suffix="%" lowerIsBetter />
-                    <ComparisonRow label="Free-cash-flow yield" primary={selectedAnalytics.fcfYield} comparison={comparisonAnalytics.fcfYield} suffix="%" />
-                    <ComparisonRow label="Earnings growth" primary={selectedAnalytics.earningsGrowth} comparison={comparisonAnalytics.earningsGrowth} suffix="%" />
-                    <ComparisonRow label="Return on equity" primary={selectedAnalytics.roe} comparison={comparisonAnalytics.roe} suffix="%" />
-                  </tbody>
-                </table>
-              </div>
-              <p>Indicative screen only. A lower multiple or debt ratio is not automatically better; market composition, accounting standards, and the observation period matter.</p>
+              {comparisonMode === "country" && comparisonCountry && comparisonAnalytics && comparisonValuation ? <>
+                <div className="atlas-comparison-selectors single">
+                  <label><span>Primary market</span><select value={selectedCountry.id} onChange={(event) => selectCountry(marketCountries.find((country) => country.id === event.target.value) ?? selectedCountry)}>{marketCountries.filter((country) => marketAnalytics[country.id]).map((country) => <option key={country.id} value={country.id}>{country.name} · {country.keyIndex}</option>)}</select></label>
+                  <label><span>Against</span><select value={effectiveComparisonId} onChange={(event) => setComparisonId(event.target.value)}>{marketCountries.filter((country) => country.id !== selectedCountry.id && marketAnalytics[country.id]).map((country) => <option key={country.id} value={country.id}>{country.name} · {country.keyIndex}</option>)}</select></label>
+                </div>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>Metric</th><th>{selectedCountry.name}</th><th>{comparisonCountry.name}</th><th>Reading</th></tr></thead>
+                    <tbody>
+                      <ComparisonRow label="Index P/E" primary={selectedAnalytics.pe} comparison={comparisonAnalytics.pe} suffix="x" lowerIsBetter />
+                      <ComparisonRow label="PEG ratio" primary={selectedValuation.peg} comparison={comparisonValuation.peg} lowerIsBetter />
+                      <ComparisonRow label="Price / book" primary={selectedValuation.priceToBook} comparison={comparisonValuation.priceToBook} suffix="x" lowerIsBetter />
+                      <ComparisonRow label="Sharpe ratio" primary={selectedAnalytics.sharpe} comparison={comparisonAnalytics.sharpe} />
+                      <ComparisonRow label="Government debt / GDP" primary={selectedAnalytics.debtToGdp} comparison={comparisonAnalytics.debtToGdp} suffix="%" lowerIsBetter />
+                      <ComparisonRow label="Free-cash-flow yield" primary={selectedAnalytics.fcfYield} comparison={comparisonAnalytics.fcfYield} suffix="%" />
+                      <ComparisonRow label="Earnings growth" primary={selectedAnalytics.earningsGrowth} comparison={comparisonAnalytics.earningsGrowth} suffix="%" />
+                      <ComparisonRow label="Return on equity" primary={selectedAnalytics.roe} comparison={comparisonAnalytics.roe} suffix="%" />
+                    </tbody>
+                  </table>
+                </div>
+                <p>Whole-market screen. Index composition, accounting standards, and observation periods can materially change the reading.</p>
+              </> : null}
+              {comparisonMode === "industry" && industryPrimary && industryComparison && industryPrimaryScore && industryComparisonScore ? <>
+                <div className="atlas-comparison-selectors">
+                  <label><span>Industry</span><select value={comparisonIndustry} onChange={(event) => setComparisonIndustry(event.target.value as HeadToHeadIndustry)}>{Object.entries(industryLabels).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+                  <label><span>Market A</span><select value={industryPrimary.countryId} onChange={(event) => setIndustryPrimaryId(event.target.value)}>{industryOptions.map((market) => <option key={market.countryId} value={market.countryId}>{market.country}</option>)}</select></label>
+                  <label><span>Market B</span><select value={industryComparison.countryId} onChange={(event) => setIndustryComparisonId(event.target.value)}>{industryOptions.filter((market) => market.countryId !== industryPrimary.countryId).map((market) => <option key={market.countryId} value={market.countryId}>{market.country}</option>)}</select></label>
+                </div>
+                <div className="industry-verdict">
+                  <div><span>Stronger modeled setup</span><strong>{industryPrimaryScore.overall >= industryComparisonScore.overall ? industryPrimary.country : industryComparison.country}</strong><p>{industryLabels[comparisonIndustry]} · transparent screen, not a recommendation</p></div>
+                  <ScoreSummary market={industryPrimary.country} score={industryPrimaryScore.overall} />
+                  <ScoreSummary market={industryComparison.country} score={industryComparisonScore.overall} />
+                </div>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>Metric</th><th>{industryPrimary.country}</th><th>{industryComparison.country}</th><th>Reading</th></tr></thead>
+                    <tbody>
+                      <ComparisonRow label="Industry P/E" primary={industryPrimary.pe} comparison={industryComparison.pe} suffix="x" lowerIsBetter />
+                      <ComparisonRow label="Earnings growth" primary={industryPrimary.earningsGrowth} comparison={industryComparison.earningsGrowth} suffix="%" />
+                      <ComparisonRow label="FCF yield" primary={industryPrimary.fcfYield} comparison={industryComparison.fcfYield} suffix="%" />
+                      <ComparisonRow label="Net debt / EBITDA" primary={industryPrimary.netDebtToEbitda} comparison={industryComparison.netDebtToEbitda} suffix="x" lowerIsBetter />
+                      <ComparisonRow label="Return on equity" primary={industryPrimary.roe} comparison={industryComparison.roe} suffix="%" />
+                      <ComparisonRow label="Sharpe ratio" primary={industryPrimary.sharpe} comparison={industryComparison.sharpe} />
+                      <RiskComparisonRow label="Policy risk" primary={industryPrimary.policyRisk} comparison={industryComparison.policyRisk} />
+                      <RiskComparisonRow label="Currency risk" primary={industryPrimary.currencyRisk} comparison={industryComparison.currencyRisk} />
+                      <ComparisonRow label="Market liquidity" primary={industryPrimary.liquidity} comparison={industryComparison.liquidity} suffix="/5" />
+                    </tbody>
+                  </table>
+                </div>
+                <div className="industry-context"><p><strong>{industryPrimary.country}</strong>{industryPrimary.note}</p><p><strong>{industryComparison.country}</strong>{industryComparison.note}</p></div>
+                <p>Overall score: valuation 20%, growth 20%, quality 16%, balance sheet 14%, risk-adjusted return 15%, investability 15%. Inputs are indicative research screens and must be verified before use.</p>
+              </> : null}
             </section>
           ) : null}
           {selectedResearch ? (
@@ -1308,4 +1359,20 @@ function ComparisonRow({
       <td><span className={favorable === null ? "" : favorable ? "good" : "bad"}>{reading}</span></td>
     </tr>
   );
+}
+
+function RiskComparisonRow({ label, primary, comparison }: { label: string; primary: number; comparison: number }) {
+  const names = ["", "Low", "Moderate", "Elevated", "High", "Very high"];
+  return (
+    <tr>
+      <td><strong>{label}</strong></td>
+      <td>{names[primary]} · {primary}/5</td>
+      <td>{names[comparison]} · {comparison}/5</td>
+      <td><span className={primary === comparison ? "" : primary < comparison ? "good" : "bad"}>{primary === comparison ? "Broadly similar" : primary < comparison ? "Lower in market A" : "Lower in market B"}</span></td>
+    </tr>
+  );
+}
+
+function ScoreSummary({ market, score }: { market: string; score: number }) {
+  return <div className="industry-score"><span>{market}</span><strong>{score.toFixed(0)}<small>/100</small></strong><i><b style={{ width: `${score}%` }} /></i></div>;
 }
