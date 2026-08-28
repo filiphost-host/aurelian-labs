@@ -970,8 +970,6 @@ export function GlobalMapView({
     ?? industryOptions.find((market) => market.countryId !== industryPrimary?.countryId);
   const industryPrimaryScore = industryPrimary ? scoreIndustryMarket(industryPrimary) : null;
   const industryComparisonScore = industryComparison ? scoreIndustryMarket(industryComparison) : null;
-  const activeUniverseCount = Number(marketRegion !== "all") + Number(marketStage !== "all") + Number(industryLens !== "all");
-  const activeScreenCount = Object.values(screenFilters).filter((filter) => filter.enabled).length;
   const matchingMarkets = marketCountries.filter(marketPassesFilters);
   const matchingMarketCount = matchingMarkets.length;
   const shortcuts = ["norway", "netherlands", "united-states", "india", "singapore", "south-africa"]
@@ -1041,8 +1039,8 @@ export function GlobalMapView({
             <rect width="900" height="460" className="map-ocean" />
             <rect width="900" height="460" className="map-grain" />
             <g className="map-grid-lines">
-              {[120, 240, 360, 480, 600, 720].map((x) => <line key={`x-${x}`} x1={x} y1="0" x2={x} y2="460" />)}
-              {[90, 170, 250, 330, 410].map((y) => <line key={`y-${y}`} x1="0" y1={y} x2="900" y2={y} />)}
+              {Array.from({ length: 14 }, (_, index) => (index + 1) * 60).map((x) => <line key={`x-${x}`} x1={x} y1="0" x2={x} y2="460" />)}
+              {Array.from({ length: 9 }, (_, index) => (index + 1) * 46).map((y) => <line key={`y-${y}`} x1="0" y1={y} x2="900" y2={y} />)}
             </g>
             {worldCountries.map((country) => {
               const market = marketByAtlasName.get(country.name);
@@ -1158,7 +1156,7 @@ export function GlobalMapView({
             </button>
             {lensPanelOpen ? (
               <div className="map-lens-panel">
-                <header><span>Atlas filters</span><div><strong>{activeLenses.size + activeUniverseCount + activeScreenCount || "All"}</strong><button type="button" className="atlas-filter-reset" onClick={resetFilters} aria-label="Reset all filters" title="Reset all filters"><RotateCcw size={13} /></button></div></header>
+                <header><span>Atlas filters</span><div><button type="button" className="atlas-filter-reset" onClick={resetFilters} aria-label="Reset all filters" title="Reset all filters"><RotateCcw size={13} /></button></div></header>
                 <div className="map-screen-summary"><strong>{matchingMarketCount} of {marketCountries.length}</strong><span>researched markets match</span></div>
                 <div className="atlas-filter-tabs" role="tablist" aria-label="Filter groups">
                   {(["universe", "fundamentals", "risk"] as const).map((panel) => <button key={panel} role="tab" aria-selected={filterPanel === panel} className={filterPanel === panel ? "active" : ""} onClick={() => setFilterPanel(panel)}>{panel === "risk" ? "Risk & macro" : `${panel[0].toUpperCase()}${panel.slice(1)}`}</button>)}
@@ -1200,7 +1198,6 @@ export function GlobalMapView({
                 <div className="atlas-filter-results"><span>{matchingMarkets.slice(0, 5).map((market) => market.name).join(" · ") || "No markets match"}{matchingMarkets.length > 5 ? ` · +${matchingMarkets.length - 5}` : ""}</span></div>
                 <p className="map-screen-note">Filters use comparative model inputs. Sector and industry lenses are estimates, not live index quotes. Market-size and liquidity feeds are the next sourced layer.</p>
                 <div className="atlas-filter-sources"><span>Framework</span><a href="https://www.msci.com/indexes/index-resources/gics" target="_blank" rel="noreferrer">GICS</a><a href={officialSources.worldBank} target="_blank" rel="noreferrer">World Bank</a><a href="https://www.imf.org/external/datamapper/datasets/WEO" target="_blank" rel="noreferrer">IMF</a></div>
-                <button type="button" onClick={resetFilters}>Reset all filters</button>
               </div>
             ) : null}
           </div>

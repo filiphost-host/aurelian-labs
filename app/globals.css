@@ -7331,6 +7331,13 @@ button {
   min-height: 76px;
   align-items: end;
   padding: 17px 19px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(106deg, rgba(224, 194, 112, 0.018) 0 1px, transparent 1px 6px),
+    #111013;
+  box-shadow: inset 0 1px 0 rgba(222, 191, 104, 0.08);
 }
 
 .primary-view-toolbar > div:first-child {
@@ -7430,9 +7437,16 @@ button {
   width: 390px;
   max-height: calc(min(72vh, 760px) - 60px);
   overflow-y: auto;
-  border-radius: 2px;
-  background: rgba(10, 13, 12, 0.97);
-  box-shadow: -18px 0 36px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(204, 179, 108, 0.12);
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(167, 181, 173, 0.035) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 46px, rgba(167, 181, 173, 0.03) 46px 47px),
+    repeating-linear-gradient(106deg, rgba(225, 200, 132, 0.018) 0 1px, transparent 1px 6px),
+    rgba(10, 13, 12, 0.94);
+  box-shadow: -18px 0 36px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(225, 199, 126, 0.07);
+  backdrop-filter: blur(18px) saturate(0.86);
+  -webkit-backdrop-filter: blur(18px) saturate(0.86);
 }
 .atlas-workspace .map-lens-panel header > div { display: flex; align-items: center; gap: 7px; }
 .atlas-filter-reset {
@@ -7708,16 +7722,30 @@ button {
 .app-masthead { height: 66px; }
 .app-shell { padding-top: 78px; }
 .app-masthead .masthead-wordmark {
+  --wordmark-shine-x: 42%;
+  --wordmark-shine-y: 45%;
   color: transparent;
-  background: linear-gradient(102deg, #a87929 0%, #e7cf89 34%, #c49a45 62%, #f0dda0 100%);
+  background:
+    radial-gradient(circle at var(--wordmark-shine-x) var(--wordmark-shine-y), rgba(255, 248, 211, 0.98) 0, rgba(238, 207, 126, 0.88) 9%, transparent 34%),
+    repeating-linear-gradient(104deg, rgba(255, 246, 204, 0.28) 0 1px, rgba(118, 75, 18, 0.08) 1px 3px, transparent 3px 6px),
+    linear-gradient(102deg, #9c6c20 0%, #e7ca7c 30%, #b78532 58%, #f0d990 100%);
+  background-blend-mode: screen, soft-light, normal;
   background-clip: text;
   -webkit-background-clip: text;
   font-family: "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-  font-size: 21px;
-  font-weight: 320;
+  font-size: 25px;
+  font-weight: 560;
   letter-spacing: 0;
   line-height: 1;
-  text-shadow: 0 0 18px rgba(199, 169, 93, .08);
+  text-shadow: 0 0 20px rgba(199, 169, 93, .1);
+  transform: translateY(0);
+  transition: transform 180ms ease, filter 180ms ease;
+  cursor: default;
+}
+
+.app-masthead .masthead-wordmark:hover {
+  filter: brightness(1.08) contrast(1.04);
+  transform: translateY(-1px);
 }
 
 .login-brand-mark {
@@ -7738,8 +7766,12 @@ button {
   .app-masthead { height: 58px; padding-inline: 12px; }
   .app-shell { padding-top: 68px; }
   .app-masthead .brand { min-width: 0; }
-  .app-masthead .masthead-wordmark { font-size: 17px; }
+  .app-masthead .masthead-wordmark { font-size: 19px; }
   .login-brand-mark { width: 82px; height: 82px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-masthead .masthead-wordmark { transition: none; }
 }
 
 /* Atlas head-to-head */

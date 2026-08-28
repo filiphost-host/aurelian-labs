@@ -457,7 +457,24 @@ export function Workbench({
   return (
     <main className="app-shell">
       <header className="app-masthead">
-        <div className="brand"><strong className="masthead-wordmark">Aurelian Capital</strong></div>
+        <div className="brand">
+          <strong
+            className="masthead-wordmark"
+            onPointerMove={(event) => {
+              const bounds = event.currentTarget.getBoundingClientRect();
+              const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+              const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+              event.currentTarget.style.setProperty("--wordmark-shine-x", `${x}%`);
+              event.currentTarget.style.setProperty("--wordmark-shine-y", `${y}%`);
+            }}
+            onPointerLeave={(event) => {
+              event.currentTarget.style.setProperty("--wordmark-shine-x", "42%");
+              event.currentTarget.style.setProperty("--wordmark-shine-y", "45%");
+            }}
+          >
+            Aurelian Capital
+          </strong>
+        </div>
         <div className="masthead-controls">
           <div className="currency-toggle" aria-label="Display currency">
             <button className={displayCurrency === "NOK" ? "active" : ""} onClick={() => setDisplayCurrency("NOK")}>NOK</button>
