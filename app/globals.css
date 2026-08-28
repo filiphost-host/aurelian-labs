@@ -7548,19 +7548,21 @@ button {
   object-position: center;
   opacity: 1;
   transform: none;
-  filter: contrast(1.06) saturate(1.03);
+  filter: contrast(1.12) saturate(1.06) brightness(.98);
+  -webkit-mask-image: radial-gradient(ellipse 92% 100% at 50% 52%, #000 0 68%, rgba(0, 0, 0, .92) 78%, rgba(0, 0, 0, .5) 90%, transparent 100%);
+  mask-image: radial-gradient(ellipse 92% 100% at 50% 52%, #000 0 68%, rgba(0, 0, 0, .92) 78%, rgba(0, 0, 0, .5) 90%, transparent 100%);
 }
 
 .app-masthead .brand-mark {
-  width: 86px;
-  height: 86px;
+  width: 92px;
+  height: 92px;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
 }
 
-.app-masthead .brand { min-width: 86px; gap: 0; }
+.app-masthead .brand { min-width: 92px; gap: 0; }
 .app-masthead { height: 86px; }
 .app-shell { padding-top: 96px; }
 
@@ -7581,8 +7583,8 @@ button {
 @media (max-width: 620px) {
   .app-masthead { height: 72px; padding-inline: 12px; }
   .app-shell { padding-top: 80px; }
-  .app-masthead .brand { min-width: 68px; }
-  .app-masthead .brand-mark { width: 68px; height: 68px; }
+  .app-masthead .brand { min-width: 72px; }
+  .app-masthead .brand-mark { width: 72px; height: 72px; }
   .login-brand-mark { width: 82px; height: 82px; }
 }
 
