@@ -4,19 +4,12 @@ import {
   CircleGauge,
   Globe2,
   Newspaper,
-  Search,
   SlidersHorizontal,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { InsightsView } from "@/components/insights-view";
-import {
-  SearchCommand,
-  type RemoteInstrument,
-} from "@/components/search-command";
-import { replayTransactions } from "@/lib/calculations";
 import { fallbackFxRates, latestFxRatesFromRows, type FxRateRow, type FxRates } from "@/lib/fx";
-import { buildDailyBrief } from "@/lib/insights";
 import type { BenchmarkPricePoint } from "@/lib/portfolio-story";
 import {
   sampleDecisions,
@@ -28,11 +21,9 @@ import {
 } from "@/lib/sample-data";
 import { createClient } from "@/lib/supabase";
 import type {
-  DailyBrief,
   DisplayCurrency,
   Holding,
   HoldingDecision,
-  MarketQuote,
   MarketEvent,
   PortfolioSnapshot,
   SavedScenario,
@@ -70,12 +61,6 @@ const JudgmentView = dynamic(
 );
 
 type Tab = "insights" | "portfolio" | "analyst" | "judgment" | "map" | "scenarios" | "calendar" | "research";
-type LocalSearchResult = {
-  id: string;
-  type: "holding" | "insight" | "scenario" | "country";
-  title: string;
-  subtitle: string;
-};
 
 const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: "map", label: "Atlas", icon: Globe2 },
@@ -131,7 +116,6 @@ export function Workbench({
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>(configured ? [] : sampleSnapshots);
   const [decisions, setDecisions] = useState<HoldingDecision[]>(configured ? [] : sampleDecisions);
   const [events, setEvents] = useState<MarketEvent[]>(configured ? [] : sampleEvents);
-  const [storedBrief, setStoredBrief] = useState<DailyBrief | null>(null);
   const [fxRates, setFxRates] = useState<FxRates>(fallbackFxRates);
   const [benchmarkPrices, setBenchmarkPrices] = useState<BenchmarkPricePoint[]>([]);
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
@@ -140,23 +124,10 @@ export function Workbench({
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(configured);
   const [status, setStatus] = useState("Public session · changes stay in this browser tab");
-  const [searchOpen, setSearchOpen] = useState(false);
   const [focusedHoldingId, setFocusedHoldingId] = useState<string | null>(null);
-  const [instrumentSeed, setInstrumentSeed] = useState<RemoteInstrument | null>(null);
+  const instrumentSeed = null;
   const [requestedCountry, setRequestedCountry] = useState<string | null>(null);
   const [researchTicker, setResearchTicker] = useState("MSFT");
-
-  useEffect(() => {
-    function keyboard(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setSearchOpen(true);
-      }
-      if (event.key === "Escape") setSearchOpen(false);
-    }
-    window.addEventListener("keydown", keyboard);
-    return () => window.removeEventListener("keydown", keyboard);
-  }, []);
 
   useEffect(() => {
     if (!configured || !supabase) return;
@@ -175,7 +146,6 @@ export function Workbench({
         snapshotRows,
         decisionRows,
         eventRows,
-        briefRows,
         scenarioRows,
         fxRows,
         benchmarkRows,
@@ -185,7 +155,6 @@ export function Workbench({
         supabase!.from("portfolio_snapshots").select("*").order("snapshot_date"),
         supabase!.from("holding_decisions").select("*").order("recorded_at"),
         supabase!.from("market_events").select("*").order("event_date"),
-        supabase!.from("daily_briefs").select("*").order("brief_date", { ascending: false }).limit(1),
         supabase!.from("saved_scenarios").select("*").order("created_at", { ascending: false }),
         supabase!.from("fx_rates").select("base_currency,quote_currency,rate,as_of,source").order("as_of", { ascending: false }).limit(120),
         loadBenchmarkPrices(supabase!, "^GSPC"),
@@ -197,7 +166,6 @@ export function Workbench({
         snapshotRows.error,
         decisionRows.error,
         eventRows.error,
-        briefRows.error,
         scenarioRows.error,
       ].find(Boolean);
       if (firstError) {
@@ -218,42 +186,11 @@ export function Workbench({
       setDecisions((decisionRows.data ?? []) as unknown as HoldingDecision[]);
       setEvents((eventRows.data ?? []) as unknown as MarketEvent[]);
       setSavedScenarios((scenarioRows.data ?? []) as unknown as SavedScenario[]);
-      const savedBrief = briefRows.data?.[0];
-      if (savedBrief) {
-        setStoredBrief({
-          id: savedBrief.id,
-          brief_date: savedBrief.brief_date,
-          title: savedBrief.title,
-          summary: savedBrief.summary,
-          insights: savedBrief.insights,
-          generated_at: savedBrief.generated_at,
-        } as DailyBrief);
-      }
       setLoading(false);
     }
 
     loadWorkspace();
   }, [configured, supabase]);
-
-  const scenarioPositions = useMemo(
-    () => replayTransactions(holdings, transactions, fxRates.rates),
-    [fxRates, holdings, transactions],
-  );
-
-  const calculatedBrief = useMemo(
-    () => buildDailyBrief({
-      holdings,
-      transactions,
-      decisions,
-      events,
-      snapshots,
-      asOf: snapshots.at(-1)?.snapshot_date ?? initialAsOf,
-      generatedAt: initialGeneratedAt,
-      fxRates: fxRates.rates,
-    }),
-    [decisions, events, fxRates, holdings, initialAsOf, initialGeneratedAt, snapshots, transactions],
-  );
-  const brief = storedBrief?.brief_date === calculatedBrief.brief_date ? storedBrief : calculatedBrief;
 
   function openTab(tab: Tab) {
     setActiveTab(tab);
@@ -270,43 +207,12 @@ export function Workbench({
     openTab("research");
   }
 
-  const applyMarketQuotes = useCallback((quotes: MarketQuote[]) => {
-    if (quotes.length === 0) return;
-    const byHoldingId = new Map(quotes.map((quote) => [quote.id, quote]));
-    setHoldings((current) => current.map((holding) => {
-      const quote = byHoldingId.get(holding.id);
-      if (!quote) return holding;
-      return {
-        ...holding,
-        market_price: quote.price,
-        price_provenance: {
-          source: quote.source,
-          as_of: quote.asOf,
-          status: quote.status,
-          note: quote.status === "delayed" ? "Latest available quote; exchange delays may apply." : null,
-        },
-      };
-    }));
-    if (supabase && userId) {
-      void Promise.all(quotes.map((quote) => supabase.from("holdings").update({
-        market_price: quote.price,
-        price_provenance: {
-          source: quote.source,
-          as_of: quote.asOf,
-          status: quote.status,
-          note: quote.status === "delayed" ? "Latest available quote; exchange delays may apply." : null,
-        },
-      }).eq("id", quote.id).eq("user_id", userId)));
-    }
-  }, [supabase, userId]);
-
   async function saveHolding(holding: Holding) {
     const isNew = !holdings.some((item) => item.id === holding.id);
     const normalized = normalizeHolding(holding);
     setHoldings((current) => isNew
       ? [...current, normalized]
       : current.map((item) => item.id === holding.id ? normalized : item));
-    setStoredBrief(null);
 
     if (isNew && holding.quantity > 0) {
       const opening: Transaction = {
@@ -343,7 +249,6 @@ export function Workbench({
     setHoldings((current) => current.filter((item) => item.id !== id));
     setTransactions((current) => current.filter((transaction) => transaction.holding_id !== id));
     setDecisions((current) => current.filter((decision) => decision.holding_id !== id));
-    setStoredBrief(null);
     if (supabase && userId) {
       const { error } = await supabase.from("holdings").delete().eq("id", id).eq("user_id", userId);
       setStatus(error ? error.message : `${holding.name} deleted.`);
@@ -352,7 +257,6 @@ export function Workbench({
 
   async function saveTransaction(transaction: Transaction) {
     setTransactions((current) => [...current.filter((item) => item.id !== transaction.id), transaction]);
-    setStoredBrief(null);
     if (supabase && userId) {
       const { error } = await supabase.from("transactions").upsert({ ...transaction, user_id: userId });
       setStatus(error ? error.message : "Transaction recorded.");
@@ -364,7 +268,6 @@ export function Workbench({
   async function importTransactions(drafts: Transaction[]) {
     if (!drafts.length) return;
     setTransactions((current) => [...current, ...drafts]);
-    setStoredBrief(null);
 
     if (!supabase || !userId) {
       setStatus(`${drafts.length} imported transactions added to this preview session.`);
@@ -388,7 +291,6 @@ export function Workbench({
   async function deleteTransaction(id: string) {
     if (!window.confirm("Delete this ledger entry? Portfolio returns will be recalculated.")) return;
     setTransactions((current) => current.filter((item) => item.id !== id));
-    setStoredBrief(null);
     if (supabase && userId) {
       const { error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", userId);
       setStatus(error ? error.message : "Transaction deleted.");
@@ -397,7 +299,6 @@ export function Workbench({
 
   async function saveDecision(decision: HoldingDecision) {
     setDecisions((current) => [...current, decision]);
-    setStoredBrief(null);
     if (supabase && userId) {
       const { error } = await supabase.from("holding_decisions").insert({ ...decision, user_id: userId });
       setStatus(error ? error.message : "Decision Memory updated.");
@@ -422,27 +323,7 @@ export function Workbench({
     }
   }
 
-  function handleLocalSearch(result: LocalSearchResult) {
-    if (result.type === "holding") {
-      openTab("portfolio");
-      setFocusedHoldingId(result.id);
-      window.setTimeout(() => document.getElementById(`holding-${result.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
-    } else if (result.type === "insight") {
-      openTab("insights");
-    } else if (result.type === "scenario") {
-      const preset = scenarioPresets.find((item) => item.id === result.id);
-      if (preset) {
-        setScenario({ ...preset.shocks });
-        setActivePresetId(preset.id);
-      }
-      openTab("scenarios");
-    } else {
-      setRequestedCountry(result.title);
-      openTab("map");
-    }
-  }
-
-  const consumeInstrumentSeed = useCallback(() => setInstrumentSeed(null), []);
+  const consumeInstrumentSeed = () => {};
   if (loading) {
     return (
       <main className="app-shell centered">
@@ -487,13 +368,10 @@ export function Workbench({
         <div className="view-stage" key={activeTab} role="region" aria-label={`${tabs.find((tab) => tab.id === activeTab)?.label} view`}>
           {activeTab === "insights" ? (
             <InsightsView
-              brief={brief}
-              holdings={holdings}
-              decisions={decisions}
-              fxRates={fxRates.rates}
+              asOf={initialAsOf}
+              generatedAt={initialGeneratedAt}
               fxMeta={fxRates}
               benchmarkAsOf={benchmarkPrices.at(-1)?.price_date ?? null}
-              onQuotesUpdated={applyMarketQuotes}
               onOpenMarket={(country) => {
                 setRequestedCountry(country);
                 openTab("map");
@@ -566,16 +444,11 @@ export function Workbench({
           {activeTab === "map" ? (
             <GlobalMapView
               key={requestedCountry ?? "default-map"}
-              holdings={holdings}
-              fxRates={fxRates.rates}
               requestedCountry={requestedCountry}
             />
           ) : null}
           {activeTab === "scenarios" ? (
             <ScenarioView
-              holdings={holdings}
-              positions={scenarioPositions}
-              benchmarkPrices={benchmarkPrices}
               fxRates={fxRates.rates}
               displayCurrency={displayCurrency}
               scenario={scenario}
@@ -607,23 +480,7 @@ export function Workbench({
             </button>
           );
         })}
-        <button className="dock-search" onClick={() => setSearchOpen(true)} aria-label="Search Aurelian" title="Search Aurelian"><Search size={18} /><span>Search</span></button>
       </nav>
-
-      {searchOpen ? (
-        <SearchCommand
-          open
-          onClose={() => setSearchOpen(false)}
-          holdings={holdings}
-          brief={brief}
-          presets={scenarioPresets}
-          onLocalSelect={handleLocalSearch}
-          onInstrumentSelect={(instrument) => {
-            setInstrumentSeed(instrument);
-            openTab("portfolio");
-          }}
-        />
-      ) : null}
     </main>
   );
 }

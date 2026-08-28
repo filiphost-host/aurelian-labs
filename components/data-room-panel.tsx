@@ -3,7 +3,6 @@
 import { Landmark, PlugZap } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FxRates } from "@/lib/fx";
-import type { Holding } from "@/lib/types";
 
 type Connector = {
   id: string;
@@ -42,11 +41,9 @@ function ageLabel(date: string | null) {
 export function DataRoomPanel({
   fxRates,
   benchmarkAsOf,
-  holdings,
 }: {
   fxRates: FxRates;
   benchmarkAsOf: string | null;
-  holdings: Holding[];
 }) {
   const [dataRoom, setDataRoom] = useState<DataRoom | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +57,6 @@ export function DataRoomPanel({
     return () => { active = false; };
   }, []);
 
-  const verified = holdings.filter((holding) => ["live", "delayed"].includes(holding.price_provenance.status)).length;
-  const coverage = holdings.length ? Math.round((verified / holdings.length) * 100) : 0;
   const missing = dataRoom?.connectors.filter((connector) => !connector.configured) ?? [];
 
   return (
@@ -86,12 +81,9 @@ export function DataRoomPanel({
           <em>{benchmarkAsOf ? `Updated ${ageLabel(benchmarkAsOf)}` : "The daily refresh has not run"}</em>
         </article>
         <article>
-          <span>Priced from a feed</span>
-          <strong>{coverage}%</strong>
-          <em>
-            {verified} of {holdings.length} positions
-            {holdings.length - verified > 0 ? `; ${holdings.length - verified} manual or estimated` : ""}
-          </em>
+          <span>Market coverage</span>
+          <strong>Major indices</strong>
+          <em>Unavailable observations are excluded rather than shown as zero</em>
         </article>
         <article>
           <span>Norwegian policy rate</span>

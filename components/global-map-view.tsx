@@ -22,7 +22,6 @@ import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as R
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import worldAtlas from "world-atlas/countries-110m.json";
-import { formatPercent, holdingValueNok, totalValueNok } from "@/lib/calculations";
 import {
   industryLabels,
   marketsForIndustry,
@@ -36,7 +35,6 @@ import {
   zoomMapAt,
   type MapPoint,
 } from "@/lib/map-viewport";
-import type { Holding } from "@/lib/types";
 import { OceanParticleField } from "@/components/ocean-particle-field";
 
 type CountryFeature = Feature<Geometry, { name: string }> & { id?: string | number };
@@ -744,12 +742,8 @@ function marketCentroid(market: MarketCountry | null | undefined): MapPoint | nu
 }
 
 export function GlobalMapView({
-  holdings,
-  fxRates,
   requestedCountry,
 }: {
-  holdings: Holding[];
-  fxRates: Record<string, number>;
   requestedCountry: string | null;
 }) {
   const requestedMarket = marketCountries.find((item) =>
@@ -798,8 +792,6 @@ export function GlobalMapView({
     ? worldCountries.find((country) => country.name === activeCountry.atlasName)
     : null;
   const activeCentroid = marketCentroid(activeCountry);
-  const portfolioTotal = totalValueNok(holdings, fxRates);
-
   const [viewWidth, viewHeight] = mapViewSize(zoom);
   const viewX = Math.max(0, Math.min(900 - viewWidth, center[0] - viewWidth / 2));
   const viewY = Math.max(0, Math.min(460 - viewHeight, center[1] - viewHeight / 2));
@@ -980,10 +972,6 @@ export function GlobalMapView({
   const suggestions = query
     ? marketCountries.filter((country) => country.name.toLowerCase().includes(query.toLowerCase()) && country.name !== query)
     : [];
-  const activeExposure = selectedCountry && portfolioTotal
-    ? holdings.filter((holding) => holding.country === selectedCountry.name)
-      .reduce((sum, holding) => sum + holdingValueNok(holding, fxRates), 0) / portfolioTotal * 100
-    : 0;
   const selectedResearch = selectedCountry ? marketResearch[selectedCountry.id] : null;
   const selectedAnalytics = selectedCountry ? marketAnalytics[selectedCountry.id] : null;
   const previewResearch = previewCountry ? marketResearch[previewCountry.id] : null;
@@ -1308,9 +1296,9 @@ export function GlobalMapView({
             <Metric title="Government debt / GDP" data={selectedCountry.debtToGdp} cadence="Annual observation" />
             <Metric title="Equity market cap / GDP" data={selectedCountry.marketCapToGdp} cadence="Annual observation" />
             <article>
-              <span>Portfolio exposure</span>
-              <strong>{formatPercent(activeExposure)}</strong>
-              <em>{activeExposure ? "Based on direct country tags" : "No directly tagged holdings"}</em>
+              <span>Market currency</span>
+              <strong>{selectedCountry.currency}</strong>
+              <em>Primary reporting and trading currency</em>
             </article>
           </div>
           {selectedAnalytics ? (

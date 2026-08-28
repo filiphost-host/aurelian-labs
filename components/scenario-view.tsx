@@ -2,9 +2,9 @@
 
 import {
   ArrowRight, Check, ChevronDown, ChevronUp, Copy, Equal, Info, Landmark,
-  Link2, Plus, RotateCcw, Save, Search, ShieldAlert, SlidersHorizontal, Trash2, X,
+  Link2, Plus, RotateCcw, Save, ShieldAlert, SlidersHorizontal, Trash2, X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, Cell, LabelList, Line, LineChart, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -17,13 +17,12 @@ import { scenarioPresets } from "@/lib/sample-data";
 import { scenarioCategories, scenarioGuides, type ScenarioCategory } from "@/lib/scenario-research";
 import {
   buildStressHoldings, normalizedAllocations, rebalanceAllocation, stressInstrumentLibrary,
-  type StressAllocation, type StressInstrument,
+  type StressAllocation,
 } from "@/lib/stress-portfolio";
 import type {
-  AssetType, DisplayCurrency, FactorKey, Holding, LedgerPosition,
+  AssetType, DisplayCurrency, FactorKey,
   SavedScenario, Scenario, ShareOptions,
 } from "@/lib/types";
-import type { BenchmarkPricePoint } from "@/lib/portfolio-story";
 import {
   buildScenarioTimeline, type ScenarioTimelinePoint, type TimelineStressEvent,
 } from "@/lib/scenario-timeline";
@@ -63,43 +62,19 @@ function eventTimestamp(date: string) {
   return Date.UTC(year, month - 1, 1);
 }
 
-function holdingInstrument(holding: Holding): StressInstrument {
-  return {
-    id: `holding-${holding.id}`,
-    ticker: holding.ticker ?? holding.name.slice(0, 8).toUpperCase(),
-    name: holding.name,
-    assetType: holding.asset_type === "cash" ? "bond" : holding.asset_type,
-    country: holding.country ?? "Unclassified",
-    sector: holding.sector ?? "Unclassified",
-    currency: holding.currency,
-    exposures: holding.factor_exposures,
-    duration: holding.duration_estimate ?? undefined,
-    creditQuality: holding.credit_quality ?? undefined,
-  };
-}
-
-function initialAllocations(holdings: Holding[], fxRates: Record<string, number>): StressAllocation[] {
-  const eligible = holdings.filter((holding) => holding.asset_type !== "cash");
-  const total = totalValueNok(eligible, fxRates);
-  if (!eligible.length) return [
+function initialAllocations(): StressAllocation[] {
+  return [
     { instrumentId: "lab-sxr8", weight: 60 },
     { instrumentId: "lab-msft", weight: 15 },
     { instrumentId: "lab-nvda", weight: 10 },
     { instrumentId: "lab-treasury", weight: 15 },
   ];
-  return eligible.map((holding) => ({
-    instrumentId: `holding-${holding.id}`,
-    weight: total ? holdingValueNok(holding, fxRates) / total * 100 : 100 / eligible.length,
-  }));
 }
 
 export function ScenarioView({
-  holdings, fxRates, displayCurrency, scenario, setScenario, activePresetId,
+  fxRates, displayCurrency, scenario, setScenario, activePresetId,
   setActivePresetId, savedScenarios, onSaveScenario, onDeleteScenario,
 }: {
-  holdings: Holding[];
-  positions: LedgerPosition[];
-  benchmarkPrices: BenchmarkPricePoint[];
   fxRates: Record<string, number>;
   displayCurrency: DisplayCurrency;
   scenario: Scenario;
@@ -111,12 +86,9 @@ export function ScenarioView({
   onDeleteScenario: (id: string) => void;
 }) {
   const [capitalNok, setCapitalNok] = useState(100_000);
-  const [allocations, setAllocations] = useState<StressAllocation[]>(() => initialAllocations(holdings, fxRates));
+  const [allocations, setAllocations] = useState<StressAllocation[]>(initialAllocations);
   const [instrumentFilter, setInstrumentFilter] = useState<InstrumentFilter>("all");
-  const [instrumentQuery, setInstrumentQuery] = useState("");
   const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({});
-  const [remoteInstruments, setRemoteInstruments] = useState<StressInstrument[]>([]);
-  const [searchStatus, setSearchStatus] = useState<"idle" | "searching" | "ready" | "unavailable">("idle");
   const [scenarioCategory, setScenarioCategory] = useState<ScenarioCategory>(scenarioGuides[activePresetId]?.category ?? "Macro");
   const [modelOpen, setModelOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -126,55 +98,7 @@ export function ScenarioView({
   const capitalDisplayRate = displayCurrency === "EUR" ? (fxRates.EUR || 11.8) : 1;
   const displayedCapital = Number((capitalNok / capitalDisplayRate).toFixed(2));
 
-  const instruments = useMemo(() => {
-    const personal = holdings.filter((holding) => holding.asset_type !== "cash").map(holdingInstrument);
-    const existingTickers = new Set(personal.map((instrument) => instrument.ticker.toUpperCase()));
-    const curated = stressInstrumentLibrary.filter((instrument) => !existingTickers.has(instrument.ticker.toUpperCase()));
-    const remoteByTicker = new Map<string, StressInstrument>();
-    remoteInstruments.forEach((instrument) => {
-      const ticker = instrument.ticker.toUpperCase();
-      if (!remoteByTicker.has(ticker)) remoteByTicker.set(ticker, instrument);
-    });
-    const base = [...personal, ...curated].map((instrument) => {
-      const researched = remoteByTicker.get(instrument.ticker.toUpperCase());
-      if (!researched) return instrument;
-      remoteByTicker.delete(instrument.ticker.toUpperCase());
-      return {
-        ...instrument,
-        forwardPe: researched.forwardPe ?? instrument.forwardPe,
-        sharpe: researched.sharpe ?? instrument.sharpe,
-        recessionRisk: researched.recessionRisk ?? instrument.recessionRisk,
-        metricSource: researched.forwardPe != null || researched.sharpe != null ? researched.metricSource : instrument.metricSource,
-        metricsAsOf: researched.metricsAsOf ?? instrument.metricsAsOf,
-      };
-    });
-    return [...base, ...remoteByTicker.values()];
-  }, [holdings, remoteInstruments]);
-
-  useEffect(() => {
-    const query = instrumentQuery.trim();
-    if (query.length < 2) return;
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setSearchStatus("searching");
-      try {
-        const response = await fetch(`/api/scenario/instruments?q=${encodeURIComponent(query)}`, { signal: controller.signal });
-        if (!response.ok) throw new Error("Search unavailable");
-        const payload = await response.json() as { results?: StressInstrument[] };
-        setRemoteInstruments(payload.results ?? []);
-        setSearchStatus("ready");
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") {
-          setRemoteInstruments([]);
-          setSearchStatus("unavailable");
-        }
-      }
-    }, 400);
-    return () => {
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-  }, [instrumentQuery]);
+  const instruments = stressInstrumentLibrary;
   const selectedIds = new Set(allocations.map((allocation) => allocation.instrumentId));
   const normalized = normalizedAllocations(allocations);
   const stressHoldings = useMemo(
@@ -213,8 +137,8 @@ export function ScenarioView({
     return [...historical, ...current];
   }, [activePresetId, fxRates, impactPercent, stressHoldings, timelineEventIds, total]);
   const timelineData = useMemo(
-    () => buildScenarioTimeline(capitalNok, selectedTimelineEvents),
-    [capitalNok, selectedTimelineEvents],
+    () => buildScenarioTimeline(100, selectedTimelineEvents),
+    [selectedTimelineEvents],
   );
   const topContributor = rows.find((row) => row.impactNok < 0) ?? rows[0] ?? null;
   const activeGuide = scenarioGuides[activePresetId] ?? scenarioGuides.custom;
@@ -222,11 +146,9 @@ export function ScenarioView({
   const visiblePresets = scenarioPresets.filter((preset) =>
     preset.id !== "custom" && (scenarioGuides[preset.id] ?? scenarioGuides.custom).category === scenarioCategory,
   );
-  const filteredInstruments = instruments.filter((instrument) => {
-    if (instrumentFilter !== "all" && instrument.assetType !== instrumentFilter) return false;
-    const query = instrumentQuery.trim().toLowerCase();
-    return !query || `${instrument.ticker} ${instrument.name} ${instrument.country} ${instrument.sector}`.toLowerCase().includes(query);
-  });
+  const filteredInstruments = instruments.filter((instrument) =>
+    instrumentFilter === "all" || instrument.assetType === instrumentFilter,
+  );
   const assetMix = (["stock", "etf", "bond"] as const).map((assetType) => ({
     assetType,
     weight: stressHoldings.filter((holding) => holding.asset_type === assetType)
@@ -272,8 +194,8 @@ export function ScenarioView({
       return next;
     });
   }
-  function loadCurrentPortfolio() {
-    setAllocations(initialAllocations(holdings, fxRates));
+  function loadSamplePortfolio() {
+    setAllocations(initialAllocations());
   }
   function scrollToStep(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -313,12 +235,12 @@ export function ScenarioView({
       <section id="scenario-step-portfolio" className="stress-builder">
         <div className="scenario-section-heading">
           <div><span className="eyebrow">Step 1 · Test portfolio</span><h2>What do you want to stress?</h2></div>
-          <div className="stress-builder-actions"><button className="ghost-button" onClick={loadCurrentPortfolio}>Load sample portfolio</button><button className="ghost-button" onClick={equalWeight}><Equal size={15} /> Equal weight</button></div>
+          <div className="stress-builder-actions"><button className="ghost-button" onClick={loadSamplePortfolio}>Reset example</button><button className="ghost-button" onClick={equalWeight}><Equal size={15} /> Equal weight</button></div>
         </div>
         <div className="stress-builder-grid">
           <div className="stress-selected">
             <div className="stress-capital-row">
-              <label className="stress-capital-input"><span>Investment amount in {displayCurrency}</span><input type="number" min="1000" step="1000" inputMode="decimal" value={capitalNok ? displayedCapital : ""} onChange={(event) => setCapitalNok(Math.max(0, Number(event.target.value) * capitalDisplayRate))} onBlur={() => setCapitalNok((current) => Math.max(1_000 * capitalDisplayRate, current || 100_000))} /><small>Enter any amount to calculate the modeled gain or loss</small></label>
+              <label className="stress-capital-input"><span>Hypothetical test amount in {displayCurrency}</span><input type="number" min="1000" step="1000" inputMode="decimal" value={capitalNok ? displayedCapital : ""} onChange={(event) => setCapitalNok(Math.max(0, Number(event.target.value) * capitalDisplayRate))} onBlur={() => setCapitalNok((current) => Math.max(1_000 * capitalDisplayRate, current || 100_000))} /><small>Used only to translate the percentage shock into an illustrative gain or loss</small></label>
               <div>{assetMix.map((item) => <span key={item.assetType}><strong>{item.weight.toFixed(0)}%</strong>{item.assetType === "etf" ? "ETFs" : `${item.assetType}s`}</span>)}</div>
             </div>
             <div className="stress-allocation-list">
@@ -336,7 +258,6 @@ export function ScenarioView({
           </div>
           <div className="stress-universe">
             <div className="stress-universe-tools">
-              <label><Search size={15} /><input value={instrumentQuery} onChange={(event) => { const query = event.target.value; setInstrumentQuery(query); if (query.trim().length < 2) { setRemoteInstruments([]); setSearchStatus("idle"); } }} placeholder="Ticker, company, ETF, ISIN or FIGI" />{searchStatus === "searching" ? <span className="stress-search-state">Searching</span> : null}</label>
               <div>{(["all", "stock", "etf", "bond"] as const).map((filter) => <button key={filter} className={instrumentFilter === filter ? "active" : ""} onClick={() => setInstrumentFilter(filter)}>{filter === "all" ? "All" : filter === "etf" ? "ETFs" : `${filter[0].toUpperCase()}${filter.slice(1)}s`}</button>)}</div>
               <p>Forward P/E is estimate-based. Sharpe uses one year of adjusted weekly returns when sourced. Recession risk is Aurelian&apos;s transparent 1–100 model.</p>
             </div>
@@ -352,12 +273,11 @@ export function ScenarioView({
                   <span className={`stress-risk risk-${(instrument.recessionRisk ?? 50) < 35 ? "low" : (instrument.recessionRisk ?? 50) < 65 ? "medium" : "high"}`}><span><i style={{ width: `${instrument.recessionRisk ?? 50}%` }} /></span><strong>{instrument.recessionRisk ?? 50}</strong><small>{instrument.metricSource ?? "Modeled"}</small></span>
                 </button>;
               })}
-              {!filteredInstruments.length && searchStatus !== "searching" ? <div className="empty-state">No matching instrument. Try the full company name, ticker, ISIN, or FIGI.</div> : null}
-              {searchStatus === "unavailable" ? <div className="stress-search-warning">The wider market search is temporarily unavailable. The built-in catalog remains usable.</div> : null}
+              {!filteredInstruments.length ? <div className="empty-state">No instruments are available in this category.</div> : null}
             </div>
           </div>
         </div>
-        <p className="panel-note">Weights are normalized to 100% for the calculation. This portfolio exists only inside the Scenario Lab and does not change your stored holdings.</p>
+        <p className="panel-note">Weights are normalized to 100% for the calculation. This temporary hypothetical mix is not stored.</p>
       </section>
 
       <section id="scenario-step-event" className="scenario-library">
@@ -386,7 +306,7 @@ export function ScenarioView({
         </div>
         <div className="scenario-timeline">
           <div className="scenario-timeline-head">
-            <div><strong>Portfolio path</strong><span>Modeled growth with selected historical shocks</span></div>
+            <div><strong>Indexed stress path</strong><span>Hypothetical mix starting at 100</span></div>
             <div className="timeline-event-toggles" aria-label="Historical events shown on timeline">
               {historicalTimelineEvents.map((event) => <button key={event.id} type="button" aria-pressed={timelineEventIds.has(event.id)} className={timelineEventIds.has(event.id) ? "active" : ""} onClick={() => toggleTimelineEvent(event.id)}>{event.shortLabel}</button>)}
             </div>
@@ -400,7 +320,7 @@ export function ScenarioView({
                 <Tooltip cursor={{ stroke: "rgba(216,193,123,.28)", strokeWidth: 1 }} content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
                   const point = payload[0].payload as ScenarioTimelinePoint;
-                  return <div className="timeline-tooltip"><span>{new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(point.timestamp))}</span><strong>{formatMoney(point.portfolioNok, displayCurrency, fxRates)}</strong><small>Baseline {formatMoney(point.baselineNok, displayCurrency, fxRates)}</small>{point.eventName ? <><em>{point.eventName} · {formatPercent(point.eventImpactPercent ?? 0)}</em><p>{point.eventRecap}</p></> : null}</div>;
+                  return <div className="timeline-tooltip"><span>{new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(point.timestamp))}</span><strong>Index {point.portfolioNok.toFixed(1)}</strong><small>Baseline {point.baselineNok.toFixed(1)}</small>{point.eventName ? <><em>{point.eventName} · {formatPercent(point.eventImpactPercent ?? 0)}</em><p>{point.eventRecap}</p></> : null}</div>;
                 }} />
                 {selectedTimelineEvents.map((event) => <ReferenceLine key={event.id} x={eventTimestamp(event.date)} stroke="rgba(204,82,98,.46)" strokeDasharray="3 4" label={{ value: event.shortLabel, position: "insideTopRight", fill: "#a66a72", fontSize: 8 }} />)}
                 <Line type="monotone" dataKey="baselineNok" stroke="#4e5451" strokeWidth={1.2} strokeDasharray="4 5" dot={false} isAnimationActive animationDuration={600} />
@@ -408,7 +328,7 @@ export function ScenarioView({
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="timeline-legend"><span><i className="portfolio-line" />Modeled portfolio</span><span><i className="baseline-line" />No-shock baseline</span><small>Illustrative factor path, not observed historical performance. Hover to inspect each period.</small></div>
+          <div className="timeline-legend"><span><i className="portfolio-line" />Modeled test mix</span><span><i className="baseline-line" />No-shock baseline</span><small>Indexed illustration, not personal or observed historical performance. Hover to inspect each period.</small></div>
         </div>
         <div className="stress-results-grid">
           <div className="stress-contribution-chart">
