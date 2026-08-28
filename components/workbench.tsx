@@ -78,7 +78,7 @@ type LocalSearchResult = {
 };
 
 const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
-  { id: "map", label: "Aurelian Atlas", icon: Globe2 },
+  { id: "map", label: "Atlas", icon: Globe2 },
   { id: "scenarios", label: "Scenarios", icon: SlidersHorizontal },
   { id: "insights", label: "Insights", icon: Newspaper },
 ];

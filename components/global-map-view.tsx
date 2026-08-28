@@ -59,9 +59,13 @@ type MarketResearch = {
 };
 
 type MapLens = "rates" | "energy" | "economic-sites" | "trillion" | "blue-banana";
-type ScreenKey = "maxPe" | "maxPeg" | "maxPriceToBook" | "minSharpe" | "maxDebt" | "minSolvency" | "minFcfYield" | "minGrowth";
+type ScreenKey = "maxPe" | "maxPeg" | "maxPriceToBook" | "minSharpe" | "maxDebt" | "minSolvency" | "minFcfYield" | "minGrowth" | "minRoe";
 type ScreenFilter = { enabled: boolean; value: number };
 type MarketScreen = Record<ScreenKey, ScreenFilter>;
+type FilterPanel = "universe" | "fundamentals" | "risk";
+type MarketRegion = "all" | "Europe" | "Americas" | "Asia-Pacific" | "Africa & Middle East";
+type MarketStage = "all" | "Developed" | "Emerging" | "Restricted";
+type IndustryLens = "all" | "technology" | "semiconductors" | "financials" | "health-care" | "energy" | "oil-gas" | "materials" | "steel-construction" | "industrials" | "defense" | "consumer" | "utilities" | "real-estate";
 type MarketAnalytics = {
   pe: number;
   sharpe: number;
@@ -548,6 +552,45 @@ const pointMarketCoordinates: Record<string, [number, number]> = {
 const marketByAtlasName = new Map(marketCountries.map((country) => [country.atlasName, country]));
 const DEFAULT_ZOOM = 1.12;
 const DEFAULT_CENTER: MapPoint = [465, 205];
+const marketRegions: Record<Exclude<MarketRegion, "all">, Set<string>> = {
+  Europe: new Set(["norway", "sweden", "denmark", "finland", "united-kingdom", "germany", "france", "spain", "netherlands", "switzerland", "italy", "belgium", "austria", "ireland", "portugal", "poland", "russia"]),
+  Americas: new Set(["united-states", "canada", "brazil", "mexico"]),
+  "Asia-Pacific": new Set(["japan", "australia", "china", "india", "south-korea", "singapore", "taiwan", "indonesia"]),
+  "Africa & Middle East": new Set(["south-africa", "egypt"]),
+};
+const emergingMarkets = new Set(["poland", "south-africa", "egypt", "china", "india", "taiwan", "indonesia", "brazil", "mexico"]);
+const restrictedMarkets = new Set(["russia"]);
+const industryLensOptions: Array<{ id: IndustryLens; label: string; group: string }> = [
+  { id: "all", label: "Whole market index", group: "Market" },
+  { id: "technology", label: "Information technology", group: "Sector" },
+  { id: "semiconductors", label: "Semiconductors", group: "Industry" },
+  { id: "financials", label: "Financials", group: "Sector" },
+  { id: "health-care", label: "Health care", group: "Sector" },
+  { id: "energy", label: "Energy", group: "Sector" },
+  { id: "oil-gas", label: "Oil & gas", group: "Industry" },
+  { id: "materials", label: "Materials", group: "Sector" },
+  { id: "steel-construction", label: "Steel & construction materials", group: "Industry" },
+  { id: "industrials", label: "Industrials", group: "Sector" },
+  { id: "defense", label: "Aerospace & defense", group: "Industry" },
+  { id: "consumer", label: "Consumer", group: "Sector" },
+  { id: "utilities", label: "Utilities", group: "Sector" },
+  { id: "real-estate", label: "Real estate", group: "Sector" },
+];
+const industryProfiles: Record<Exclude<IndustryLens, "all">, { pe: number; growth: number; fcf: number; roe: number; sharpe: number }> = {
+  technology: { pe: 1.35, growth: 1.55, fcf: 0.72, roe: 1.3, sharpe: 0.95 },
+  semiconductors: { pe: 1.48, growth: 1.75, fcf: 0.62, roe: 1.4, sharpe: 0.9 },
+  financials: { pe: 0.68, growth: 0.8, fcf: 1.18, roe: 0.82, sharpe: 0.9 },
+  "health-care": { pe: 1.08, growth: 1.15, fcf: 0.88, roe: 1.12, sharpe: 1.08 },
+  energy: { pe: 0.72, growth: 0.82, fcf: 1.38, roe: 1.02, sharpe: 0.85 },
+  "oil-gas": { pe: 0.64, growth: 0.75, fcf: 1.5, roe: 0.96, sharpe: 0.8 },
+  materials: { pe: 0.78, growth: 0.78, fcf: 1.25, roe: 0.9, sharpe: 0.82 },
+  "steel-construction": { pe: 0.58, growth: 0.72, fcf: 1.38, roe: 0.86, sharpe: 0.74 },
+  industrials: { pe: 0.9, growth: 0.92, fcf: 1.05, roe: 0.98, sharpe: 0.96 },
+  defense: { pe: 1.02, growth: 1.18, fcf: 0.92, roe: 1.08, sharpe: 1.08 },
+  consumer: { pe: 0.96, growth: 0.95, fcf: 1.02, roe: 1.05, sharpe: 0.98 },
+  utilities: { pe: 0.76, growth: 0.58, fcf: 1.12, roe: 0.72, sharpe: 0.92 },
+  "real-estate": { pe: 0.82, growth: 0.68, fcf: 1.2, roe: 0.76, sharpe: 0.78 },
+};
 const energyMarkets = new Set(["norway", "united-kingdom", "united-states", "canada", "australia", "brazil", "mexico", "china", "egypt", "russia"]);
 const trillionEconomies = new Set(["united-states", "china", "germany", "japan", "india", "united-kingdom", "france", "italy", "brazil", "canada", "russia", "south-korea", "australia", "spain", "mexico", "netherlands", "indonesia"]);
 const rateAnchors = [
@@ -564,6 +607,7 @@ const defaultMarketScreen: MarketScreen = {
   minSolvency: { enabled: false, value: 70 },
   minFcfYield: { enabled: false, value: 5 },
   minGrowth: { enabled: false, value: 8 },
+  minRoe: { enabled: false, value: 15 },
 };
 
 const marketAnalytics: Record<string, MarketAnalytics> = {
@@ -631,6 +675,30 @@ function valuationMetrics(analytics: MarketAnalytics) {
   };
 }
 
+function regionForMarket(marketId: string): Exclude<MarketRegion, "all"> {
+  return (Object.entries(marketRegions) as Array<[Exclude<MarketRegion, "all">, Set<string>]>).find(([, ids]) => ids.has(marketId))?.[0]
+    ?? "Europe";
+}
+
+function stageForMarket(marketId: string): Exclude<MarketStage, "all"> {
+  if (restrictedMarkets.has(marketId)) return "Restricted";
+  if (emergingMarkets.has(marketId)) return "Emerging";
+  return "Developed";
+}
+
+function analyticsForIndustry(analytics: MarketAnalytics, industry: IndustryLens): MarketAnalytics {
+  if (industry === "all") return analytics;
+  const profile = industryProfiles[industry];
+  return {
+    ...analytics,
+    pe: analytics.pe * profile.pe,
+    earningsGrowth: analytics.earningsGrowth * profile.growth,
+    fcfYield: analytics.fcfYield * profile.fcf,
+    roe: analytics.roe * profile.roe,
+    sharpe: analytics.sharpe * profile.sharpe,
+  };
+}
+
 function marketCentroid(market: MarketCountry | null | undefined): MapPoint | null {
   if (!market) return null;
   const shape = worldCountries.find((country) => country.name === market.atlasName);
@@ -670,6 +738,10 @@ export function GlobalMapView({
   const [comparisonIndustry, setComparisonIndustry] = useState<HeadToHeadIndustry>("oil-gas");
   const [industryPrimaryId, setIndustryPrimaryId] = useState("united-states");
   const [industryComparisonId, setIndustryComparisonId] = useState("india");
+  const [filterPanel, setFilterPanel] = useState<FilterPanel>("universe");
+  const [marketRegion, setMarketRegion] = useState<MarketRegion>("all");
+  const [marketStage, setMarketStage] = useState<MarketStage>("all");
+  const [industryLens, setIndustryLens] = useState<IndustryLens>("all");
   const dragRef = useRef<{
     pointerId: number;
     start: MapPoint;
@@ -835,9 +907,12 @@ export function GlobalMapView({
   }
 
   function marketPassesFilters(market: MarketCountry) {
+    if (marketRegion !== "all" && regionForMarket(market.id) !== marketRegion) return false;
+    if (marketStage !== "all" && stageForMarket(market.id) !== marketStage) return false;
     if (activeLenses.has("energy") && !energyMarkets.has(market.id)) return false;
     if (activeLenses.has("trillion") && !trillionEconomies.has(market.id)) return false;
-    const analytics = marketAnalytics[market.id];
+    const baseAnalytics = marketAnalytics[market.id];
+    const analytics = baseAnalytics ? analyticsForIndustry(baseAnalytics, industryLens) : null;
     if (!analytics) return !Object.values(screenFilters).some((filter) => filter.enabled);
     if (screenFilters.maxPe.enabled && analytics.pe > screenFilters.maxPe.value) return false;
     const valuation = valuationMetrics(analytics);
@@ -848,6 +923,7 @@ export function GlobalMapView({
     if (screenFilters.minSolvency.enabled && analytics.solvency < screenFilters.minSolvency.value) return false;
     if (screenFilters.minFcfYield.enabled && analytics.fcfYield < screenFilters.minFcfYield.value) return false;
     if (screenFilters.minGrowth.enabled && analytics.earningsGrowth < screenFilters.minGrowth.value) return false;
+    if (screenFilters.minRoe.enabled && analytics.roe < screenFilters.minRoe.value) return false;
     return true;
   }
 
@@ -878,8 +954,10 @@ export function GlobalMapView({
     ?? industryOptions.find((market) => market.countryId !== industryPrimary?.countryId);
   const industryPrimaryScore = industryPrimary ? scoreIndustryMarket(industryPrimary) : null;
   const industryComparisonScore = industryComparison ? scoreIndustryMarket(industryComparison) : null;
+  const activeUniverseCount = Number(marketRegion !== "all") + Number(marketStage !== "all") + Number(industryLens !== "all");
   const activeScreenCount = Object.values(screenFilters).filter((filter) => filter.enabled).length;
-  const matchingMarketCount = marketCountries.filter(marketPassesFilters).length;
+  const matchingMarkets = marketCountries.filter(marketPassesFilters);
+  const matchingMarketCount = matchingMarkets.length;
   const shortcuts = ["norway", "netherlands", "united-states", "india", "singapore", "south-africa"]
     .map((id) => marketCountries.find((country) => country.id === id))
     .filter((country): country is MarketCountry => Boolean(country));
@@ -887,7 +965,7 @@ export function GlobalMapView({
   return (
     <div className="map-layout atlas-layout">
       <section className="map-toolbar">
-        <div><h2>Aurelian Atlas</h2></div>
+        <div><h2>Atlas</h2></div>
         <div className="country-search">
           <Search size={16} />
           <input
@@ -1060,31 +1138,49 @@ export function GlobalMapView({
             </button>
             {lensPanelOpen ? (
               <div className="map-lens-panel">
-                <header><span>Market screener</span><strong>{activeLenses.size + activeScreenCount || "All"}</strong></header>
+                <header><span>Atlas filters</span><strong>{activeLenses.size + activeUniverseCount + activeScreenCount || "All"}</strong></header>
                 <div className="map-screen-summary"><strong>{matchingMarketCount} of {marketCountries.length}</strong><span>researched markets match</span></div>
-                <section className="map-lens-section">
-                  <h4>Map overlays</h4>
-                  <div className="map-overlay-grid">
-                    <label><input type="checkbox" checked={activeLenses.has("rates")} onChange={() => toggleLens("rates")} /><span><strong>Central banks</strong><small>Policy-rate anchors</small></span></label>
-                    <label><input type="checkbox" checked={activeLenses.has("energy")} onChange={() => toggleLens("energy")} /><span><strong>Oil &amp; gas</strong><small>Producer exposure</small></span></label>
-                    <label><input type="checkbox" checked={activeLenses.has("economic-sites")} onChange={() => toggleLens("economic-sites")} /><span><strong>Economic sites</strong><small>Offshore fields and key hubs</small></span></label>
-                    <label><input type="checkbox" checked={activeLenses.has("trillion")} onChange={() => toggleLens("trillion")} /><span><strong>GDP above $1tn</strong><small>Economic scale</small></span></label>
-                    <label><input type="checkbox" checked={activeLenses.has("blue-banana")} onChange={() => toggleLens("blue-banana")} /><span><strong>Blue Banana</strong><small>European corridor</small></span></label>
-                  </div>
-                </section>
-                <section className="map-lens-section analytical-screen">
-                  <div className="map-lens-section-heading"><h4>Analytical filters</h4><span>Indicative screen</span></div>
-                  <ScreenerControl label="Index P/E" description="Maximum valuation multiple" suffix="x" min={6} max={35} step={1} filter={screenFilters.maxPe} onChange={(next) => updateScreenFilter("maxPe", next)} />
+                <div className="atlas-filter-tabs" role="tablist" aria-label="Filter groups">
+                  {(["universe", "fundamentals", "risk"] as const).map((panel) => <button key={panel} role="tab" aria-selected={filterPanel === panel} className={filterPanel === panel ? "active" : ""} onClick={() => setFilterPanel(panel)}>{panel === "risk" ? "Risk & macro" : `${panel[0].toUpperCase()}${panel.slice(1)}`}</button>)}
+                </div>
+                {filterPanel === "universe" ? <>
+                  <section className="map-lens-section atlas-universe-screen">
+                    <div className="map-lens-section-heading"><h4>Market universe</h4><span>Where to look</span></div>
+                    <label className="atlas-select-field"><span><strong>Region</strong><small>Geographic market group</small></span><select value={marketRegion} onChange={(event) => setMarketRegion(event.target.value as MarketRegion)}><option value="all">All regions</option>{Object.keys(marketRegions).map((region) => <option key={region} value={region}>{region}</option>)}</select></label>
+                    <label className="atlas-select-field"><span><strong>Market classification</strong><small>Access, maturity, and investability</small></span><select value={marketStage} onChange={(event) => setMarketStage(event.target.value as MarketStage)}><option value="all">All classifications</option><option>Developed</option><option>Emerging</option><option>Restricted</option></select></label>
+                    <label className="atlas-select-field"><span><strong>Industry lens</strong><small>Screen countries using sector-relative fundamentals</small></span><select value={industryLens} onChange={(event) => setIndustryLens(event.target.value as IndustryLens)}>{industryLensOptions.map((option) => <option key={option.id} value={option.id}>{option.group} · {option.label}</option>)}</select></label>
+                    {industryLens !== "all" ? <p className="atlas-industry-disclosure">Industry ratios are transparent comparative estimates derived from each country index. Country debt and resilience remain country-level.</p> : null}
+                  </section>
+                  <section className="map-lens-section">
+                    <h4>Map overlays</h4>
+                    <div className="map-overlay-grid">
+                      <label><input type="checkbox" checked={activeLenses.has("rates")} onChange={() => toggleLens("rates")} /><span><strong>Central banks</strong><small>Policy-rate anchors</small></span></label>
+                      <label><input type="checkbox" checked={activeLenses.has("energy")} onChange={() => toggleLens("energy")} /><span><strong>Energy producers</strong><small>Oil and gas exposure</small></span></label>
+                      <label><input type="checkbox" checked={activeLenses.has("economic-sites")} onChange={() => toggleLens("economic-sites")} /><span><strong>Economic sites</strong><small>Only for selected market</small></span></label>
+                      <label><input type="checkbox" checked={activeLenses.has("trillion")} onChange={() => toggleLens("trillion")} /><span><strong>GDP above $1tn</strong><small>Economic scale</small></span></label>
+                      <label><input type="checkbox" checked={activeLenses.has("blue-banana")} onChange={() => toggleLens("blue-banana")} /><span><strong>Blue Banana</strong><small>European corridor</small></span></label>
+                    </div>
+                  </section>
+                </> : null}
+                {filterPanel === "fundamentals" ? <section className="map-lens-section analytical-screen">
+                  <div className="map-lens-section-heading"><h4>Valuation &amp; quality</h4><span>{industryLens === "all" ? "Whole index" : "Industry lens"}</span></div>
+                  <ScreenerControl label="P/E ratio" description="Maximum forward valuation multiple" suffix="x" min={4} max={40} step={1} filter={screenFilters.maxPe} onChange={(next) => updateScreenFilter("maxPe", next)} />
                   <ScreenerControl label="PEG ratio" description="Maximum price / growth multiple" min={0.5} max={4} step={0.1} decimals={1} filter={screenFilters.maxPeg} onChange={(next) => updateScreenFilter("maxPeg", next)} />
-                  <ScreenerControl label="Price / book" description="Maximum index book multiple" suffix="x" min={0.5} max={12} step={0.5} decimals={1} filter={screenFilters.maxPriceToBook} onChange={(next) => updateScreenFilter("maxPriceToBook", next)} />
+                  <ScreenerControl label="Price / book" description="Maximum book-value multiple" suffix="x" min={0.5} max={12} step={0.5} decimals={1} filter={screenFilters.maxPriceToBook} onChange={(next) => updateScreenFilter("maxPriceToBook", next)} />
+                  <ScreenerControl label="Free-cash-flow yield" description="Minimum cash yield" suffix="%" min={0} max={12} step={0.5} decimals={1} filter={screenFilters.minFcfYield} onChange={(next) => updateScreenFilter("minFcfYield", next)} />
+                  <ScreenerControl label="Earnings growth" description="Minimum forward growth" suffix="%" min={-5} max={25} step={1} filter={screenFilters.minGrowth} onChange={(next) => updateScreenFilter("minGrowth", next)} />
+                  <ScreenerControl label="Return on equity" description="Minimum profitability" suffix="%" min={5} max={35} step={1} filter={screenFilters.minRoe} onChange={(next) => updateScreenFilter("minRoe", next)} />
+                </section> : null}
+                {filterPanel === "risk" ? <section className="map-lens-section analytical-screen">
+                  <div className="map-lens-section-heading"><h4>Risk &amp; macro resilience</h4><span>Country level</span></div>
                   <ScreenerControl label="Sharpe ratio" description="Minimum risk-adjusted return" min={-0.5} max={2} step={0.1} decimals={1} filter={screenFilters.minSharpe} onChange={(next) => updateScreenFilter("minSharpe", next)} />
-                  <ScreenerControl label="Government debt" description="Maximum debt / GDP" suffix="%" min={20} max={250} step={5} filter={screenFilters.maxDebt} onChange={(next) => updateScreenFilter("maxDebt", next)} />
-                  <ScreenerControl label="Solvency score" description="Minimum fiscal and market resilience" suffix="/100" min={20} max={95} step={5} filter={screenFilters.minSolvency} onChange={(next) => updateScreenFilter("minSolvency", next)} />
-                  <ScreenerControl label="Free-cash-flow yield" description="Minimum index-level cash yield" suffix="%" min={0} max={12} step={0.5} decimals={1} filter={screenFilters.minFcfYield} onChange={(next) => updateScreenFilter("minFcfYield", next)} />
-                  <ScreenerControl label="Earnings growth" description="Minimum forward growth screen" suffix="%" min={-5} max={20} step={1} filter={screenFilters.minGrowth} onChange={(next) => updateScreenFilter("minGrowth", next)} />
-                </section>
-                <p className="map-screen-note">Analytical values are comparative model inputs, not live quotes. Use Market Monitor for calculated delayed index history.</p>
-                <button type="button" onClick={() => { setActiveLenses(new Set()); setScreenFilters(defaultMarketScreen); }}>Reset all filters</button>
+                  <ScreenerControl label="Government debt" description="Maximum gross debt / GDP" suffix="%" min={20} max={250} step={5} filter={screenFilters.maxDebt} onChange={(next) => updateScreenFilter("maxDebt", next)} />
+                  <ScreenerControl label="Resilience score" description="Minimum fiscal and market resilience" suffix="/100" min={20} max={95} step={5} filter={screenFilters.minSolvency} onChange={(next) => updateScreenFilter("minSolvency", next)} />
+                </section> : null}
+                <div className="atlas-filter-results"><span>{matchingMarkets.slice(0, 5).map((market) => market.name).join(" · ") || "No markets match"}{matchingMarkets.length > 5 ? ` · +${matchingMarkets.length - 5}` : ""}</span></div>
+                <p className="map-screen-note">Filters use comparative model inputs. Sector and industry lenses are estimates, not live index quotes. Market-size and liquidity feeds are the next sourced layer.</p>
+                <div className="atlas-filter-sources"><span>Framework</span><a href="https://www.msci.com/indexes/index-resources/gics" target="_blank" rel="noreferrer">GICS</a><a href={officialSources.worldBank} target="_blank" rel="noreferrer">World Bank</a><a href="https://www.imf.org/external/datamapper/datasets/WEO" target="_blank" rel="noreferrer">IMF</a></div>
+                <button type="button" onClick={() => { setActiveLenses(new Set()); setScreenFilters(defaultMarketScreen); setMarketRegion("all"); setMarketStage("all"); setIndustryLens("all"); }}>Reset all filters</button>
               </div>
             ) : null}
           </div>
