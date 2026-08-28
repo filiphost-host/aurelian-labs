@@ -7,7 +7,7 @@ export default function ShareNotFound() {
       <BrandMark className="share-brand-mark" />
       <h1>This snapshot is unavailable</h1>
       <p>It may have expired, been revoked, or the link may be incomplete.</p>
-      <Link className="primary-button" href="/login">Return to Aurelian Capital</Link>
+      <Link className="primary-button" href="/">Return to Aurelian Capital</Link>
     </main>
   );
 }

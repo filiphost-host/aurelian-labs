@@ -27,7 +27,7 @@ import {
   sampleTransactions,
   scenarioPresets,
 } from "@/lib/sample-data";
-import { createClient, hasSupabaseEnv } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import type {
   DailyBrief,
   DisplayCurrency,
@@ -123,7 +123,7 @@ export function Workbench({
   initialAsOf: string;
   initialGeneratedAt: string;
 }) {
-  const configured = hasSupabaseEnv();
+  const configured = false;
   const supabase = useMemo(() => createClient(), []);
   const [activeTab, setActiveTab] = useState<Tab>("map");
   const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("NOK");
@@ -140,9 +140,7 @@ export function Workbench({
   const [activePresetId, setActivePresetId] = useState(scenarioPresets[0].id);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(configured);
-  const [status, setStatus] = useState(
-    configured ? "Loading private workspace..." : "Preview data · private storage not connected",
-  );
+  const [status, setStatus] = useState("Public session · changes stay in this browser tab");
   const [searchOpen, setSearchOpen] = useState(false);
   const [focusedHoldingId, setFocusedHoldingId] = useState<string | null>(null);
   const [instrumentSeed, setInstrumentSeed] = useState<RemoteInstrument | null>(null);
@@ -474,7 +472,7 @@ export function Workbench({
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Private analysis environment</p>
+            <p className="eyebrow">Independent market intelligence</p>
             <h1>{tabs.find((tab) => tab.id === activeTab)?.label}</h1>
           </div>
           <div className="topbar-actions">

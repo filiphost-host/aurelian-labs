@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Aurelian Capital",
-  description: "Private portfolio workbench for scenario analysis and investment theses.",
+  description: "Independent market intelligence, global analysis, and portfolio stress testing.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

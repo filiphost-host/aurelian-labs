@@ -81,8 +81,7 @@ export function ScenarioView({
   onSaveScenario: (scenario: SavedScenario) => void;
   onDeleteScenario: (id: string) => void;
 }) {
-  const currentCapital = Math.max(100_000, Math.round(totalValueNok(holdings, fxRates) / 10_000) * 10_000);
-  const [capitalNok, setCapitalNok] = useState(currentCapital || 1_000_000);
+  const [capitalNok, setCapitalNok] = useState(100_000);
   const [allocations, setAllocations] = useState<StressAllocation[]>(() => initialAllocations(holdings, fxRates));
   const [instrumentFilter, setInstrumentFilter] = useState<InstrumentFilter>("all");
   const [instrumentQuery, setInstrumentQuery] = useState("");
@@ -93,6 +92,8 @@ export function ScenarioView({
   const [saveOpen, setSaveOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [scenarioName, setScenarioName] = useState("");
+  const capitalDisplayRate = displayCurrency === "EUR" ? (fxRates.EUR || 11.8) : 1;
+  const displayedCapital = Number((capitalNok / capitalDisplayRate).toFixed(2));
 
   const instruments = useMemo(() => {
     const personal = holdings.filter((holding) => holding.asset_type !== "cash").map(holdingInstrument);
@@ -197,7 +198,6 @@ export function ScenarioView({
   }
   function loadCurrentPortfolio() {
     setAllocations(initialAllocations(holdings, fxRates));
-    setCapitalNok(currentCapital);
   }
   function scrollToStep(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -231,18 +231,18 @@ export function ScenarioView({
       <nav className="scenario-step-rail" aria-label="Stress test steps">
         <button onClick={() => scrollToStep("scenario-step-portfolio")}><span>1</span><strong>Build portfolio</strong><small>{stressHoldings.length} positions · {formatMoney(total, displayCurrency, fxRates)}</small></button><ArrowRight size={16} />
         <button onClick={() => scrollToStep("scenario-step-event")}><span>2</span><strong>Choose market move</strong><small>{activePreset?.name ?? "Custom assumptions"}</small></button><ArrowRight size={16} />
-        <button onClick={() => scrollToStep("scenario-step-results")}><span>3</span><strong>Read stress result</strong><small className={impact >= 0 ? "good" : "bad"}>{formatPercent(impactPercent)}</small></button>
+        <button onClick={() => scrollToStep("scenario-step-results")}><span>3</span><strong>Read stress result</strong><small className={impact >= 0 ? "good" : "bad"}>{formatMoney(impact, displayCurrency, fxRates)} · {formatPercent(impactPercent)}</small></button>
       </nav>
 
       <section id="scenario-step-portfolio" className="stress-builder">
         <div className="scenario-section-heading">
           <div><span className="eyebrow">Step 1 · Test portfolio</span><h2>What do you want to stress?</h2></div>
-          <div className="stress-builder-actions"><button className="ghost-button" onClick={loadCurrentPortfolio}>Use my holdings</button><button className="ghost-button" onClick={equalWeight}><Equal size={15} /> Equal weight</button></div>
+          <div className="stress-builder-actions"><button className="ghost-button" onClick={loadCurrentPortfolio}>Load sample portfolio</button><button className="ghost-button" onClick={equalWeight}><Equal size={15} /> Equal weight</button></div>
         </div>
         <div className="stress-builder-grid">
           <div className="stress-selected">
             <div className="stress-capital-row">
-              <label><span>Test capital in NOK</span><input type="number" min="10000" step="10000" value={capitalNok} onChange={(event) => setCapitalNok(Math.max(10_000, Number(event.target.value) || 10_000))} /></label>
+              <label className="stress-capital-input"><span>Investment amount in {displayCurrency}</span><input type="number" min="1000" step="1000" inputMode="decimal" value={capitalNok ? displayedCapital : ""} onChange={(event) => setCapitalNok(Math.max(0, Number(event.target.value) * capitalDisplayRate))} onBlur={() => setCapitalNok((current) => Math.max(1_000 * capitalDisplayRate, current || 100_000))} /><small>Enter any amount to calculate the modeled gain or loss</small></label>
               <div>{assetMix.map((item) => <span key={item.assetType}><strong>{item.weight.toFixed(0)}%</strong>{item.assetType === "etf" ? "ETFs" : `${item.assetType}s`}</span>)}</div>
             </div>
             <div className="stress-allocation-list">
@@ -304,7 +304,7 @@ export function ScenarioView({
       <section id="scenario-step-results" className="stress-results">
         <div className="scenario-section-heading"><div><span className="eyebrow">Step 3 · Stress result</span><h2>{activeGuide.question}</h2></div><span>Linear estimate · no probability assigned</span></div>
         <div className="scenario-result-band">
-          <article><span>Estimated portfolio move</span><strong className={impact >= 0 ? "good" : "bad"}>{formatPercent(impactPercent)}</strong><em>{formatMoney(impact, displayCurrency, fxRates)}</em></article>
+          <article><span>{impact >= 0 ? "Estimated gain" : "Estimated loss"}</span><strong className={impact >= 0 ? "good" : "bad"}>{formatMoney(impact, displayCurrency, fxRates)}</strong><em>{formatPercent(impactPercent)} of {formatMoney(total, displayCurrency, fxRates)}</em></article>
           <article><span>Value after stress</span><strong>{formatMoney(total + impact, displayCurrency, fxRates)}</strong><em>Before {formatMoney(total, displayCurrency, fxRates)}</em></article>
           <article><span>Largest weak point</span><strong>{topContributor?.holding.ticker ?? "None"}</strong><em>{topContributor ? `${formatPercent(topContributor.impactPercent)} position impact` : "No responsive exposure"}</em></article>
         </div>

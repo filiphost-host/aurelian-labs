@@ -7725,15 +7725,19 @@ button {
 .stress-capital-row > label { display: grid; gap: 5px; }
 .stress-capital-row > label span { color: #7f8781; font-size: 9px; text-transform: uppercase; }
 .stress-capital-row > label input {
-  width: 170px;
-  height: 36px;
-  border: 1px solid rgba(199, 169, 93, .2);
+  width: 210px;
+  height: 42px;
+  border: 1px solid rgba(199, 169, 93, .34);
   border-radius: 2px;
   padding: 0 10px;
   color: #e2dfd9;
   background: #111412;
   font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
+.stress-capital-row > label small { max-width: 250px; color: #626963; font-size: 8px; line-height: 1.4; }
+.stress-capital-row > label input:focus { outline: 1px solid rgba(225, 199, 120, .5); outline-offset: 1px; }
 .stress-capital-row > div { display: flex; gap: 18px; }
 .stress-capital-row > div span { color: #737a74; font-size: 9px; text-transform: uppercase; }
 .stress-capital-row > div strong { display: block; margin-bottom: 2px; color: #d9bc68; font-size: 13px; }
