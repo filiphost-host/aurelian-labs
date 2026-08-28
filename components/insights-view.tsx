@@ -11,6 +11,7 @@ import {
   Compass,
   FileSearch,
   Gauge,
+  Gem,
   MapPinned,
   RefreshCw,
   ShieldCheck,
@@ -35,7 +36,7 @@ import { DataRoomPanel } from "@/components/data-room-panel";
 import type { DailyBrief, MarketQuote } from "@/lib/types";
 
 type DeskFocus = "core" | "us" | "europe" | "discover";
-type InsightView = "overview" | "markets" | "signals" | "investors" | "sources";
+type InsightView = "overview" | "markets" | "under-radar" | "signals" | "investors" | "sources";
 type IndexResearch = {
   index: {
     id: string;
@@ -60,9 +61,39 @@ type IndexResearch = {
   methodology: string;
 };
 
+type RadarCompany = {
+  symbol: string;
+  name: string;
+  country: string;
+  industry: string;
+  signal: string;
+  sourceUrl: string;
+  return1y: number | null;
+  return6m: number | null;
+  sharpe: number | null;
+  maxDrawdown: number | null;
+  largestDailyMove: number | null;
+  averageVolume20d: number | null;
+  relativeReturn: number | null;
+  qualityScore: number | null;
+  passesGuardrails: boolean;
+  asOf: string | null;
+};
+
+type UnderRadarResponse = {
+  benchmark: { name: string; return1y: number; asOf: string } | null;
+  outperformers: RadarCompany[];
+  comparison: RadarCompany[];
+  screenedCount: number;
+  methodology: string;
+  source: string;
+  refreshedAt: string;
+};
+
 const insightViews: Array<{ id: InsightView; label: string; description: string }> = [
   { id: "overview", label: "Daily overview", description: "Market pulse and priority signals" },
   { id: "markets", label: "Markets", description: "Major indices and geographic research" },
+  { id: "under-radar", label: "Under the Radar", description: "Durable outliers beyond the headline names" },
   { id: "signals", label: "Market signals", description: "Facts, relevance, and scenarios" },
   { id: "investors", label: "Investor comparison", description: "Compare operating styles" },
   { id: "sources", label: "Data sources", description: "Price provenance and freshness" },
@@ -234,6 +265,8 @@ export function InsightsView({
         {insightView === "markets" ? (
           <MarketResearchDesk deskFocus={deskFocus} onDeskFocus={setDeskFocus} onOpenMarket={onOpenMarket} />
         ) : null}
+
+        {insightView === "under-radar" ? <UnderTheRadarDesk /> : null}
 
         {insightView === "investors" ? <InvestorComparison /> : null}
 
@@ -446,6 +479,150 @@ function MarketResearchDesk({ deskFocus, onDeskFocus, onOpenMarket }: {
           </article>
         ))}
       </div>
+    </section>
+  );
+}
+
+const alternativeSignals = [
+  {
+    name: "Lipstick effect",
+    grade: "Empirical, narrow",
+    tone: "evidence",
+    reads: "Substitution from larger discretionary purchases toward smaller beauty purchases during stress.",
+    caution: "Observed in specific groups and periods; it is not a standalone recession forecast.",
+    source: "Journal of Behavioral and Experimental Economics",
+    sourceUrl: "https://www.sciencedirect.com/science/article/pii/S2214804319304884",
+  },
+  {
+    name: "Temporary employment",
+    grade: "Hard data",
+    tone: "data",
+    reads: "Employers often adjust temporary staffing before permanent payrolls.",
+    caution: "Industry mix and structural labour changes can weaken the historical relationship.",
+    source: "FRED",
+    sourceUrl: "https://fred.stlouisfed.org/series/TEMPHELPS",
+  },
+  {
+    name: "Freight and packaging",
+    grade: "Real-economy proxy",
+    tone: "proxy",
+    reads: "Shipping and packaging demand can reveal changes in physical goods activity before headline GDP.",
+    caution: "Services, inventory cycles, and e-commerce mix can distort the signal.",
+    source: "FRED transportation data",
+    sourceUrl: "https://fred.stlouisfed.org/categories/32261",
+  },
+  {
+    name: "Men's underwear index",
+    grade: "Folklore",
+    tone: "folklore",
+    reads: "The story says replacement purchases are deferred when household confidence weakens.",
+    caution: "There is no robust, investable public series. Treat it as a question, not evidence.",
+    source: "Concept note",
+    sourceUrl: "https://www.theatlantic.com/newsletters/archive/2025/09/recession-indicator-meme/684376/",
+  },
+] as const;
+
+function marketRegion(country: string) {
+  if (["United States"].includes(country)) return "US";
+  if (["Japan", "South Korea", "Taiwan"].includes(country)) return "Asia";
+  return "Europe";
+}
+
+function signedPercent(value: number | null) {
+  if (value === null) return "Unavailable";
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function UnderTheRadarDesk() {
+  const [data, setData] = useState<UnderRadarResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [region, setRegion] = useState<"All" | "US" | "Europe" | "Asia">("All");
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/market/under-radar");
+      if (!response.ok) throw new Error("Screen unavailable");
+      setData(await response.json() as UnderRadarResponse);
+    } catch {
+      setError("The delayed history feed is unavailable. The research framework remains visible below.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void refresh(), 0);
+    return () => window.clearTimeout(timer);
+  }, [refresh]);
+
+  const visible = (data?.outperformers ?? []).filter((company) =>
+    region === "All" || marketRegion(company.country) === region,
+  );
+
+  return (
+    <section className="under-radar-desk" aria-labelledby="under-radar-title">
+      <header className="under-radar-heading">
+        <div><span className="eyebrow">Breadth beyond the obvious</span><h2 id="under-radar-title">Under the Radar</h2><p>Find liquid companies whose sustained price action is stronger than the headline narrative, then inspect the business signal behind it.</p></div>
+        <button className="icon-button" type="button" onClick={() => void refresh()} disabled={loading} aria-label="Refresh under-the-radar screen" title="Refresh screen"><RefreshCw size={15} className={loading ? "spinning" : ""} /></button>
+      </header>
+
+      <div className="radar-guardrail-band">
+        <Gem size={17} />
+        <div><strong>Quality guardrails are on</strong><span>Thin trading, sub-5 prices, one-day jumps above 30%, short histories, and extreme drawdowns are rejected.</span></div>
+        <em>{data ? `${data.outperformers.length} of ${data.screenedCount} qualify` : "Screening"}</em>
+      </div>
+
+      <section className="headline-comparison" aria-label="Victoria's Secret semiconductor comparison">
+        <div className="headline-comparison-copy"><span className="eyebrow">The comparison that prompted this</span><h3>Victoria&apos;s Secret vs semiconductor leaders</h3><p>Victoria&apos;s Secret now trades as <strong>VSXY</strong> (formerly VSCO); TSMC&apos;s US ticker is <strong>TSM</strong>. This compares price performance without pretending the businesses share the same economics.</p></div>
+        <div className="headline-comparison-grid">
+          {loading && !data ? Array.from({ length: 3 }, (_, index) => <div className="radar-company-card loading" key={index} />) : data?.comparison.map((company) => (
+            <article className="radar-company-card" key={company.symbol}>
+              <header><span>{company.symbol}</span><em>{company.industry}</em></header>
+              <strong>{signedPercent(company.return1y)}</strong>
+              <p>{company.name}</p>
+              <footer><span>6M {signedPercent(company.return6m)}</span><span>Sharpe {company.sharpe?.toFixed(2) ?? "-"}</span><span className={company.passesGuardrails ? "comparison-qualified" : "comparison-review"} title={company.passesGuardrails ? "Passes every durability guardrail" : `Review required: largest daily move ${signedPercent(company.largestDailyMove)}`}>{company.passesGuardrails ? "Qualified" : `Review · ${signedPercent(company.largestDailyMove)} day`}</span></footer>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <div className="radar-screen-heading">
+        <div><span className="eyebrow">Qualified relative strength</span><h3>Durable outliers</h3></div>
+        <div className="radar-region-filter" role="group" aria-label="Outperformer region">
+          {(["All", "US", "Europe", "Asia"] as const).map((item) => <button key={item} className={region === item ? "active" : ""} onClick={() => setRegion(item)}>{item}</button>)}
+        </div>
+      </div>
+      {error ? <div className="index-research-empty"><TriangleAlert size={17} /><span>{error}</span></div> : null}
+      {!error && !loading && !visible.length ? <div className="radar-empty"><ShieldCheck size={18} /><strong>No company clears every guardrail in this region today.</strong><span>That is a valid result. The screen does not lower its standards to manufacture an idea.</span></div> : null}
+      {visible.length ? (
+        <div className="radar-outlier-table table-wrap">
+          <table>
+            <thead><tr><th>Company</th><th>Hidden signal</th><th>1Y return</th><th>vs S&amp;P 500</th><th>Sharpe</th><th>Max drawdown</th><th>Screen</th></tr></thead>
+            <tbody>{visible.map((company) => <tr key={company.symbol}>
+              <td><a href={company.sourceUrl} target="_blank" rel="noreferrer"><strong>{company.name}</strong><span>{company.symbol} · {company.country}</span></a></td>
+              <td><strong>{company.signal}</strong><span>{company.industry}</span></td>
+              <td className={(company.return1y ?? 0) >= 0 ? "good" : "bad"}>{signedPercent(company.return1y)}</td>
+              <td className="good">{signedPercent(company.relativeReturn)}</td>
+              <td>{company.sharpe?.toFixed(2) ?? "-"}</td>
+              <td className="bad">{signedPercent(company.maxDrawdown)}</td>
+              <td><span className="radar-quality-score"><i style={{ width: `${company.qualityScore ?? 0}%` }} />{company.qualityScore ?? "-"}</span></td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      ) : null}
+      <p className="radar-methodology">{data?.methodology ?? "The screen waits for delayed market history before ranking companies."} {data ? `${data.source}. As of ${formatQuoteTime(data.refreshedAt)}.` : ""}</p>
+
+      <section className="alternative-signals">
+        <div className="section-heading"><div><span className="eyebrow">Unconventional economic evidence</span><h2>Signals behind the headlines</h2></div><span className="as-of">Evidence grade shown explicitly</span></div>
+        <div className="alternative-signal-grid">{alternativeSignals.map((signal) => <article key={signal.name}>
+          <header><strong>{signal.name}</strong><span className={signal.tone}>{signal.grade}</span></header>
+          <dl><div><dt>What it may reveal</dt><dd>{signal.reads}</dd></div><div><dt>Why to be careful</dt><dd>{signal.caution}</dd></div></dl>
+          <a href={signal.sourceUrl} target="_blank" rel="noreferrer">{signal.source} <ArrowUpRight size={12} /></a>
+        </article>)}</div>
+      </section>
     </section>
   );
 }
