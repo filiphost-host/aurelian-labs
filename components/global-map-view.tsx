@@ -13,10 +13,12 @@ import {
   Minimize2,
   Minus,
   Plus,
+  RotateCcw,
   Search,
   Settings2,
+  X,
 } from "lucide-react";
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import worldAtlas from "world-atlas/countries-110m.json";
@@ -742,6 +744,7 @@ export function GlobalMapView({
   const [marketRegion, setMarketRegion] = useState<MarketRegion>("all");
   const [marketStage, setMarketStage] = useState<MarketStage>("all");
   const [industryLens, setIndustryLens] = useState<IndustryLens>("all");
+  const [globeTilt, setGlobeTilt] = useState<MapPoint>([0, 0]);
   const dragRef = useRef<{
     pointerId: number;
     start: MapPoint;
@@ -849,6 +852,14 @@ export function GlobalMapView({
     setExpandedHoverId(null);
   }
 
+  function resetFilters() {
+    setActiveLenses(new Set());
+    setScreenFilters(defaultMarketScreen);
+    setMarketRegion("all");
+    setMarketStage("all");
+    setIndustryLens("all");
+  }
+
   function changeZoom(nextZoom: number, pointerRatio: MapPoint = [0.5, 0.5]) {
     const next = zoomMapAt(center, zoom, nextZoom, pointerRatio);
     setZoom(next.zoom);
@@ -872,6 +883,10 @@ export function GlobalMapView({
     if (!drag || drag.pointerId !== event.pointerId) return;
     const delta: MapPoint = [event.clientX - drag.start[0], event.clientY - drag.start[1]];
     if (Math.hypot(...delta) > 4) drag.moved = true;
+    setGlobeTilt([
+      Math.max(-2.8, Math.min(2.8, -delta[1] * 0.018)),
+      Math.max(-4.2, Math.min(4.2, delta[0] * 0.018)),
+    ]);
     const bounds = event.currentTarget.getBoundingClientRect();
     setCenter(panMapCenter(drag.center, zoom, delta, [bounds.width, bounds.height]));
   }
@@ -882,6 +897,7 @@ export function GlobalMapView({
     suppressClickRef.current = drag.moved;
     dragRef.current = null;
     setDragging(false);
+    setGlobeTilt([0, 0]);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -994,7 +1010,11 @@ export function GlobalMapView({
       </section>
 
       <section ref={mapWorkspaceRef} className={`panel wide map-panel atlas-workspace${isFullscreen ? " is-fullscreen" : ""}`}>
-        <div className={`world-map-shell${lensPanelOpen ? " filters-open" : ""}`} onMouseLeave={clearPreviewSoon}>
+        <div
+          className={`world-map-shell globe-map-shell${lensPanelOpen ? " filters-open" : ""}`}
+          style={{ "--globe-tilt-x": `${globeTilt[0]}deg`, "--globe-tilt-y": `${globeTilt[1]}deg` } as CSSProperties}
+          onMouseLeave={clearPreviewSoon}
+        >
           <OceanParticleField surfaceRef={mapSurfaceRef} />
           <svg
             ref={mapSurfaceRef}
@@ -1125,6 +1145,7 @@ export function GlobalMapView({
               );
             }) : null}
           </svg>
+          <div className="globe-curvature" aria-hidden="true" />
           <div className="map-lens-control">
             <button
               className={`map-lens-trigger${lensPanelOpen ? " active" : ""}`}
@@ -1138,7 +1159,7 @@ export function GlobalMapView({
             </button>
             {lensPanelOpen ? (
               <div className="map-lens-panel">
-                <header><span>Atlas filters</span><strong>{activeLenses.size + activeUniverseCount + activeScreenCount || "All"}</strong></header>
+                <header><span>Atlas filters</span><div><strong>{activeLenses.size + activeUniverseCount + activeScreenCount || "All"}</strong><button type="button" className="atlas-filter-reset" onClick={resetFilters} aria-label="Reset all filters" title="Reset all filters"><RotateCcw size={13} /></button></div></header>
                 <div className="map-screen-summary"><strong>{matchingMarketCount} of {marketCountries.length}</strong><span>researched markets match</span></div>
                 <div className="atlas-filter-tabs" role="tablist" aria-label="Filter groups">
                   {(["universe", "fundamentals", "risk"] as const).map((panel) => <button key={panel} role="tab" aria-selected={filterPanel === panel} className={filterPanel === panel ? "active" : ""} onClick={() => setFilterPanel(panel)}>{panel === "risk" ? "Risk & macro" : `${panel[0].toUpperCase()}${panel.slice(1)}`}</button>)}
@@ -1180,7 +1201,7 @@ export function GlobalMapView({
                 <div className="atlas-filter-results"><span>{matchingMarkets.slice(0, 5).map((market) => market.name).join(" · ") || "No markets match"}{matchingMarkets.length > 5 ? ` · +${matchingMarkets.length - 5}` : ""}</span></div>
                 <p className="map-screen-note">Filters use comparative model inputs. Sector and industry lenses are estimates, not live index quotes. Market-size and liquidity feeds are the next sourced layer.</p>
                 <div className="atlas-filter-sources"><span>Framework</span><a href="https://www.msci.com/indexes/index-resources/gics" target="_blank" rel="noreferrer">GICS</a><a href={officialSources.worldBank} target="_blank" rel="noreferrer">World Bank</a><a href="https://www.imf.org/external/datamapper/datasets/WEO" target="_blank" rel="noreferrer">IMF</a></div>
-                <button type="button" onClick={() => { setActiveLenses(new Set()); setScreenFilters(defaultMarketScreen); setMarketRegion("all"); setMarketStage("all"); setIndustryLens("all"); }}>Reset all filters</button>
+                <button type="button" onClick={resetFilters}>Reset all filters</button>
               </div>
             ) : null}
           </div>
@@ -1237,7 +1258,7 @@ export function GlobalMapView({
         <section className="country-dashboard">
           <header>
             <div><span className="eyebrow">{selectedCountry.currency} market profile</span><h2>{selectedCountry.name}</h2></div>
-            <div className="country-index"><span>Key index</span><strong>{selectedCountry.keyIndex}</strong></div>
+            <div className="country-profile-actions"><div className="country-index"><span>Key index</span><strong>{selectedCountry.keyIndex}</strong></div><button type="button" className="icon-button country-profile-close" onClick={resetMap} aria-label={`Close ${selectedCountry.name} profile`} title="Close market profile"><X size={17} /></button></div>
           </header>
           <div className="country-metrics">
             <Metric title="Policy framework" data={selectedCountry.policyRate} cadence="Daily / event-driven" />

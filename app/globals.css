@@ -7355,8 +7355,12 @@ button {
   width: 100%;
   height: 100%;
   min-height: min(72vh, 760px);
-  transition: width 320ms cubic-bezier(.2,.8,.2,1), margin 320ms cubic-bezier(.2,.8,.2,1), filter 180ms ease;
+  clip-path: ellipse(49.1% 46.5% at 50% 50%);
+  transform: perspective(1400px) rotateX(var(--globe-tilt-x, 0deg)) rotateY(var(--globe-tilt-y, 0deg));
+  transform-origin: center;
+  transition: width 320ms cubic-bezier(.2,.8,.2,1), margin 320ms cubic-bezier(.2,.8,.2,1), filter 180ms ease, transform 280ms cubic-bezier(.2,.8,.2,1);
 }
+.atlas-workspace .world-map.dragging { transition: width 320ms cubic-bezier(.2,.8,.2,1), margin 320ms cubic-bezier(.2,.8,.2,1), filter 180ms ease; }
 .atlas-workspace .world-map-shell.filters-open .world-map { width: calc(100% - 410px); margin-right: 410px; }
 .atlas-workspace .map-ocean { fill: transparent; }
 .atlas-workspace .map-grain { fill: #aeb7b4; opacity: .025; }
@@ -7374,7 +7378,27 @@ button {
   display: block;
   pointer-events: none;
   background: #101617;
+  clip-path: ellipse(49.1% 46.5% at 50% 50%);
+  transform: perspective(1400px) rotateX(var(--globe-tilt-x, 0deg)) rotateY(var(--globe-tilt-y, 0deg));
+  transform-origin: center;
+  transition: transform 280ms cubic-bezier(.2,.8,.2,1);
 }
+.globe-map-shell:has(.world-map.dragging) .ocean-particle-canvas { transition: none; }
+.globe-curvature {
+  position: absolute;
+  z-index: 2;
+  inset: 3.5% 1.2%;
+  width: auto;
+  pointer-events: none;
+  border: 1px solid rgba(135, 164, 148, .13);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 40% 34%, transparent 52%, rgba(4, 8, 6, .2) 72%, rgba(2, 5, 4, .7) 100%);
+  box-shadow: inset -34px -8px 70px rgba(0,0,0,.34), inset 18px 8px 44px rgba(115,150,130,.035), 0 18px 44px rgba(0,0,0,.24);
+  transform: perspective(1400px) rotateX(var(--globe-tilt-x, 0deg)) rotateY(var(--globe-tilt-y, 0deg));
+  transition: width 320ms cubic-bezier(.2,.8,.2,1), right 320ms cubic-bezier(.2,.8,.2,1), transform 280ms cubic-bezier(.2,.8,.2,1);
+}
+.globe-map-shell:has(.world-map.dragging) .globe-curvature { transition: none; }
+.atlas-workspace .world-map-shell.filters-open .globe-curvature { right: 411px; }
 .atlas-workspace .map-lens-control { top: 16px; right: 16px; bottom: auto; }
 .atlas-workspace .map-lens-panel {
   position: absolute;
@@ -7388,9 +7412,23 @@ button {
   background: rgba(10, 13, 12, 0.97);
   box-shadow: -18px 0 36px rgba(0, 0, 0, 0.28);
 }
+.atlas-workspace .map-lens-panel header > div { display: flex; align-items: center; gap: 7px; }
+.atlas-filter-reset {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 3px;
+  color: #8e948e;
+  background: rgba(255,255,255,.025);
+}
+.atlas-filter-reset:hover { border-color: rgba(199,169,93,.28); color: #dbc477; background: rgba(199,169,93,.07); }
 .atlas-workspace:fullscreen .map-lens-panel { max-height: calc(100vh - 92px); }
 .atlas-workspace .map-zoom-controls { right: 16px; bottom: 16px; }
 .country-dashboard { border-radius: 2px; }
+.country-profile-actions { display: flex; align-items: center; gap: 10px; }
+.country-profile-close { flex: 0 0 auto; }
 
 .economic-marker { pointer-events: none; }
 .economic-marker-halo { fill: rgba(206, 66, 73, 0.09); stroke: rgba(213, 75, 82, 0.42); stroke-width: .8; vector-effect: non-scaling-stroke; }
@@ -7584,6 +7622,7 @@ button {
 
 @media (max-width: 980px) {
   .atlas-workspace .world-map-shell.filters-open .world-map { width: 100%; margin-right: 0; opacity: .42; }
+  .atlas-workspace .world-map-shell.filters-open .globe-curvature { right: 1.2%; opacity: .42; }
   .atlas-workspace .map-lens-panel { width: min(350px, calc(100vw - 76px)); }
   .scenario-portfolio-grid { grid-template-columns: 1fr; }
   .scenario-ranking-chart { border-right: 0; border-bottom: 1px solid rgba(199, 169, 93, 0.14); }
