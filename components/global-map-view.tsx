@@ -980,7 +980,7 @@ export function GlobalMapView({
 
   return (
     <div className="map-layout atlas-layout">
-      <section className="map-toolbar">
+      <section className="map-toolbar primary-view-toolbar">
         <div><h2>Atlas</h2></div>
         <div className="country-search">
           <Search size={16} />

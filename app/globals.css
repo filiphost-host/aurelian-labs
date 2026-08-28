@@ -7327,8 +7327,47 @@ button {
 
 /* Final Atlas overrides remain last so the restored application theme cannot dilute them. */
 .atlas-layout { gap: 14px; }
-.atlas-layout .map-toolbar { align-items: end; }
-.atlas-layout .map-toolbar h2 { margin-bottom: 4px; font-size: clamp(24px, 3vw, 38px); }
+.primary-view-toolbar {
+  min-height: 76px;
+  align-items: end;
+  padding: 17px 19px;
+}
+
+.primary-view-toolbar > div:first-child {
+  display: flex;
+  align-items: end;
+}
+
+.primary-view-toolbar h2,
+.atlas-layout .map-toolbar h2 {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1;
+}
+
+.insights-workbench .brief-hero.primary-view-toolbar {
+  min-height: 76px;
+  border-top-width: 1px;
+}
+
+.insights-brief-copy {
+  padding: 4px 2px 2px;
+}
+
+.insights-brief-copy h3 {
+  margin: 5px 0 7px;
+  font-size: 18px;
+}
+
+.insights-brief-copy p {
+  max-width: 780px;
+  margin: 0;
+  color: #817c7f;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
 .atlas-layout .map-toolbar > div:first-child > p { max-width: 620px; margin: 0; color: #8f9891; font-size: 11px; }
 
 .atlas-workspace {

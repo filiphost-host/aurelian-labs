@@ -295,8 +295,8 @@ export function ScenarioView({
 
   return <>
     <div className="scenario-layout scenario-workbench scenario-lab-v2">
-      <section className="scenario-toolbar">
-        <div><h2>Scenario Lab</h2><p>Build a portfolio, choose a market move, and inspect the result.</p></div>
+      <section className="scenario-toolbar primary-view-toolbar">
+        <div><h2>Scenarios</h2></div>
         <div className="scenario-actions">
           <button className="ghost-button" onClick={() => selectPreset("custom")}><RotateCcw size={15} /> Clear shock</button>
           <button className="ghost-button" onClick={() => setSaveOpen(true)}><Save size={15} /> Save</button>

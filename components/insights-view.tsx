@@ -220,12 +220,8 @@ export function InsightsView({
   return (
     <>
       <div className="insights-layout insights-workbench">
-        <section className="brief-hero">
-          <div>
-            <span className="eyebrow">Daily decision brief</span>
-            <h2>{brief.title}</h2>
-            <p>{brief.summary}</p>
-          </div>
+        <section className="brief-hero primary-view-toolbar">
+          <div><h2>Insights</h2></div>
           <div className="brief-actions">
             <button className="ghost-button" onClick={() => setShareOpen(true)}>
               <Link2 size={16} /> Share snapshot
@@ -237,6 +233,12 @@ export function InsightsView({
               <Bot size={16} /> Ask the analyst
             </button>
           </div>
+        </section>
+
+        <section className="insights-brief-copy" aria-labelledby="daily-brief-title">
+          <span className="eyebrow">Daily decision brief</span>
+          <h3 id="daily-brief-title">{brief.title}</h3>
+          <p>{brief.summary}</p>
         </section>
 
         <section className="insights-control-bar" aria-label="Insights view controls">
