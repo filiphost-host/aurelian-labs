@@ -7355,8 +7355,7 @@ button {
   width: 100%;
   height: 100%;
   min-height: min(72vh, 760px);
-  clip-path: ellipse(49.1% 46.5% at 50% 50%);
-  transform: perspective(1400px) rotateX(var(--globe-tilt-x, 0deg)) rotateY(var(--globe-tilt-y, 0deg));
+  transform: perspective(1800px) rotateX(var(--globe-tilt-x, 0deg)) rotateY(var(--globe-tilt-y, 0deg)) scale(.992);
   transform-origin: center;
   transition: width 320ms cubic-bezier(.2,.8,.2,1), margin 320ms cubic-bezier(.2,.8,.2,1), filter 180ms ease, transform 280ms cubic-bezier(.2,.8,.2,1);
 }
@@ -7378,27 +7377,11 @@ button {
   display: block;
   pointer-events: none;
   background: #101617;
-  clip-path: ellipse(49.1% 46.5% at 50% 50%);
-  transform: perspective(1400px) rotateX(var(--globe-tilt-x, 0deg)) rotateY(var(--globe-tilt-y, 0deg));
+  transform: perspective(1800px) rotateX(var(--globe-tilt-x, 0deg)) rotateY(var(--globe-tilt-y, 0deg)) scale(.992);
   transform-origin: center;
   transition: transform 280ms cubic-bezier(.2,.8,.2,1);
 }
 .globe-map-shell:has(.world-map.dragging) .ocean-particle-canvas { transition: none; }
-.globe-curvature {
-  position: absolute;
-  z-index: 2;
-  inset: 3.5% 1.2%;
-  width: auto;
-  pointer-events: none;
-  border: 1px solid rgba(135, 164, 148, .13);
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 40% 34%, transparent 52%, rgba(4, 8, 6, .2) 72%, rgba(2, 5, 4, .7) 100%);
-  box-shadow: inset -34px -8px 70px rgba(0,0,0,.34), inset 18px 8px 44px rgba(115,150,130,.035), 0 18px 44px rgba(0,0,0,.24);
-  transform: perspective(1400px) rotateX(var(--globe-tilt-x, 0deg)) rotateY(var(--globe-tilt-y, 0deg));
-  transition: width 320ms cubic-bezier(.2,.8,.2,1), right 320ms cubic-bezier(.2,.8,.2,1), transform 280ms cubic-bezier(.2,.8,.2,1);
-}
-.globe-map-shell:has(.world-map.dragging) .globe-curvature { transition: none; }
-.atlas-workspace .world-map-shell.filters-open .globe-curvature { right: 411px; }
 .atlas-workspace .map-lens-control { top: 16px; right: 16px; bottom: auto; }
 .atlas-workspace .map-lens-panel {
   position: absolute;
@@ -7622,7 +7605,6 @@ button {
 
 @media (max-width: 980px) {
   .atlas-workspace .world-map-shell.filters-open .world-map { width: 100%; margin-right: 0; opacity: .42; }
-  .atlas-workspace .world-map-shell.filters-open .globe-curvature { right: 1.2%; opacity: .42; }
   .atlas-workspace .map-lens-panel { width: min(350px, calc(100vw - 76px)); }
   .scenario-portfolio-grid { grid-template-columns: 1fr; }
   .scenario-ranking-chart { border-right: 0; border-bottom: 1px solid rgba(199, 169, 93, 0.14); }

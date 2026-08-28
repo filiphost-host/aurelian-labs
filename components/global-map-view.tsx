@@ -884,8 +884,8 @@ export function GlobalMapView({
     const delta: MapPoint = [event.clientX - drag.start[0], event.clientY - drag.start[1]];
     if (Math.hypot(...delta) > 4) drag.moved = true;
     setGlobeTilt([
-      Math.max(-2.8, Math.min(2.8, -delta[1] * 0.018)),
-      Math.max(-4.2, Math.min(4.2, delta[0] * 0.018)),
+      Math.max(-1.8, Math.min(1.8, -delta[1] * 0.012)),
+      Math.max(-2.6, Math.min(2.6, delta[0] * 0.012)),
     ]);
     const bounds = event.currentTarget.getBoundingClientRect();
     setCenter(panMapCenter(drag.center, zoom, delta, [bounds.width, bounds.height]));
@@ -1145,7 +1145,6 @@ export function GlobalMapView({
               );
             }) : null}
           </svg>
-          <div className="globe-curvature" aria-hidden="true" />
           <div className="map-lens-control">
             <button
               className={`map-lens-trigger${lensPanelOpen ? " active" : ""}`}
