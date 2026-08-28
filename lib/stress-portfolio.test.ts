@@ -4,6 +4,16 @@ import { buildStressHoldings, normalizedAllocations, stressInstrumentLibrary } f
 import { scenarioPresets } from "./sample-data";
 
 describe("Scenario Lab portfolio builder", () => {
+  it("offers a broad US, Nordic, and European research universe", () => {
+    expect(stressInstrumentLibrary.length).toBeGreaterThan(50);
+    expect(stressInstrumentLibrary.some((instrument) => instrument.country === "Norway")).toBe(true);
+    expect(stressInstrumentLibrary.some((instrument) => instrument.country === "Sweden")).toBe(true);
+    expect(stressInstrumentLibrary.some((instrument) => instrument.country === "Denmark")).toBe(true);
+    expect(stressInstrumentLibrary.filter((instrument) => instrument.assetType === "etf").length).toBeGreaterThan(5);
+    expect(stressInstrumentLibrary.filter((instrument) => instrument.recessionRisk != null)
+      .every((instrument) => instrument.recessionRisk! >= 1 && instrument.recessionRisk! <= 100)).toBe(true);
+  });
+
   it("normalizes user weights to 100 percent", () => {
     const result = normalizedAllocations([
       { instrumentId: "a", weight: 20 },

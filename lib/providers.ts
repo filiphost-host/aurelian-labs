@@ -3,6 +3,7 @@ import "server-only";
 import { type CallBudget, parseEodhdClose, parseYahooCloses } from "@/lib/market-data";
 import { eodhdSymbol, marketDataSymbol } from "@/lib/market-symbols";
 import { parseNorgesBankPolicyRate, parseNorgesBankRates } from "@/lib/norges-bank";
+import { annualizedSharpeFromCloses, recessionRiskScore } from "@/lib/instrument-research";
 import type { MarketQuote } from "@/lib/types";
 
 export type InstrumentSearchResult = {
@@ -86,7 +87,9 @@ export async function searchOpenFigi(query: string): Promise<InstrumentSearchRes
       const score = (item: typeof left) => {
         const ticker = item.ticker?.toLowerCase() ?? "";
         const name = item.name?.toLowerCase() ?? "";
+        const preferredExchange = new Set(["US", "UN", "UW", "UQ", "NO", "OS", "SS", "ST", "DC", "CO", "GR", "GY", "FP", "NA", "LN"]);
         return (typePriority[item.securityType2 ?? ""] ?? 0) +
+          (preferredExchange.has(item.exchCode ?? "") ? 15 : 0) +
           (ticker === normalizedQuery ? 200 : ticker.startsWith(normalizedQuery) ? 80 : 0) +
           (name === normalizedQuery ? 60 : name.startsWith(normalizedQuery) ? 40 : name.includes(normalizedQuery) ? 20 : 0);
       };
@@ -153,6 +156,52 @@ export async function searchInstruments(query: string) {
     seen.add(key);
     return true;
   }).slice(0, 12);
+}
+
+export type InstrumentResearchMetrics = {
+  forwardPe: number | null;
+  sharpe: number | null;
+  recessionRisk: number;
+  sector: string | null;
+  currency: string | null;
+  source: "Alpha Vantage";
+  asOf: string;
+};
+
+export async function fetchAlphaVantageInstrumentMetrics(symbol: string): Promise<InstrumentResearchMetrics | null> {
+  if (!process.env.ALPHA_VANTAGE_API_KEY) return null;
+  const key = process.env.ALPHA_VANTAGE_API_KEY;
+  const [overview, history] = await Promise.all([
+    fetchJson<Record<string, string>>(`https://www.alphavantage.co/query?function=OVERVIEW&symbol=${encodeURIComponent(symbol)}&apikey=${key}`),
+    fetchJson<{ "Weekly Adjusted Time Series"?: Record<string, { "5. adjusted close"?: string }> }>(
+      `https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol=${encodeURIComponent(symbol)}&apikey=${key}`,
+    ),
+  ]);
+  if (!overview?.Symbol && !history?.["Weekly Adjusted Time Series"]) return null;
+
+  const weekly = Object.entries(history?.["Weekly Adjusted Time Series"] ?? {})
+    .sort(([left], [right]) => left.localeCompare(right))
+    .slice(-53)
+    .map(([, point]) => Number(point["5. adjusted close"]))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const forwardPe = finiteNumber(overview?.ForwardPE);
+  const beta = finiteNumber(overview?.Beta);
+  const operatingMargin = finiteNumber(overview?.OperatingMarginTTM);
+  const sector = overview?.Sector || null;
+  return {
+    forwardPe,
+    sharpe: annualizedSharpeFromCloses(weekly),
+    recessionRisk: recessionRiskScore({
+      assetType: "stock",
+      sector: sector ?? "Unclassified",
+      beta,
+      operatingMargin,
+    }),
+    sector,
+    currency: overview?.Currency || null,
+    source: "Alpha Vantage",
+    asOf: new Date().toISOString().slice(0, 10),
+  };
 }
 
 async function fetchTwelveDataClose(symbol: string, exchange?: string | null) {

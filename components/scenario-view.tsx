@@ -4,7 +4,7 @@ import {
   ArrowRight, Check, ChevronDown, ChevronUp, Copy, Equal, Info, Landmark,
   Link2, Plus, RotateCcw, Save, Search, ShieldAlert, SlidersHorizontal, Trash2, X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -86,6 +86,8 @@ export function ScenarioView({
   const [allocations, setAllocations] = useState<StressAllocation[]>(() => initialAllocations(holdings, fxRates));
   const [instrumentFilter, setInstrumentFilter] = useState<InstrumentFilter>("all");
   const [instrumentQuery, setInstrumentQuery] = useState("");
+  const [remoteInstruments, setRemoteInstruments] = useState<StressInstrument[]>([]);
+  const [searchStatus, setSearchStatus] = useState<"idle" | "searching" | "ready" | "unavailable">("idle");
   const [scenarioCategory, setScenarioCategory] = useState<ScenarioCategory>(scenarioGuides[activePresetId]?.category ?? "Macro");
   const [modelOpen, setModelOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -95,8 +97,52 @@ export function ScenarioView({
   const instruments = useMemo(() => {
     const personal = holdings.filter((holding) => holding.asset_type !== "cash").map(holdingInstrument);
     const existingTickers = new Set(personal.map((instrument) => instrument.ticker.toUpperCase()));
-    return [...personal, ...stressInstrumentLibrary.filter((instrument) => !existingTickers.has(instrument.ticker.toUpperCase()))];
-  }, [holdings]);
+    const curated = stressInstrumentLibrary.filter((instrument) => !existingTickers.has(instrument.ticker.toUpperCase()));
+    const remoteByTicker = new Map<string, StressInstrument>();
+    remoteInstruments.forEach((instrument) => {
+      const ticker = instrument.ticker.toUpperCase();
+      if (!remoteByTicker.has(ticker)) remoteByTicker.set(ticker, instrument);
+    });
+    const base = [...personal, ...curated].map((instrument) => {
+      const researched = remoteByTicker.get(instrument.ticker.toUpperCase());
+      if (!researched) return instrument;
+      remoteByTicker.delete(instrument.ticker.toUpperCase());
+      return {
+        ...instrument,
+        forwardPe: researched.forwardPe ?? instrument.forwardPe,
+        sharpe: researched.sharpe ?? instrument.sharpe,
+        recessionRisk: researched.recessionRisk ?? instrument.recessionRisk,
+        metricSource: researched.forwardPe != null || researched.sharpe != null ? researched.metricSource : instrument.metricSource,
+        metricsAsOf: researched.metricsAsOf ?? instrument.metricsAsOf,
+      };
+    });
+    return [...base, ...remoteByTicker.values()];
+  }, [holdings, remoteInstruments]);
+
+  useEffect(() => {
+    const query = instrumentQuery.trim();
+    if (query.length < 2) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearchStatus("searching");
+      try {
+        const response = await fetch(`/api/scenario/instruments?q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        if (!response.ok) throw new Error("Search unavailable");
+        const payload = await response.json() as { results?: StressInstrument[] };
+        setRemoteInstruments(payload.results ?? []);
+        setSearchStatus("ready");
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setRemoteInstruments([]);
+          setSearchStatus("unavailable");
+        }
+      }
+    }, 400);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [instrumentQuery]);
   const selectedIds = new Set(allocations.map((allocation) => allocation.instrumentId));
   const normalized = normalizedAllocations(allocations);
   const stressHoldings = useMemo(
@@ -214,18 +260,24 @@ export function ScenarioView({
           </div>
           <div className="stress-universe">
             <div className="stress-universe-tools">
-              <label><Search size={15} /><input value={instrumentQuery} onChange={(event) => setInstrumentQuery(event.target.value)} placeholder="Find stock, ETF, bond" /></label>
+              <label><Search size={15} /><input value={instrumentQuery} onChange={(event) => { const query = event.target.value; setInstrumentQuery(query); if (query.trim().length < 2) { setRemoteInstruments([]); setSearchStatus("idle"); } }} placeholder="Ticker, company, ETF, ISIN or FIGI" />{searchStatus === "searching" ? <span className="stress-search-state">Searching</span> : null}</label>
               <div>{(["all", "stock", "etf", "bond"] as const).map((filter) => <button key={filter} className={instrumentFilter === filter ? "active" : ""} onClick={() => setInstrumentFilter(filter)}>{filter === "all" ? "All" : filter === "etf" ? "ETFs" : `${filter[0].toUpperCase()}${filter.slice(1)}s`}</button>)}</div>
+              <p>Forward P/E is estimate-based. Sharpe uses one year of adjusted weekly returns when sourced. Recession risk is Aurelian&apos;s transparent 1–100 model.</p>
             </div>
             <div className="stress-instrument-list">
+              <div className="stress-instrument-head"><span>Instrument</span><span>Fwd P/E</span><span>Sharpe</span><span>Recession risk</span></div>
               {filteredInstruments.map((instrument) => {
                 const selected = selectedIds.has(instrument.id);
                 return <button key={instrument.id} className={selected ? "selected" : ""} onClick={() => toggleInstrument(instrument.id)}>
                   <span className="stress-asset-icon">{selected ? <Check size={14} /> : <Plus size={14} />}</span>
-                  <span><strong>{instrument.ticker}</strong><small>{instrument.name}</small></span>
-                  <em>{instrument.assetType}<small>{instrument.country}</small></em>
+                  <span className="stress-instrument-name"><strong>{instrument.ticker}</strong><small>{instrument.name} · {instrument.country}</small></span>
+                  <span className="stress-metric"><strong>{instrument.forwardPe == null ? "—" : instrument.forwardPe.toFixed(1)}</strong><small>{instrument.forwardPe == null ? "Unavailable" : "Estimate"}</small></span>
+                  <span className="stress-metric"><strong>{instrument.sharpe == null ? "—" : instrument.sharpe.toFixed(2)}</strong><small>1Y weekly</small></span>
+                  <span className={`stress-risk risk-${(instrument.recessionRisk ?? 50) < 35 ? "low" : (instrument.recessionRisk ?? 50) < 65 ? "medium" : "high"}`}><span><i style={{ width: `${instrument.recessionRisk ?? 50}%` }} /></span><strong>{instrument.recessionRisk ?? 50}</strong><small>{instrument.metricSource ?? "Modeled"}</small></span>
                 </button>;
               })}
+              {!filteredInstruments.length && searchStatus !== "searching" ? <div className="empty-state">No matching instrument. Try the full company name, ticker, ISIN, or FIGI.</div> : null}
+              {searchStatus === "unavailable" ? <div className="stress-search-warning">The wider market search is temporarily unavailable. The built-in catalog remains usable.</div> : null}
             </div>
           </div>
         </div>

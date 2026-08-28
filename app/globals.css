@@ -7777,12 +7777,29 @@ button {
 .stress-universe-tools > div button { min-height: 30px; padding: 0 10px; border: 1px solid rgba(255,255,255,.07); border-radius: 2px; color: #777e79; background: transparent; font-size: 9px; }
 .stress-universe-tools > div button:hover { color: #d7d6d2; background: rgba(255,255,255,.05); }
 .stress-universe-tools > div button.active { border-color: rgba(199,169,93,.25); color: #e1c778; background: rgba(199,169,93,.09); }
+.stress-universe-tools > p { margin: 9px 0 0; color: #666d67; font-size: 8px; line-height: 1.45; }
+.stress-search-state { color: #b8a468; font-size: 8px; text-transform: uppercase; }
 .stress-instrument-list { max-height: 410px; overflow: auto; padding: 5px; }
+.stress-instrument-head {
+  position: sticky;
+  z-index: 2;
+  top: -5px;
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) 62px 62px minmax(112px, .72fr);
+  gap: 9px;
+  padding: 9px 10px 8px 47px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  color: #666b67;
+  background: rgba(13, 15, 14, .97);
+  font-size: 8px;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+}
 .stress-instrument-list > button {
   width: 100%;
   min-height: 54px;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(170px, 1fr) 62px 62px minmax(112px, .72fr);
   align-items: center;
   gap: 9px;
   border: 0;
@@ -7797,13 +7814,28 @@ button {
 .stress-asset-icon { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.1); color: #8b918c; }
 .stress-instrument-list > button.selected .stress-asset-icon { border-color: rgba(91,163,122,.32); color: #67ad86; }
 .stress-instrument-list > button > span strong,
-.stress-instrument-list > button > span small,
-.stress-instrument-list > button > em small { display: block; }
+.stress-instrument-list > button > span small { display: block; }
 .stress-instrument-list > button > span strong { font-size: 10px; }
 .stress-instrument-list > button > span small { margin-top: 3px; overflow: hidden; color: #737a74; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.stress-instrument-list > button > em { color: #8c918d; font-size: 9px; font-style: normal; text-align: right; text-transform: uppercase; }
-.stress-instrument-list > button > em small { margin-top: 3px; color: #626862; font-size: 8px; text-transform: none; }
+.stress-instrument-name { min-width: 0; }
+.stress-metric { min-width: 0; }
+.stress-metric strong { color: #d9d6d1; font-variant-numeric: tabular-nums; }
+.stress-metric small { color: #5f6560 !important; font-size: 7px !important; }
+.stress-risk { display: grid !important; grid-template-columns: minmax(45px, 1fr) 24px; align-items: center; gap: 7px; min-width: 0; }
+.stress-risk > span { height: 3px; overflow: hidden; background: rgba(255,255,255,.07); }
+.stress-risk > span i { height: 100%; display: block; background: #c0a354; }
+.stress-risk > strong { color: #cac8c3; font-size: 9px !important; font-variant-numeric: tabular-nums; }
+.stress-risk > small { grid-column: 1 / -1; margin-top: -2px !important; color: #5f6560 !important; font-size: 7px !important; }
+.stress-risk.risk-low > span i { background: #4f9d78; }
+.stress-risk.risk-high > span i { background: #c85365; }
+.stress-search-warning { margin: 8px; padding: 9px 10px; border-left: 2px solid #c85365; color: #9e9698; background: rgba(200,83,101,.06); font-size: 9px; }
 .stress-builder > .panel-note { margin: 0; padding: 10px 18px; border-top: 1px solid rgba(199,169,93,.1); }
+
+@media (max-width: 760px) {
+  .stress-instrument-list { overflow-x: auto; }
+  .stress-instrument-head,
+  .stress-instrument-list > button { min-width: 620px; }
+}
 
 .scenario-lab-v2 .scenario-library { scroll-margin-top: 90px; }
 .scenario-lab-v2 .preset-strip button { position: relative; }
