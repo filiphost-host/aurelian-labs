@@ -7529,12 +7529,12 @@ button {
   position: relative;
   display: block;
   flex: 0 0 auto;
-  overflow: hidden;
+  overflow: visible;
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: #0b0908;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
@@ -7544,37 +7544,25 @@ button {
   position: absolute;
   inset: 0;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   opacity: 1;
-  transform: scale(1.42);
-  transform-origin: 45% 39%;
-  filter: contrast(1.08) saturate(1.05);
+  transform: none;
+  filter: contrast(1.06) saturate(1.03);
 }
 
 .app-masthead .brand-mark {
-  width: 58px;
-  height: 58px;
+  width: 86px;
+  height: 86px;
   border: 0;
-  border-radius: 50%;
-  background: #0b0908;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
-.app-masthead .brand { gap: 15px; }
-.app-masthead .brand strong {
-  color: transparent;
-  background:
-    repeating-linear-gradient(103deg, rgba(255, 245, 201, .48) 0 1px, transparent 1px 3px),
-    linear-gradient(100deg, #8d6a28 0%, #e9d18a 34%, #b88b35 58%, #f0dc99 78%, #9a722a 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  font-family: "Helvetica Neue", Arial, sans-serif;
-  font-size: 20px;
-  font-weight: 300;
-  letter-spacing: 0;
-  line-height: 1;
-}
+.app-masthead .brand { min-width: 86px; gap: 0; }
+.app-masthead { height: 86px; }
+.app-shell { padding-top: 96px; }
 
 .login-brand-mark {
   width: 96px;
@@ -7591,9 +7579,10 @@ button {
 }
 
 @media (max-width: 620px) {
-  .app-masthead .brand-mark { width: 48px; height: 48px; }
-  .app-masthead .brand > div:last-child { display: block; }
-  .app-masthead .brand strong { font-size: 15px; }
+  .app-masthead { height: 72px; padding-inline: 12px; }
+  .app-shell { padding-top: 80px; }
+  .app-masthead .brand { min-width: 68px; }
+  .app-masthead .brand-mark { width: 68px; height: 68px; }
   .login-brand-mark { width: 82px; height: 82px; }
 }
 

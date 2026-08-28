@@ -3,7 +3,6 @@
 import {
   CircleGauge,
   Globe2,
-  LogOut,
   Newspaper,
   Search,
   SlidersHorizontal,
@@ -447,11 +446,6 @@ export function Workbench({
   }
 
   const consumeInstrumentSeed = useCallback(() => setInstrumentSeed(null), []);
-  async function signOut() {
-    if (supabase) await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
-
   if (loading) {
     return (
       <main className="app-shell centered">
@@ -468,17 +462,12 @@ export function Workbench({
       <header className="app-masthead">
         <div className="brand">
           <BrandMark priority />
-          <div><strong>Aurelian Capital</strong></div>
         </div>
         <div className="masthead-controls">
-          <div className="status-pill" role="status"><i />{status}</div>
           <div className="currency-toggle" aria-label="Display currency">
             <button className={displayCurrency === "NOK" ? "active" : ""} onClick={() => setDisplayCurrency("NOK")}>NOK</button>
             <button className={displayCurrency === "EUR" ? "active" : ""} onClick={() => setDisplayCurrency("EUR")}>EUR</button>
           </div>
-          {configured ? (
-            <button className="sidebar-signout" onClick={signOut}><LogOut size={15} /> Sign out</button>
-          ) : null}
         </div>
       </header>
 

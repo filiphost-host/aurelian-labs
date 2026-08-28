@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export function BrandMark({ className = "", priority = false }: { className?: string; priority?: boolean }) {
   return (
-    <span className={`brand-mark ${className}`.trim()} aria-hidden="true">
+    <span className={`brand-mark ${className}`.trim()} role="img" aria-label="Aurelian Capital">
       <Image
         className="brand-mark-image"
         src="/aurelian-capital-mark.png"
@@ -10,7 +10,7 @@ export function BrandMark({ className = "", priority = false }: { className?: st
         width={192}
         height={192}
         priority={priority}
-        sizes="112px"
+        sizes="(max-width: 620px) 68px, 86px"
       />
     </span>
   );
