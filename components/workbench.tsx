@@ -468,7 +468,7 @@ export function Workbench({
       <header className="app-masthead">
         <div className="brand">
           <BrandMark priority />
-          <div><strong>Aurelian Capital</strong><span>Private investment intelligence</span></div>
+          <div><strong>Aurelian Capital</strong></div>
         </div>
         <div className="masthead-controls">
           <div className="status-pill" role="status"><i />{status}</div>

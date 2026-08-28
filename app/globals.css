@@ -7539,27 +7539,42 @@ button {
 }
 
 .brand-mark-image {
-  width: 138%;
-  height: 138%;
-  max-width: none;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
   display: block;
   object-fit: cover;
-  transform: translate(-9%, -3.2%);
-  filter: contrast(1.06) saturate(1.04);
+  object-position: center;
+  opacity: 1;
+  transform: scale(1.42);
+  transform-origin: 45% 39%;
+  filter: contrast(1.08) saturate(1.05);
 }
 
 .app-masthead .brand-mark {
-  width: 54px;
-  height: 54px;
+  width: 58px;
+  height: 58px;
   border: 0;
   border-radius: 50%;
   background: #0b0908;
   box-shadow: none;
 }
 
-.app-masthead .brand { gap: 14px; }
-.app-masthead .brand strong { color: #dbbb67; font-size: 19px; }
-.app-masthead .brand > div:last-child > span { margin-top: 3px; color: #777175; font-size: 9px; }
+.app-masthead .brand { gap: 15px; }
+.app-masthead .brand strong {
+  color: transparent;
+  background:
+    repeating-linear-gradient(103deg, rgba(255, 245, 201, .48) 0 1px, transparent 1px 3px),
+    linear-gradient(100deg, #8d6a28 0%, #e9d18a 34%, #b88b35 58%, #f0dc99 78%, #9a722a 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 0;
+  line-height: 1;
+}
 
 .login-brand-mark {
   width: 96px;
@@ -7576,10 +7591,9 @@ button {
 }
 
 @media (max-width: 620px) {
-  .app-masthead .brand-mark { width: 46px; height: 46px; }
+  .app-masthead .brand-mark { width: 48px; height: 48px; }
   .app-masthead .brand > div:last-child { display: block; }
   .app-masthead .brand strong { font-size: 15px; }
-  .app-masthead .brand > div:last-child > span { display: none; }
   .login-brand-mark { width: 82px; height: 82px; }
 }
 

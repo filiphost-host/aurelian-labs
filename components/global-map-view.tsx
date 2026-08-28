@@ -652,7 +652,7 @@ export function GlobalMapView({
   );
   const requestedCentroid = marketCentroid(requestedMarket);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [pinnedId, setPinnedId] = useState<string | null>(requestedMarket?.id ?? "norway");
+  const [pinnedId, setPinnedId] = useState<string | null>(requestedMarket?.id ?? null);
   const [zoom, setZoom] = useState(requestedMarket ? 2.2 : DEFAULT_ZOOM);
   const [center, setCenter] = useState<MapPoint>(
     requestedCentroid ?? DEFAULT_CENTER,
@@ -767,7 +767,7 @@ export function GlobalMapView({
   }
 
   function resetMap() {
-    setPinnedId("norway");
+    setPinnedId(null);
     setHoveredId(null);
     setZoom(DEFAULT_ZOOM);
     setCenter(DEFAULT_CENTER);
