@@ -7,10 +7,10 @@ export function BrandMark({ className = "", priority = false }: { className?: st
         className="brand-mark-image"
         src="/aurelian-capital-mark.png"
         alt=""
-        width={96}
-        height={96}
+        width={192}
+        height={192}
         priority={priority}
-        sizes="96px"
+        sizes="112px"
       />
     </span>
   );
