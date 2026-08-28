@@ -126,6 +126,29 @@ export function normalizedAllocations(allocations: StressAllocation[]) {
   return cleaned.map((allocation) => ({ ...allocation, weight: allocation.weight / total * 100 }));
 }
 
+export function rebalanceAllocation(
+  allocations: StressAllocation[],
+  instrumentId: string,
+  requestedWeight: number,
+) {
+  if (!allocations.some((allocation) => allocation.instrumentId === instrumentId)) return allocations;
+  if (allocations.length === 1) return allocations.map((allocation) => ({ ...allocation, weight: 100 }));
+
+  const targetWeight = Math.max(0, Math.min(100, Number.isFinite(requestedWeight) ? requestedWeight : 0));
+  const remainder = 100 - targetWeight;
+  const others = allocations.filter((allocation) => allocation.instrumentId !== instrumentId);
+  const otherTotal = others.reduce((sum, allocation) => sum + Math.max(0, allocation.weight), 0);
+  const equalShare = remainder / others.length;
+
+  return allocations.map((allocation) => {
+    if (allocation.instrumentId === instrumentId) return { ...allocation, weight: targetWeight };
+    return {
+      ...allocation,
+      weight: otherTotal > 0 ? Math.max(0, allocation.weight) / otherTotal * remainder : equalShare,
+    };
+  });
+}
+
 export function buildStressHoldings(
   instruments: StressInstrument[],
   allocations: StressAllocation[],

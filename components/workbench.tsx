@@ -10,7 +10,6 @@ import {
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { InsightsView } from "@/components/insights-view";
-import { BrandMark } from "@/components/brand-mark";
 import {
   SearchCommand,
   type RemoteInstrument,
@@ -458,9 +457,7 @@ export function Workbench({
   return (
     <main className="app-shell">
       <header className="app-masthead">
-        <div className="brand">
-          <BrandMark priority />
-        </div>
+        <div className="brand"><strong className="masthead-wordmark">Aurelian Capital</strong></div>
         <div className="masthead-controls">
           <div className="currency-toggle" aria-label="Display currency">
             <button className={displayCurrency === "NOK" ? "active" : ""} onClick={() => setDisplayCurrency("NOK")}>NOK</button>
@@ -470,18 +467,6 @@ export function Workbench({
       </header>
 
       <section className="workspace">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Independent market intelligence</p>
-            <h1>{tabs.find((tab) => tab.id === activeTab)?.label}</h1>
-          </div>
-          <div className="topbar-actions">
-            <button className="search-trigger" onClick={() => setSearchOpen(true)}>
-              <Search size={16} /><span>Search Aurelian</span><kbd>⌘ K</kbd>
-            </button>
-          </div>
-        </header>
-
         <div className="view-stage" key={activeTab} role="region" aria-label={`${tabs.find((tab) => tab.id === activeTab)?.label} view`}>
           {activeTab === "insights" ? (
             <InsightsView

@@ -15,7 +15,7 @@ import {
 import { scenarioPresets } from "@/lib/sample-data";
 import { scenarioCategories, scenarioGuides, type ScenarioCategory } from "@/lib/scenario-research";
 import {
-  buildStressHoldings, normalizedAllocations, stressInstrumentLibrary,
+  buildStressHoldings, normalizedAllocations, rebalanceAllocation, stressInstrumentLibrary,
   type StressAllocation, type StressInstrument,
 } from "@/lib/stress-portfolio";
 import type {
@@ -85,6 +85,7 @@ export function ScenarioView({
   const [allocations, setAllocations] = useState<StressAllocation[]>(() => initialAllocations(holdings, fxRates));
   const [instrumentFilter, setInstrumentFilter] = useState<InstrumentFilter>("all");
   const [instrumentQuery, setInstrumentQuery] = useState("");
+  const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({});
   const [remoteInstruments, setRemoteInstruments] = useState<StressInstrument[]>([]);
   const [searchStatus, setSearchStatus] = useState<"idle" | "searching" | "ready" | "unavailable">("idle");
   const [scenarioCategory, setScenarioCategory] = useState<ScenarioCategory>(scenarioGuides[activePresetId]?.category ?? "Macro");
@@ -189,9 +190,19 @@ export function ScenarioView({
       setAllocations((current) => normalizedAllocations([...current, { instrumentId: id, weight: current.length ? 10 : 100 }]));
     }
   }
-  function updateWeight(id: string, weight: number) {
-    setAllocations((current) => current.map((allocation) => allocation.instrumentId === id
-      ? { ...allocation, weight: Math.max(0, Math.min(100, weight)) } : allocation));
+  function updateWeight(id: string, value: string) {
+    setWeightDrafts((current) => ({ ...current, [id]: value }));
+    if (value === "") return;
+    setAllocations((current) => rebalanceAllocation(current, id, Number(value)));
+  }
+  function commitWeight(id: string) {
+    const draft = weightDrafts[id];
+    if (draft !== undefined) setAllocations((current) => rebalanceAllocation(current, id, Number(draft || 0)));
+    setWeightDrafts((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
   }
   function equalWeight() {
     if (allocations.length) setAllocations(allocations.map((allocation) => ({ ...allocation, weight: 100 / allocations.length })));
@@ -220,7 +231,7 @@ export function ScenarioView({
   return <>
     <div className="scenario-layout scenario-workbench scenario-lab-v2">
       <section className="scenario-toolbar">
-        <div><span className="eyebrow">Construct · shock · inspect</span><h2>Scenario Lab</h2><p>Build the portfolio you want to test, then decide what changes in the market.</p></div>
+        <div><h2>Scenario Lab</h2><p>Build a portfolio, choose a market move, and inspect the result.</p></div>
         <div className="scenario-actions">
           <button className="ghost-button" onClick={() => selectPreset("custom")}><RotateCcw size={15} /> Clear shock</button>
           <button className="ghost-button" onClick={() => setSaveOpen(true)}><Save size={15} /> Save</button>
@@ -252,7 +263,7 @@ export function ScenarioView({
                 return <article key={instrument.id}>
                   <button className="icon-button danger" title={`Remove ${instrument.name}`} onClick={() => toggleInstrument(instrument.id)}><X size={14} /></button>
                   <div><strong>{instrument.ticker}</strong><span>{instrument.name} · {instrument.assetType}</span></div>
-                  <label><input aria-label={`${instrument.name} weight`} type="number" min="0" max="100" step="1" value={Number(allocation.weight.toFixed(1))} onChange={(event) => updateWeight(instrument.id, Number(event.target.value))} /><span>%</span></label>
+                  <label><input aria-label={`${instrument.name} weight`} type="number" min="0" max="100" step="1" inputMode="decimal" value={weightDrafts[instrument.id] ?? Number(allocation.weight.toFixed(1))} onChange={(event) => updateWeight(instrument.id, event.target.value)} onBlur={() => commitWeight(instrument.id)} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /><span>%</span></label>
                 </article>;
               })}
               {!normalized.length ? <div className="empty-state">Select at least one stock, ETF, or bond from the instrument list.</div> : null}

@@ -679,6 +679,7 @@ export function GlobalMapView({
   const hoverOpenRef = useRef<number | null>(null);
   const hoverClearRef = useRef<number | null>(null);
   const mapWorkspaceRef = useRef<HTMLElement | null>(null);
+  const oceanWakeRef = useRef<SVGGElement | null>(null);
   const activeId = hoveredId ?? pinnedId;
   const previewCountry = marketCountries.find((country) => country.id === hoveredId) ?? null;
   const selectedCountry = marketCountries.find((country) => country.id === pinnedId) ?? previewCountry;
@@ -802,6 +803,30 @@ export function GlobalMapView({
     setCenter(panMapCenter(drag.center, zoom, delta, [bounds.width, bounds.height]));
   }
 
+  function moveOceanWake(event: ReactPointerEvent<SVGSVGElement>) {
+    continuePan(event);
+    const wake = oceanWakeRef.current;
+    if (!wake) return;
+    const target = event.target as Element;
+    const overLand = Boolean(target.closest(".map-land, .market-hit-target, .market-pulse, .point-market-ring, .country-focus-overlay"));
+    if (dragRef.current || overLand) {
+      wake.classList.remove("active");
+      return;
+    }
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix) return;
+    const point = event.currentTarget.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const local = point.matrixTransform(matrix.inverse());
+    wake.setAttribute("transform", `translate(${local.x} ${local.y})`);
+    wake.classList.add("active");
+  }
+
+  function hideOceanWake() {
+    oceanWakeRef.current?.classList.remove("active");
+  }
+
   function endPan(event: ReactPointerEvent<SVGSVGElement>) {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
@@ -885,11 +910,7 @@ export function GlobalMapView({
   return (
     <div className="map-layout atlas-layout">
       <section className="map-toolbar">
-        <div>
-          <span className="eyebrow">Sourced country context</span>
-          <h2>Aurelian Atlas</h2>
-          <p>Economic geography, market structure, and portfolio exposure in one view.</p>
-        </div>
+        <div><h2>Aurelian Atlas</h2></div>
         <div className="country-search">
           <Search size={16} />
           <input
@@ -918,16 +939,17 @@ export function GlobalMapView({
       </section>
 
       <section ref={mapWorkspaceRef} className={`panel wide map-panel atlas-workspace${isFullscreen ? " is-fullscreen" : ""}`}>
-        <div className={`world-map-shell${lensPanelOpen ? " filters-open" : ""}`} onMouseLeave={clearPreviewSoon}>
+        <div className={`world-map-shell${lensPanelOpen ? " filters-open" : ""}`} onMouseLeave={() => { clearPreviewSoon(); hideOceanWake(); }}>
           <svg
             className={`world-map${dragging ? " dragging" : ""}`}
             viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
             role="img"
             aria-label={`Global securities map with ${marketCountries.length} researched markets`}
             onPointerDown={beginPan}
-            onPointerMove={continuePan}
+            onPointerMove={moveOceanWake}
             onPointerUp={endPan}
             onPointerCancel={endPan}
+            onPointerLeave={hideOceanWake}
           >
             <defs>
               <filter id="map-grain-filter">
@@ -945,6 +967,12 @@ export function GlobalMapView({
             <g className="map-grid-lines">
               {[120, 240, 360, 480, 600, 720].map((x) => <line key={`x-${x}`} x1={x} y1="0" x2={x} y2="460" />)}
               {[90, 170, 250, 330, 410].map((y) => <line key={`y-${y}`} x1="0" y1={y} x2="900" y2={y} />)}
+            </g>
+            <g ref={oceanWakeRef} className="ocean-wake" aria-hidden="true">
+              <circle r="12" />
+              <circle r="12" />
+              <circle r="12" />
+              <circle className="ocean-wake-core" r="2.2" />
             </g>
             {worldCountries.map((country) => {
               const market = marketByAtlasName.get(country.name);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { scenarioImpact, totalValueNok } from "./calculations";
-import { buildStressHoldings, normalizedAllocations, stressInstrumentLibrary } from "./stress-portfolio";
+import { buildStressHoldings, normalizedAllocations, rebalanceAllocation, stressInstrumentLibrary } from "./stress-portfolio";
 import { scenarioPresets } from "./sample-data";
 
 describe("Scenario Lab portfolio builder", () => {
@@ -21,6 +21,17 @@ describe("Scenario Lab portfolio builder", () => {
     ]);
     expect(result.reduce((sum, row) => sum + row.weight, 0)).toBeCloseTo(100);
     expect(result[0].weight).toBeCloseTo(40);
+  });
+
+  it("keeps an edited weight exact and proportionally rebalances the rest", () => {
+    const result = rebalanceAllocation([
+      { instrumentId: "a", weight: 15 },
+      { instrumentId: "b", weight: 35 },
+      { instrumentId: "c", weight: 50 },
+    ], "a", 40);
+    expect(result.find((row) => row.instrumentId === "a")?.weight).toBe(40);
+    expect(result.reduce((sum, row) => sum + row.weight, 0)).toBeCloseTo(100);
+    expect(result.find((row) => row.instrumentId === "b")?.weight).toBeCloseTo(24.7059);
   });
 
   it("builds a test portfolio at the requested NOK capital", () => {
