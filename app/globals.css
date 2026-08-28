@@ -7411,8 +7411,25 @@ button {
 .atlas-workspace .map-grain { fill: #aeb7b4; opacity: .025; }
 .atlas-workspace .map-grid-lines { pointer-events: none; }
 .atlas-workspace .map-grid-lines line { stroke: rgba(169, 182, 176, .055); }
-.atlas-workspace .map-land.muted { fill: #182a21; stroke: rgba(96, 132, 108, .42); opacity: .92; }
-.atlas-workspace .map-land.market-country { fill: #27543a; stroke: #669274; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7)); }
+.atlas-workspace .map-land.muted {
+  fill: #111a16;
+  stroke: rgba(85, 106, 94, .28);
+  stroke-width: .58;
+  opacity: .7;
+}
+.atlas-workspace .map-land.market-country {
+  fill: #29553d;
+  stroke: #6f9b7b;
+  stroke-width: 1.05;
+  opacity: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.72));
+}
+.atlas-workspace .map-land.market-developed { fill: url(#marketDevelopedFill); }
+.atlas-workspace .map-land.market-emerging { fill: url(#marketEmergingFill); stroke: #829172; }
+.atlas-workspace .map-land.market-restricted { fill: url(#marketRestrictedFill); stroke: #826b61; }
+.atlas-workspace .map-land.market-resilient { stroke: #86ad91; stroke-width: 1.18; }
+.atlas-workspace .map-land.market-vulnerable { stroke: #9d7169; stroke-width: 1.15; }
+.atlas-workspace .map-land.market-country.energy-market { stroke: #aa9b67; stroke-width: 1.22; }
 .atlas-workspace .map-land.market-country.active,
 .atlas-workspace .map-land.market-country.pinned { filter: drop-shadow(0 0 3px rgba(212, 175, 55, 0.5)) drop-shadow(0 3px 2px rgba(0, 0, 0, 0.72)); }
 .ocean-particle-canvas {

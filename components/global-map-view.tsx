@@ -263,6 +263,22 @@ const marketCountries: MarketCountry[] = [
     note: "Currency policy, inflation, external funding, the Suez Canal, and state participation are core considerations.",
   },
   {
+    id: "saudi-arabia", name: "Saudi Arabia", atlasName: "Saudi Arabia", currency: "SAR", keyIndex: "Tadawul All Share",
+    sectors: "Energy, financials, materials, telecom",
+    policyRate: { value: "USD-peg framework", asOf: "Event-driven", source: "Saudi Central Bank", sourceUrl: "https://www.sama.gov.sa/en-US/EconomicReports/Pages/RepoRate.aspx" },
+    debtToGdp: { value: "Low-to-moderate public debt", asOf: "Annual series", source: "IMF", sourceUrl: officialSources.imfDebt },
+    marketCapToGdp: { value: "Large, Aramco-led equity market", asOf: "Latest available", source: "World Bank", sourceUrl: officialSources.worldBank },
+    note: "Oil policy, domestic investment, fiscal breakevens, and the execution of economic diversification shape this large Gulf market.",
+  },
+  {
+    id: "united-arab-emirates", name: "United Arab Emirates", atlasName: "United Arab Emirates", currency: "AED", keyIndex: "FTSE ADX General",
+    sectors: "Financials, real estate, energy, telecom",
+    policyRate: { value: "USD-peg framework", asOf: "Event-driven", source: "Central Bank of the UAE", sourceUrl: "https://www.centralbank.ae/en/our-operations/monetary-policy-and-domestic-markets/" },
+    debtToGdp: { value: "Moderate consolidated public debt", asOf: "Annual series", source: "IMF", sourceUrl: officialSources.imfDebt },
+    marketCapToGdp: { value: "Deepening dual-exchange market", asOf: "Latest available", source: "World Bank", sourceUrl: officialSources.worldBank },
+    note: "Banking, property, hydrocarbons, logistics, and international capital flows define a fast-deepening regional market hub.",
+  },
+  {
     id: "china", name: "China", atlasName: "China", currency: "CNY", keyIndex: "CSI 300",
     sectors: "Financials, industrials, technology, consumer",
     policyRate: { value: "PBoC policy framework", asOf: "Event-driven", source: "People's Bank of China", sourceUrl: "http://www.pbc.gov.cn/en/3688006/index.html" },
@@ -469,6 +485,18 @@ const marketResearch: Record<string, MarketResearch> = {
     policyWatch: "Currency regime, IMF-linked reforms, state ownership, subsidy policy, and regional security.",
     takeaways: ["FX convertibility and inflation are first-order risks.", "The market offers scale but remains frontier-like in liquidity and governance."],
   },
+  "saudi-arabia": {
+    companies: ["Saudi Aramco", "Al Rajhi Bank", "SABIC", "Saudi National Bank"],
+    materials: "Oil, natural gas, petrochemicals, phosphates, and gold",
+    policyWatch: "OPEC+ policy, fiscal breakevens, sovereign investment, regional security, foreign-ownership rules, and Vision 2030 execution.",
+    takeaways: ["Aramco makes oil exposure unusually explicit at index level.", "Government-led capital spending can support growth while increasing concentration and execution risk."],
+  },
+  "united-arab-emirates": {
+    companies: ["International Holding Company", "First Abu Dhabi Bank", "Emirates NBD", "Emaar Properties"],
+    materials: "Oil, natural gas, aluminium; major logistics and re-export hub",
+    policyWatch: "Property cycles, bank liquidity, foreign capital, federal-emirate fiscal links, regional security, and diversification policy.",
+    takeaways: ["Abu Dhabi and Dubai offer different sector mixes within one currency regime.", "Capital inflows and property can reinforce one another in both directions."],
+  },
   china: {
     companies: ["Tencent", "Alibaba", "Kweichow Moutai", "CATL"],
     materials: "Rare earths, coal, aluminium; major commodity importer",
@@ -558,9 +586,9 @@ const marketRegions: Record<Exclude<MarketRegion, "all">, Set<string>> = {
   Europe: new Set(["norway", "sweden", "denmark", "finland", "united-kingdom", "germany", "france", "spain", "netherlands", "switzerland", "italy", "belgium", "austria", "ireland", "portugal", "poland", "russia"]),
   Americas: new Set(["united-states", "canada", "brazil", "mexico"]),
   "Asia-Pacific": new Set(["japan", "australia", "china", "india", "south-korea", "singapore", "taiwan", "indonesia"]),
-  "Africa & Middle East": new Set(["south-africa", "egypt"]),
+  "Africa & Middle East": new Set(["south-africa", "egypt", "saudi-arabia", "united-arab-emirates"]),
 };
-const emergingMarkets = new Set(["poland", "south-africa", "egypt", "china", "india", "taiwan", "indonesia", "brazil", "mexico"]);
+const emergingMarkets = new Set(["poland", "south-africa", "egypt", "saudi-arabia", "united-arab-emirates", "china", "india", "taiwan", "indonesia", "brazil", "mexico"]);
 const restrictedMarkets = new Set(["russia"]);
 const industryLensOptions: Array<{ id: IndustryLens; label: string; group: string }> = [
   { id: "all", label: "Whole market index", group: "Market" },
@@ -593,8 +621,8 @@ const industryProfiles: Record<Exclude<IndustryLens, "all">, { pe: number; growt
   utilities: { pe: 0.76, growth: 0.58, fcf: 1.12, roe: 0.72, sharpe: 0.92 },
   "real-estate": { pe: 0.82, growth: 0.68, fcf: 1.2, roe: 0.76, sharpe: 0.78 },
 };
-const energyMarkets = new Set(["norway", "united-kingdom", "united-states", "canada", "australia", "brazil", "mexico", "china", "egypt", "russia"]);
-const trillionEconomies = new Set(["united-states", "china", "germany", "japan", "india", "united-kingdom", "france", "italy", "brazil", "canada", "russia", "south-korea", "australia", "spain", "mexico", "netherlands", "indonesia"]);
+const energyMarkets = new Set(["norway", "united-kingdom", "united-states", "canada", "australia", "brazil", "mexico", "china", "egypt", "saudi-arabia", "united-arab-emirates", "russia"]);
+const trillionEconomies = new Set(["united-states", "china", "germany", "japan", "india", "united-kingdom", "france", "italy", "brazil", "canada", "russia", "south-korea", "australia", "spain", "mexico", "netherlands", "indonesia", "saudi-arabia"]);
 const rateAnchors = [
   { id: "united-states", label: "FED" }, { id: "germany", label: "ECB" }, { id: "united-kingdom", label: "BOE" },
   { id: "norway", label: "NB" }, { id: "japan", label: "BOJ" }, { id: "china", label: "PBOC" },
@@ -635,6 +663,8 @@ const marketAnalytics: Record<string, MarketAnalytics> = {
   poland: { pe: 11, sharpe: 1.1, debtToGdp: 50, solvency: 78, fcfYield: 8, earningsGrowth: 10, roe: 16 },
   "south-africa": { pe: 12, sharpe: 0.25, debtToGdp: 77, solvency: 55, fcfYield: 7, earningsGrowth: 5, roe: 14 },
   egypt: { pe: 8, sharpe: -0.1, debtToGdp: 90, solvency: 42, fcfYield: 5, earningsGrowth: 12, roe: 20 },
+  "saudi-arabia": { pe: 17, sharpe: 0.45, debtToGdp: 31, solvency: 78, fcfYield: 5.8, earningsGrowth: 7, roe: 15 },
+  "united-arab-emirates": { pe: 13, sharpe: 0.8, debtToGdp: 32, solvency: 86, fcfYield: 6.4, earningsGrowth: 9, roe: 16 },
   china: { pe: 13, sharpe: 0.35, debtToGdp: 88, solvency: 62, fcfYield: 7, earningsGrowth: 7, roe: 12 },
   india: { pe: 23, sharpe: 0.9, debtToGdp: 82, solvency: 68, fcfYield: 4, earningsGrowth: 14, roe: 17 },
   "south-korea": { pe: 14, sharpe: 0.8, debtToGdp: 48, solvency: 82, fcfYield: 6, earningsGrowth: 12, roe: 13 },
@@ -668,6 +698,10 @@ const economicMarkers: EconomicMarker[] = [
   { countryId: "united-states", name: "Silicon Valley", detail: "Technology and venture capital", coordinates: [-122.1, 37.4], kind: "industry" },
   { countryId: "brazil", name: "Pre-salt basin", detail: "Deepwater offshore oil", coordinates: [-42.2, -24.0], kind: "offshore" },
   { countryId: "brazil", name: "Carajas", detail: "Iron ore mining system", coordinates: [-50.2, -6.1], kind: "resource" },
+  { countryId: "saudi-arabia", name: "Ghawar", detail: "Core onshore oil-production system", coordinates: [49.1, 25.4], kind: "resource" },
+  { countryId: "saudi-arabia", name: "Riyadh", detail: "Capital-market and sovereign-investment hub", coordinates: [46.68, 24.71], kind: "capital" },
+  { countryId: "united-arab-emirates", name: "Jebel Ali", detail: "Ports, logistics, trade, and industrial free zone", coordinates: [55.03, 24.99], kind: "industry" },
+  { countryId: "united-arab-emirates", name: "Abu Dhabi", detail: "Energy, sovereign capital, and banking hub", coordinates: [54.38, 24.45], kind: "capital" },
 ];
 
 function valuationMetrics(analytics: MarketAnalytics) {
@@ -1035,6 +1069,21 @@ export function GlobalMapView({
                 <stop offset="52%" stopColor="#c99738" />
                 <stop offset="100%" stopColor="#725418" />
               </linearGradient>
+              <linearGradient id="marketDevelopedFill" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#35684a" />
+                <stop offset="58%" stopColor="#29553d" />
+                <stop offset="100%" stopColor="#1e402f" />
+              </linearGradient>
+              <linearGradient id="marketEmergingFill" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#456846" />
+                <stop offset="55%" stopColor="#36583d" />
+                <stop offset="100%" stopColor="#27432f" />
+              </linearGradient>
+              <linearGradient id="marketRestrictedFill" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#453a36" />
+                <stop offset="55%" stopColor="#302f2c" />
+                <stop offset="100%" stopColor="#222623" />
+              </linearGradient>
             </defs>
             <rect width="900" height="460" className="map-ocean" />
             <rect width="900" height="460" className="map-grain" />
@@ -1048,6 +1097,9 @@ export function GlobalMapView({
               const active = market.id === activeId;
               const filteredOut = !marketPassesFilters(market);
               const isNordic = ["norway", "sweden", "denmark", "finland"].includes(market.id);
+              const stageClass = ` market-${stageForMarket(market.id).toLowerCase()}`;
+              const solvency = marketAnalytics[market.id]?.solvency ?? 70;
+              const resilienceClass = solvency >= 85 ? " market-resilient" : solvency < 60 ? " market-vulnerable" : "";
               return (
                 <g
                   key={country.name}
@@ -1066,7 +1118,7 @@ export function GlobalMapView({
                     if (event.key === "Enter" || event.key === " ") selectCountry(market);
                   }}
                 >
-                  <path className={`map-land market-country${active ? " active" : ""}${pinnedId === market.id ? " pinned" : ""}${filteredOut ? " filtered-out" : ""}${energyMarkets.has(market.id) && activeLenses.has("energy") ? " energy-market" : ""}`} d={country.path} />
+                  <path className={`map-land market-country${stageClass}${resilienceClass}${active ? " active" : ""}${pinnedId === market.id ? " pinned" : ""}${filteredOut ? " filtered-out" : ""}${energyMarkets.has(market.id) && activeLenses.has("energy") ? " energy-market" : ""}`} d={country.path} />
                   <circle className="market-hit-target" cx={country.centroid[0]} cy={country.centroid[1]} r={isNordic ? 13 : 8} />
                   <circle className={`market-pulse${active ? " active" : ""}${filteredOut ? " filtered-out" : ""}`} cx={country.centroid[0]} cy={country.centroid[1]} r={isNordic ? 4.5 : 3.5} />
                 </g>
