@@ -7364,30 +7364,20 @@ button {
 .atlas-workspace .map-land.market-country { fill: #27543a; stroke: #669274; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7)); }
 .atlas-workspace .map-land.market-country.active,
 .atlas-workspace .map-land.market-country.pinned { filter: drop-shadow(0 0 3px rgba(212, 175, 55, 0.5)) drop-shadow(0 3px 2px rgba(0, 0, 0, 0.72)); }
-.ocean-wake { opacity: 0; pointer-events: none; transition: opacity 120ms ease; }
-.ocean-wake.active { opacity: 1; }
-.ocean-wake circle:not(.ocean-wake-core) {
-  fill: none;
-  stroke: rgba(150, 190, 173, .42);
-  stroke-width: 1.1;
+.ocean-topography { opacity: 0; pointer-events: none; transition: opacity 100ms ease; }
+.ocean-topography.active { opacity: 1; }
+.ocean-topography ellipse {
+  fill: rgba(59, 100, 81, .025);
+  stroke: rgba(133, 177, 157, .25);
+  stroke-width: .8;
   vector-effect: non-scaling-stroke;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: ocean-wake-ripple 1.65s ease-out infinite;
 }
-.ocean-wake circle:nth-child(2) { animation-delay: .52s; }
-.ocean-wake circle:nth-child(3) { animation-delay: 1.04s; }
-.ocean-wake-core { fill: rgba(183, 211, 198, .58); filter: drop-shadow(0 0 5px rgba(116, 174, 146, .55)); }
-
-@keyframes ocean-wake-ripple {
-  0% { opacity: 0; transform: scale(.25); }
-  18% { opacity: .75; }
-  100% { opacity: 0; transform: scale(2.8); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ocean-wake circle:not(.ocean-wake-core) { animation: none; opacity: .4; }
-}
+.ocean-topography ellipse:nth-child(2) { fill: rgba(63, 108, 87, .035); stroke: rgba(139, 184, 163, .29); }
+.ocean-topography ellipse:nth-child(3) { fill: rgba(69, 119, 94, .045); stroke: rgba(145, 192, 169, .34); }
+.ocean-topography ellipse:nth-child(4) { fill: rgba(76, 132, 103, .06); stroke: rgba(154, 202, 178, .4); }
+.ocean-topography ellipse:nth-child(5) { fill: rgba(84, 145, 113, .08); stroke: rgba(166, 213, 188, .48); }
+.ocean-topography ellipse:nth-child(6) { fill: rgba(96, 159, 125, .12); stroke: rgba(182, 224, 200, .58); }
+.ocean-topography path { fill: none; stroke: rgba(200, 233, 216, .7); stroke-width: .9; vector-effect: non-scaling-stroke; }
 .atlas-workspace .map-lens-control { top: 16px; right: 16px; bottom: auto; }
 .atlas-workspace .map-lens-panel {
   position: absolute;
@@ -7882,8 +7872,35 @@ button {
 .stress-factor-grid input { width: 100%; margin-top: 10px; accent-color: #b79748; }
 
 .stress-results .scenario-result-band { border-radius: 0; border-width: 0 0 1px; }
+.scenario-timeline { overflow: hidden; border-bottom: 1px solid rgba(199,169,93,.12); background: #0d0f0e; }
+.scenario-timeline-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 18px 7px; }
+.scenario-timeline-head > div:first-child strong,
+.scenario-timeline-head > div:first-child span { display: block; }
+.scenario-timeline-head > div:first-child strong { color: #ddd9d2; font-size: 12px; }
+.scenario-timeline-head > div:first-child span { margin-top: 3px; color: #717873; font-size: 9px; }
+.timeline-event-toggles { display: flex; gap: 5px; }
+.timeline-event-toggles button { min-height: 28px; padding: 0 10px; border: 1px solid rgba(255,255,255,.08); border-radius: 3px; color: #777d79; background: rgba(255,255,255,.025); font-size: 9px; }
+.timeline-event-toggles button:hover { border-color: rgba(255,255,255,.16); color: #bbbdb9; background: rgba(255,255,255,.055); }
+.timeline-event-toggles button.active { border-color: rgba(207,177,99,.3); color: #dfc879; background: rgba(199,169,93,.085); }
+.scenario-timeline-chart { min-width: 0; padding: 0 7px 2px; }
+.timeline-tooltip { width: min(280px, 72vw); padding: 11px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 3px; color: #d8d5cf; background: rgba(10,11,10,.96); box-shadow: 0 12px 30px rgba(0,0,0,.42); }
+.timeline-tooltip > span,
+.timeline-tooltip > strong,
+.timeline-tooltip > small,
+.timeline-tooltip > em { display: block; }
+.timeline-tooltip > span { color: #737a75; font-size: 8px; text-transform: uppercase; }
+.timeline-tooltip > strong { margin-top: 4px; color: #ead68f; font-size: 14px; }
+.timeline-tooltip > small { margin-top: 2px; color: #6e746f; font-size: 8px; }
+.timeline-tooltip > em { margin-top: 10px; color: #c96a78; font-size: 9px; font-style: normal; font-weight: 700; }
+.timeline-tooltip > p { margin: 5px 0 0; color: #909590; font-size: 9px; line-height: 1.45; }
+.timeline-legend { display: flex; align-items: center; gap: 16px; padding: 0 18px 13px; color: #858b86; font-size: 8px; }
+.timeline-legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.timeline-legend i { width: 18px; height: 0; border-top: 2px solid #d8c17b; }
+.timeline-legend .baseline-line { border-top: 1px dashed #59605c; }
+.timeline-legend small { margin-left: auto; color: #626863; font-size: 8px; }
 .stress-results-grid { display: grid; grid-template-columns: minmax(450px, 1.25fr) minmax(300px, .75fr); border-bottom: 1px solid rgba(199,169,93,.12); }
-.stress-contribution-chart { min-width: 0; padding: 18px 8px 8px 0; border-right: 1px solid rgba(199,169,93,.12); }
+.stress-contribution-chart { min-width: 0; overflow: visible; padding: 18px 8px 8px 0; border-right: 1px solid rgba(199,169,93,.12); }
+.stress-contribution-chart .recharts-wrapper svg { overflow: visible; }
 .stress-reading { min-width: 0; }
 .stress-reading article { position: relative; min-height: 116px; padding: 16px 18px 15px 48px; border-bottom: 1px solid rgba(255,255,255,.05); }
 .stress-reading article:last-child { border-bottom: 0; }
@@ -7927,4 +7944,9 @@ button {
   .stress-capital-row > div { justify-content: space-between; }
   .stress-factor-grid { grid-template-columns: 1fr; }
   .stress-results .scenario-result-band { grid-template-columns: 1fr; }
+  .scenario-timeline-head { align-items: stretch; flex-direction: column; gap: 10px; }
+  .timeline-event-toggles { overflow-x: auto; }
+  .timeline-event-toggles button { flex: 0 0 auto; }
+  .timeline-legend { align-items: flex-start; flex-wrap: wrap; }
+  .timeline-legend small { flex-basis: 100%; margin-left: 0; }
 }

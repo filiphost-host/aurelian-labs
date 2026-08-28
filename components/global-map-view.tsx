@@ -679,7 +679,7 @@ export function GlobalMapView({
   const hoverOpenRef = useRef<number | null>(null);
   const hoverClearRef = useRef<number | null>(null);
   const mapWorkspaceRef = useRef<HTMLElement | null>(null);
-  const oceanWakeRef = useRef<SVGGElement | null>(null);
+  const oceanTerrainRef = useRef<SVGGElement | null>(null);
   const activeId = hoveredId ?? pinnedId;
   const previewCountry = marketCountries.find((country) => country.id === hoveredId) ?? null;
   const selectedCountry = marketCountries.find((country) => country.id === pinnedId) ?? previewCountry;
@@ -803,14 +803,14 @@ export function GlobalMapView({
     setCenter(panMapCenter(drag.center, zoom, delta, [bounds.width, bounds.height]));
   }
 
-  function moveOceanWake(event: ReactPointerEvent<SVGSVGElement>) {
+  function moveOceanTerrain(event: ReactPointerEvent<SVGSVGElement>) {
     continuePan(event);
-    const wake = oceanWakeRef.current;
-    if (!wake) return;
+    const terrain = oceanTerrainRef.current;
+    if (!terrain) return;
     const target = event.target as Element;
     const overLand = Boolean(target.closest(".map-land, .market-hit-target, .market-pulse, .point-market-ring, .country-focus-overlay"));
     if (dragRef.current || overLand) {
-      wake.classList.remove("active");
+      terrain.classList.remove("active");
       return;
     }
     const matrix = event.currentTarget.getScreenCTM();
@@ -819,12 +819,12 @@ export function GlobalMapView({
     point.x = event.clientX;
     point.y = event.clientY;
     const local = point.matrixTransform(matrix.inverse());
-    wake.setAttribute("transform", `translate(${local.x} ${local.y})`);
-    wake.classList.add("active");
+    terrain.setAttribute("transform", `translate(${local.x} ${local.y})`);
+    terrain.classList.add("active");
   }
 
-  function hideOceanWake() {
-    oceanWakeRef.current?.classList.remove("active");
+  function hideOceanTerrain() {
+    oceanTerrainRef.current?.classList.remove("active");
   }
 
   function endPan(event: ReactPointerEvent<SVGSVGElement>) {
@@ -939,17 +939,17 @@ export function GlobalMapView({
       </section>
 
       <section ref={mapWorkspaceRef} className={`panel wide map-panel atlas-workspace${isFullscreen ? " is-fullscreen" : ""}`}>
-        <div className={`world-map-shell${lensPanelOpen ? " filters-open" : ""}`} onMouseLeave={() => { clearPreviewSoon(); hideOceanWake(); }}>
+        <div className={`world-map-shell${lensPanelOpen ? " filters-open" : ""}`} onMouseLeave={() => { clearPreviewSoon(); hideOceanTerrain(); }}>
           <svg
             className={`world-map${dragging ? " dragging" : ""}`}
             viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`}
             role="img"
             aria-label={`Global securities map with ${marketCountries.length} researched markets`}
             onPointerDown={beginPan}
-            onPointerMove={moveOceanWake}
+            onPointerMove={moveOceanTerrain}
             onPointerUp={endPan}
             onPointerCancel={endPan}
-            onPointerLeave={hideOceanWake}
+            onPointerLeave={hideOceanTerrain}
           >
             <defs>
               <filter id="map-grain-filter">
@@ -961,6 +961,10 @@ export function GlobalMapView({
                 <stop offset="52%" stopColor="#c99738" />
                 <stop offset="100%" stopColor="#725418" />
               </linearGradient>
+              <filter id="ocean-topography-filter" x="-45%" y="-55%" width="190%" height="210%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="13" result="terrainNoise" />
+                <feDisplacementMap in="SourceGraphic" in2="terrainNoise" scale="5" />
+              </filter>
             </defs>
             <rect width="900" height="460" className="map-ocean" />
             <rect width="900" height="460" className="map-grain" />
@@ -968,11 +972,14 @@ export function GlobalMapView({
               {[120, 240, 360, 480, 600, 720].map((x) => <line key={`x-${x}`} x1={x} y1="0" x2={x} y2="460" />)}
               {[90, 170, 250, 330, 410].map((y) => <line key={`y-${y}`} x1="0" y1={y} x2="900" y2={y} />)}
             </g>
-            <g ref={oceanWakeRef} className="ocean-wake" aria-hidden="true">
-              <circle r="12" />
-              <circle r="12" />
-              <circle r="12" />
-              <circle className="ocean-wake-core" r="2.2" />
+            <g ref={oceanTerrainRef} className="ocean-topography" filter="url(#ocean-topography-filter)" aria-hidden="true">
+              <ellipse rx="42" ry="29" cy="0" />
+              <ellipse rx="35" ry="24" cy="-1.5" />
+              <ellipse rx="28" ry="19" cy="-3" />
+              <ellipse rx="21" ry="14" cy="-4.5" />
+              <ellipse rx="14" ry="9" cy="-6" />
+              <ellipse rx="8" ry="5" cy="-7" />
+              <path d="M -4 -8 Q 0 -12 4 -8" />
             </g>
             {worldCountries.map((country) => {
               const market = marketByAtlasName.get(country.name);

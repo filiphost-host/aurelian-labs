@@ -6,7 +6,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Cell, LabelList, Line, LineChart, ReferenceLine,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
   factorLabels, factorUnits, formatMoney, formatPercent, formatShock,
@@ -23,6 +24,9 @@ import type {
   SavedScenario, Scenario, ShareOptions,
 } from "@/lib/types";
 import type { BenchmarkPricePoint } from "@/lib/portfolio-story";
+import {
+  buildScenarioTimeline, type ScenarioTimelinePoint, type TimelineStressEvent,
+} from "@/lib/scenario-timeline";
 import { ShareDialog } from "@/components/share-dialog";
 
 const factorKeys = Object.keys(factorLabels) as FactorKey[];
@@ -33,6 +37,31 @@ const darkTooltip = {
   color: "#f4f1ef",
 };
 type InstrumentFilter = "all" | Exclude<AssetType, "cash">;
+
+type HistoricalTimelineEvent = Omit<TimelineStressEvent, "impactPercent"> & { shocks: Scenario };
+
+const historicalTimelineEvents: HistoricalTimelineEvent[] = [
+  {
+    id: "gfc", name: "2008 Financial Crisis", shortLabel: "2008 GFC", date: "2008-10", recoveryMonths: 34,
+    recap: "Housing losses, bank failures, forced deleveraging, and a global credit contraction drove a deep equity drawdown.",
+    shocks: { globalEquity: -32, usEquity: -8, europeEquity: -11, technology: -5, industrials: -13, defense: 2, usdNok: 19, nokEur: -8, rates: -250, credit: 350, cash: 0 },
+  },
+  {
+    id: "covid", name: "COVID-19 Shock", shortLabel: "2020 COVID", date: "2020-03", recoveryMonths: 10,
+    recap: "Lockdowns stopped activity, markets repriced abruptly, and extraordinary policy support accelerated the recovery.",
+    shocks: { globalEquity: -24, usEquity: -7, europeEquity: -10, technology: 2, industrials: -16, defense: -3, usdNok: 15, nokEur: -6, rates: -150, credit: 240, cash: 0 },
+  },
+  {
+    id: "rates-2022", name: "2022 Rate Reset", shortLabel: "2022 Rates", date: "2022-10", recoveryMonths: 22,
+    recap: "Inflation forced rapid tightening, compressing long-duration valuations and pressuring government and corporate bonds.",
+    shocks: { globalEquity: -12, usEquity: -5, europeEquity: -7, technology: -18, industrials: -3, defense: 4, usdNok: 12, nokEur: -4, rates: 250, credit: 90, cash: 0 },
+  },
+];
+
+function eventTimestamp(date: string) {
+  const [year, month] = date.split("-").map(Number);
+  return Date.UTC(year, month - 1, 1);
+}
 
 function holdingInstrument(holding: Holding): StressInstrument {
   return {
@@ -93,6 +122,7 @@ export function ScenarioView({
   const [saveOpen, setSaveOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [scenarioName, setScenarioName] = useState("");
+  const [timelineEventIds, setTimelineEventIds] = useState<Set<string>>(() => new Set(["gfc", "covid"]));
   const capitalDisplayRate = displayCurrency === "EUR" ? (fxRates.EUR || 11.8) : 1;
   const displayedCapital = Number((capitalNok / capitalDisplayRate).toFixed(2));
 
@@ -159,6 +189,33 @@ export function ScenarioView({
   const total = totalValueNok(stressHoldings, fxRates);
   const impact = rows.reduce((sum, row) => sum + row.impactNok, 0);
   const impactPercent = total ? impact / total * 100 : 0;
+  const selectedTimelineEvents = useMemo<TimelineStressEvent[]>(() => {
+    const historical = historicalTimelineEvents
+      .filter((event) => timelineEventIds.has(event.id))
+      .map((event) => {
+        const eventImpact = stressHoldings.reduce(
+          (sum, holding) => sum + scenarioImpact(holding, event.shocks, fxRates).impactNok,
+          0,
+        );
+        return { ...event, impactPercent: total ? eventImpact / total * 100 : 0 };
+      });
+    const current = Math.abs(impactPercent) < 0.01 ? [] : [{
+      id: "current-scenario",
+      name: activePresetId === "custom" ? "Current custom scenario" : (scenarioPresets.find((preset) => preset.id === activePresetId)?.name ?? "Current scenario"),
+      shortLabel: "Current",
+      date: "2026-08",
+      impactPercent,
+      recoveryMonths: 18,
+      recap: activePresetId === "custom"
+        ? "The portfolio path reflects the factor assumptions currently set in Scenario Lab."
+        : (scenarioPresets.find((preset) => preset.id === activePresetId)?.description ?? "The active Scenario Lab assumptions are applied here."),
+    }];
+    return [...historical, ...current];
+  }, [activePresetId, fxRates, impactPercent, stressHoldings, timelineEventIds, total]);
+  const timelineData = useMemo(
+    () => buildScenarioTimeline(capitalNok, selectedTimelineEvents),
+    [capitalNok, selectedTimelineEvents],
+  );
   const topContributor = rows.find((row) => row.impactNok < 0) ?? rows[0] ?? null;
   const activeGuide = scenarioGuides[activePresetId] ?? scenarioGuides.custom;
   const activePreset = scenarioPresets.find((preset) => preset.id === activePresetId);
@@ -206,6 +263,14 @@ export function ScenarioView({
   }
   function equalWeight() {
     if (allocations.length) setAllocations(allocations.map((allocation) => ({ ...allocation, weight: 100 / allocations.length })));
+  }
+  function toggleTimelineEvent(id: string) {
+    setTimelineEventIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
   function loadCurrentPortfolio() {
     setAllocations(initialAllocations(holdings, fxRates));
@@ -319,15 +384,41 @@ export function ScenarioView({
           <article><span>Value after stress</span><strong>{formatMoney(total + impact, displayCurrency, fxRates)}</strong><em>Before {formatMoney(total, displayCurrency, fxRates)}</em></article>
           <article><span>Largest weak point</span><strong>{topContributor?.holding.ticker ?? "None"}</strong><em>{topContributor ? `${formatPercent(topContributor.impactPercent)} position impact` : "No responsive exposure"}</em></article>
         </div>
+        <div className="scenario-timeline">
+          <div className="scenario-timeline-head">
+            <div><strong>Portfolio path</strong><span>Modeled growth with selected historical shocks</span></div>
+            <div className="timeline-event-toggles" aria-label="Historical events shown on timeline">
+              {historicalTimelineEvents.map((event) => <button key={event.id} type="button" aria-pressed={timelineEventIds.has(event.id)} className={timelineEventIds.has(event.id) ? "active" : ""} onClick={() => toggleTimelineEvent(event.id)}>{event.shortLabel}</button>)}
+            </div>
+          </div>
+          <div className="scenario-timeline-chart">
+            <ResponsiveContainer width="100%" height={330}>
+              <LineChart data={timelineData} margin={{ top: 28, right: 34, bottom: 6, left: 8 }}>
+                <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
+                <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tick={{ fill: "#747a76", fontSize: 9 }} tickFormatter={(value) => String(new Date(Number(value)).getUTCFullYear())} minTickGap={42} />
+                <YAxis width={82} tick={{ fill: "#747a76", fontSize: 9 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact", maximumFractionDigits: 1 }).format(Number(value))} />
+                <Tooltip cursor={{ stroke: "rgba(216,193,123,.28)", strokeWidth: 1 }} content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const point = payload[0].payload as ScenarioTimelinePoint;
+                  return <div className="timeline-tooltip"><span>{new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(point.timestamp))}</span><strong>{formatMoney(point.portfolioNok, displayCurrency, fxRates)}</strong><small>Baseline {formatMoney(point.baselineNok, displayCurrency, fxRates)}</small>{point.eventName ? <><em>{point.eventName} · {formatPercent(point.eventImpactPercent ?? 0)}</em><p>{point.eventRecap}</p></> : null}</div>;
+                }} />
+                {selectedTimelineEvents.map((event) => <ReferenceLine key={event.id} x={eventTimestamp(event.date)} stroke="rgba(204,82,98,.46)" strokeDasharray="3 4" label={{ value: event.shortLabel, position: "insideTopRight", fill: "#a66a72", fontSize: 8 }} />)}
+                <Line type="monotone" dataKey="baselineNok" stroke="#4e5451" strokeWidth={1.2} strokeDasharray="4 5" dot={false} isAnimationActive animationDuration={600} />
+                <Line key={selectedTimelineEvents.map((event) => `${event.id}-${event.impactPercent.toFixed(2)}`).join("|")} type="monotone" dataKey="portfolioNok" stroke="#d8c17b" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "#e4cf8b", stroke: "#171815", strokeWidth: 2 }} isAnimationActive animationDuration={900} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="timeline-legend"><span><i className="portfolio-line" />Modeled portfolio</span><span><i className="baseline-line" />No-shock baseline</span><small>Illustrative factor path, not observed historical performance. Hover to inspect each period.</small></div>
+        </div>
         <div className="stress-results-grid">
           <div className="stress-contribution-chart">
             <ResponsiveContainer width="100%" height={Math.max(260, rows.length * 46)}>
-              <BarChart layout="vertical" data={rows.map((row) => ({ name: row.holding.ticker || row.holding.name, impact: row.impactNok }))} margin={{ left: 8, right: 64 }}>
+              <BarChart layout="vertical" data={rows.map((row) => ({ name: row.holding.ticker || row.holding.name, impact: row.impactNok }))} margin={{ left: 8, right: 128 }}>
                 <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
                 <XAxis type="number" tick={{ fill: "#7f7a7d", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} />
-                <YAxis dataKey="name" type="category" width={82} tick={{ fill: "#d7d3d1", fontSize: 10 }} />
+                <YAxis dataKey="name" type="category" width={96} tick={{ fill: "#d7d3d1", fontSize: 10 }} />
                 <Tooltip contentStyle={darkTooltip} formatter={(value) => formatMoney(Number(value), displayCurrency, fxRates)} />
-                <Bar dataKey="impact" radius={[0, 3, 3, 0]}>{rows.map((row) => <Cell key={row.holding.id} fill={row.impactNok >= 0 ? "#4f9d78" : "#b65f69"} />)}<LabelList dataKey="impact" position="right" formatter={(value: unknown) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} /></Bar>
+                <Bar dataKey="impact" radius={[0, 3, 3, 0]}>{rows.map((row) => <Cell key={row.holding.id} fill={row.impactNok >= 0 ? "#4f9d78" : "#b65f69"} />)}<LabelList dataKey="impact" position="right" fill="#c9c5c0" fontSize={9} formatter={(value: unknown) => new Intl.NumberFormat("nb-NO", { notation: "compact" }).format(Number(value))} /></Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
