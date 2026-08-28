@@ -7407,6 +7407,18 @@ button {
 }
 .atlas-workspace .world-map.dragging { transition: width 320ms cubic-bezier(.2,.8,.2,1), margin 320ms cubic-bezier(.2,.8,.2,1), filter 180ms ease; }
 .atlas-workspace .world-map-shell.filters-open .world-map { width: calc(100% - 410px); margin-right: 410px; }
+.atlas-workspace .world-map-shell.filters-open::after {
+  content: "";
+  width: 410px;
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 0 auto;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 45px, rgba(167, 181, 173, .045) 45px 46px),
+    repeating-linear-gradient(90deg, transparent 0 59px, rgba(167, 181, 173, .04) 59px 60px),
+    #101617;
+}
 .atlas-workspace .map-ocean { fill: transparent; }
 .atlas-workspace .map-grain { fill: #aeb7b4; opacity: .025; }
 .atlas-workspace .map-grid-lines { pointer-events: none; }
@@ -7426,7 +7438,7 @@ button {
 }
 .atlas-workspace .map-land.market-developed { fill: url(#marketDevelopedFill); }
 .atlas-workspace .map-land.market-emerging { fill: url(#marketEmergingFill); stroke: #829172; }
-.atlas-workspace .map-land.market-restricted { fill: url(#marketRestrictedFill); stroke: #826b61; }
+.atlas-workspace .map-land.market-restricted { fill: url(#marketDevelopedFill); stroke: #6f9b7b; }
 .atlas-workspace .map-land.market-resilient { stroke: #86ad91; stroke-width: 1.18; }
 .atlas-workspace .map-land.market-vulnerable { stroke: #9d7169; stroke-width: 1.15; }
 .atlas-workspace .map-land.market-country.energy-market { stroke: #aa9b67; stroke-width: 1.22; }
@@ -7456,14 +7468,8 @@ button {
   overflow-y: auto;
   border: 1px solid rgba(204, 179, 108, 0.12);
   border-radius: 7px;
-  background:
-    repeating-linear-gradient(0deg, transparent 0 31px, rgba(167, 181, 173, 0.035) 31px 32px),
-    repeating-linear-gradient(90deg, transparent 0 46px, rgba(167, 181, 173, 0.03) 46px 47px),
-    repeating-linear-gradient(106deg, rgba(225, 200, 132, 0.018) 0 1px, transparent 1px 6px),
-    rgba(10, 13, 12, 0.94);
+  background: #0a0d0c;
   box-shadow: -18px 0 36px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(225, 199, 126, 0.07);
-  backdrop-filter: blur(18px) saturate(0.86);
-  -webkit-backdrop-filter: blur(18px) saturate(0.86);
 }
 .atlas-workspace .map-lens-panel header > div { display: flex; align-items: center; gap: 7px; }
 .atlas-filter-reset {
@@ -7681,6 +7687,7 @@ button {
 
 @media (max-width: 980px) {
   .atlas-workspace .world-map-shell.filters-open .world-map { width: 100%; margin-right: 0; opacity: .42; }
+  .atlas-workspace .world-map-shell.filters-open::after { display: none; }
   .atlas-workspace .map-lens-panel { width: min(350px, calc(100vw - 76px)); }
   .scenario-portfolio-grid { grid-template-columns: 1fr; }
   .scenario-ranking-chart { border-right: 0; border-bottom: 1px solid rgba(199, 169, 93, 0.14); }

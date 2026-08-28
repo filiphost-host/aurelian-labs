@@ -1079,11 +1079,6 @@ export function GlobalMapView({
                 <stop offset="55%" stopColor="#36583d" />
                 <stop offset="100%" stopColor="#27432f" />
               </linearGradient>
-              <linearGradient id="marketRestrictedFill" x1="0" x2="1" y1="0" y2="1">
-                <stop offset="0%" stopColor="#453a36" />
-                <stop offset="55%" stopColor="#302f2c" />
-                <stop offset="100%" stopColor="#222623" />
-              </linearGradient>
             </defs>
             <rect width="900" height="460" className="map-ocean" />
             <rect width="900" height="460" className="map-grain" />
