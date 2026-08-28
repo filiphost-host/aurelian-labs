@@ -7408,7 +7408,13 @@ button {
 }
 .atlas-filter-reset:hover { border-color: rgba(199,169,93,.28); color: #dbc477; background: rgba(199,169,93,.07); }
 .atlas-workspace:fullscreen .map-lens-panel { max-height: calc(100vh - 92px); }
-.atlas-workspace .map-zoom-controls { right: 16px; bottom: 16px; }
+.atlas-workspace .map-zoom-controls {
+  z-index: 9;
+  right: 16px;
+  bottom: 16px;
+  pointer-events: auto;
+}
+.atlas-workspace .map-zoom-controls button { position: relative; z-index: 1; pointer-events: auto; cursor: pointer; }
 .country-dashboard { border-radius: 2px; }
 .country-profile-actions { display: flex; align-items: center; gap: 10px; }
 .country-profile-close { flex: 0 0 auto; }
