@@ -20,6 +20,7 @@ import {
   scenarioPresets,
 } from "@/lib/sample-data";
 import { createClient } from "@/lib/supabase";
+import type { AtlasScenarioHandoff } from "@/lib/stress-portfolio";
 import type {
   DisplayCurrency,
   Holding,
@@ -127,6 +128,7 @@ export function Workbench({
   const [focusedHoldingId, setFocusedHoldingId] = useState<string | null>(null);
   const instrumentSeed = null;
   const [requestedCountry, setRequestedCountry] = useState<string | null>(null);
+  const [atlasHandoff, setAtlasHandoff] = useState<AtlasScenarioHandoff | null>(null);
   const [researchTicker, setResearchTicker] = useState("MSFT");
 
   useEffect(() => {
@@ -443,8 +445,14 @@ export function Workbench({
           ) : null}
           {activeTab === "map" ? (
             <GlobalMapView
-              key={requestedCountry ?? "default-map"}
+              key={`${requestedCountry ?? "default-map"}-${atlasHandoff?.id ?? "fresh"}`}
               requestedCountry={requestedCountry}
+              restoreComparison={atlasHandoff?.context ?? null}
+              initialInstrumentIds={atlasHandoff?.instrumentIds ?? []}
+              onSendToScenarios={(handoff) => {
+                setAtlasHandoff(handoff);
+                openTab("scenarios");
+              }}
             />
           ) : null}
           {activeTab === "scenarios" ? (
@@ -458,6 +466,11 @@ export function Workbench({
               savedScenarios={savedScenarios}
               onSaveScenario={saveScenario}
               onDeleteScenario={deleteScenario}
+              atlasHandoff={atlasHandoff}
+              onReturnToAtlas={() => {
+                setRequestedCountry(atlasHandoff?.context.primaryCountry ?? null);
+                openTab("map");
+              }}
             />
           ) : null}
         </div>

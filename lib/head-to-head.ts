@@ -27,6 +27,32 @@ export type IndustryScore = {
   investability: number;
 };
 
+export type IndustryDerivedMetrics = {
+  peg: number | null;
+  priceToBook: number;
+  operatingMargin: number;
+  balanceSheetStrength: number;
+  earningsConsistency: number;
+  historicalGrowth: number;
+  expectedRevenueGrowth: number;
+  volatility: number;
+  maxDrawdown: number;
+};
+
+export type ComparisonVerdict = {
+  label: string;
+  leader: string;
+  note: string;
+  tone: "positive" | "risk" | "neutral";
+};
+
+export const industryMetricProvenance = {
+  source: "Aurelian comparative framework",
+  asOf: "2026-08-29",
+  freshness: "Indicative model",
+  confidence: "Medium-low",
+};
+
 export const industryLabels: Record<HeadToHeadIndustry, string> = {
   "oil-gas": "Oil & gas",
   technology: "Technology",
@@ -92,7 +118,69 @@ export function scoreIndustryMarket(market: IndustryMarket): IndustryScore {
   return { overall, valuation, growth, quality, balanceSheet, riskAdjusted, investability };
 }
 
+export function deriveIndustryMetrics(market: IndustryMarket): IndustryDerivedMetrics {
+  const riskLoad = (market.policyRisk + market.currencyRisk) / 2;
+  const volatility = clamp(35 - market.sharpe * 11 + riskLoad * 1.8);
+  return {
+    peg: market.earningsGrowth > 0 ? market.pe / market.earningsGrowth : null,
+    priceToBook: market.pe * market.roe / 100,
+    operatingMargin: clamp(market.roe * 0.62 + market.fcfYield * 0.45),
+    balanceSheetStrength: clamp(100 - market.netDebtToEbitda * 22 - riskLoad * 3),
+    earningsConsistency: clamp(48 + market.sharpe * 24 - riskLoad * 2),
+    historicalGrowth: market.earningsGrowth * 0.78,
+    expectedRevenueGrowth: market.earningsGrowth * 0.72,
+    volatility,
+    maxDrawdown: -Math.min(70, volatility * 1.45),
+  };
+}
+
+function average(values: number[]) {
+  return values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
+}
+
+export function globalIndustryBenchmark(industry: HeadToHeadIndustry): IndustryMarket | null {
+  const markets = marketsForIndustry(industry);
+  if (!markets.length) return null;
+  return {
+    industry,
+    countryId: "global",
+    country: "Global peer median",
+    benchmark: `Aurelian ${industryLabels[industry]} peer set`,
+    pe: average(markets.map((market) => market.pe)),
+    earningsGrowth: average(markets.map((market) => market.earningsGrowth)),
+    fcfYield: average(markets.map((market) => market.fcfYield)),
+    netDebtToEbitda: average(markets.map((market) => market.netDebtToEbitda)),
+    roe: average(markets.map((market) => market.roe)),
+    sharpe: average(markets.map((market) => market.sharpe)),
+    policyRisk: Math.round(average(markets.map((market) => market.policyRisk))),
+    currencyRisk: Math.round(average(markets.map((market) => market.currencyRisk))),
+    liquidity: average(markets.map((market) => market.liquidity)),
+    note: `Equal-weighted comparison across ${markets.length} researched markets. It is a reference set, not an investable index.`,
+  };
+}
+
+export function industryComparisonVerdicts(primary: IndustryMarket, comparison: IndustryMarket): ComparisonVerdict[] {
+  const primaryScore = scoreIndustryMarket(primary);
+  const comparisonScore = scoreIndustryMarket(comparison);
+  const primaryDerived = deriveIndustryMetrics(primary);
+  const comparisonDerived = deriveIndustryMetrics(comparison);
+  const pick = (left: number, right: number, lowerIsBetter = false) => {
+    if (Math.abs(left - right) < 0.01) return "Broadly similar";
+    const primaryLeads = lowerIsBetter ? left < right : left > right;
+    return primaryLeads ? primary.country : comparison.country;
+  };
+  const primaryRisk = primary.policyRisk + primary.currencyRisk + primaryDerived.volatility / 10;
+  const comparisonRisk = comparison.policyRisk + comparison.currencyRisk + comparisonDerived.volatility / 10;
+  return [
+    { label: "Better valuation", leader: pick(primaryScore.valuation, comparisonScore.valuation), note: "P/E and free-cash-flow yield", tone: "positive" },
+    { label: "Stronger quality", leader: pick(primaryScore.quality, comparisonScore.quality), note: "ROE and modeled operating margin", tone: "positive" },
+    { label: "Higher growth", leader: pick(primaryScore.growth, comparisonScore.growth), note: "Expected earnings and revenue direction", tone: "positive" },
+    { label: "Greater resilience", leader: pick((primaryScore.balanceSheet + primaryScore.riskAdjusted) / 2, (comparisonScore.balanceSheet + comparisonScore.riskAdjusted) / 2), note: "Balance sheet and risk-adjusted behavior", tone: "positive" },
+    { label: "Higher risk", leader: pick(primaryRisk, comparisonRisk), note: "Volatility, currency, and policy exposure", tone: "risk" },
+    { label: "Uncertain evidence", leader: "Both markets", note: "Several industry metrics are comparative estimates", tone: "neutral" },
+  ];
+}
+
 export function marketsForIndustry(industry: HeadToHeadIndustry) {
   return industryMarkets.filter((market) => market.industry === industry);
 }
-

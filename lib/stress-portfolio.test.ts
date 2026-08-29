@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { scenarioImpact, totalValueNok } from "./calculations";
-import { buildStressHoldings, normalizedAllocations, rebalanceAllocation, stressInstrumentLibrary } from "./stress-portfolio";
+import { buildStressHoldings, discoverStressInstruments, normalizedAllocations, rebalanceAllocation, stressInstrumentLibrary } from "./stress-portfolio";
 import { scenarioPresets } from "./sample-data";
 
 describe("Scenario Lab portfolio builder", () => {
@@ -52,5 +52,12 @@ describe("Scenario Lab portfolio builder", () => {
     const results = holdings.map((holding) => scenarioImpact(holding, rates));
     expect(results.find((row) => row.holding.asset_type === "bond")?.impactPercent).not.toBe(0);
     expect(results.find((row) => row.holding.ticker === "NVDA")?.impactPercent).not.toBe(0);
+  });
+
+  it("discovers industry securities across selected Atlas markets", () => {
+    const results = discoverStressInstruments({ countries: ["United States", "India"], industry: "oil-gas" });
+    expect(results.some((instrument) => instrument.ticker === "XLE")).toBe(true);
+    expect(results.some((instrument) => instrument.ticker === "RELIANCE")).toBe(true);
+    expect(results.every((instrument) => instrument.sector === "Energy" || instrument.assetType !== "stock")).toBe(true);
   });
 });

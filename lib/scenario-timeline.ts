@@ -26,7 +26,7 @@ function monthIndex(date: string) {
 export function buildScenarioTimeline(
   capitalNok: number,
   events: TimelineStressEvent[],
-  start = "2006-01",
+  start = "1998-01",
   end = "2028-12",
   annualGrowth = 0.055,
 ): ScenarioTimelinePoint[] {
@@ -71,4 +71,3 @@ export function buildScenarioTimeline(
     };
   });
 }
-

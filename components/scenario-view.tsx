@@ -17,7 +17,7 @@ import { scenarioPresets } from "@/lib/sample-data";
 import { scenarioCategories, scenarioGuides, type ScenarioCategory } from "@/lib/scenario-research";
 import {
   buildStressHoldings, normalizedAllocations, rebalanceAllocation, stressInstrumentLibrary,
-  type StressAllocation,
+  type AtlasScenarioHandoff, type StressAllocation,
 } from "@/lib/stress-portfolio";
 import type {
   AssetType, DisplayCurrency, FactorKey,
@@ -41,9 +41,24 @@ type HistoricalTimelineEvent = Omit<TimelineStressEvent, "impactPercent"> & { sh
 
 const historicalTimelineEvents: HistoricalTimelineEvent[] = [
   {
+    id: "dot-com", name: "Technology Bubble Unwinds", shortLabel: "2000 Tech", date: "2000-10", recoveryMonths: 42,
+    recap: "Unprofitable technology valuations reset, capital dried up, and the shock spread through a highly concentrated growth market.",
+    shocks: { globalEquity: -18, usEquity: -12, europeEquity: -9, technology: -42, industrials: -7, defense: 1, usdNok: 8, nokEur: -3, rates: -100, credit: 160, cash: 0 },
+  },
+  {
     id: "gfc", name: "2008 Financial Crisis", shortLabel: "2008 GFC", date: "2008-10", recoveryMonths: 34,
     recap: "Housing losses, bank failures, forced deleveraging, and a global credit contraction drove a deep equity drawdown.",
     shocks: { globalEquity: -32, usEquity: -8, europeEquity: -11, technology: -5, industrials: -13, defense: 2, usdNok: 19, nokEur: -8, rates: -250, credit: 350, cash: 0 },
+  },
+  {
+    id: "euro-crisis", name: "Euro-area Sovereign Crisis", shortLabel: "2011 Euro", date: "2011-09", recoveryMonths: 24,
+    recap: "Sovereign funding stress weakened European banks, widened peripheral spreads, and raised redenomination fears.",
+    shocks: { globalEquity: -10, usEquity: -4, europeEquity: -24, technology: -4, industrials: -11, defense: -2, usdNok: 9, nokEur: -12, rates: -75, credit: 220, cash: 0 },
+  },
+  {
+    id: "oil-collapse", name: "Oil Price Collapse", shortLabel: "2015 Oil", date: "2015-01", recoveryMonths: 22,
+    recap: "Surging supply and weakening demand cut oil prices, energy earnings, capital spending, and oil-linked currencies.",
+    shocks: { globalEquity: -5, usEquity: -2, europeEquity: -4, technology: 1, industrials: -9, defense: 0, usdNok: 14, nokEur: -7, rates: -50, credit: 120, cash: 0 },
   },
   {
     id: "covid", name: "COVID-19 Shock", shortLabel: "2020 COVID", date: "2020-03", recoveryMonths: 10,
@@ -74,6 +89,7 @@ function initialAllocations(): StressAllocation[] {
 export function ScenarioView({
   fxRates, displayCurrency, scenario, setScenario, activePresetId,
   setActivePresetId, savedScenarios, onSaveScenario, onDeleteScenario,
+  atlasHandoff, onReturnToAtlas,
 }: {
   fxRates: Record<string, number>;
   displayCurrency: DisplayCurrency;
@@ -84,9 +100,13 @@ export function ScenarioView({
   savedScenarios: SavedScenario[];
   onSaveScenario: (scenario: SavedScenario) => void;
   onDeleteScenario: (id: string) => void;
+  atlasHandoff: AtlasScenarioHandoff | null;
+  onReturnToAtlas: () => void;
 }) {
   const [capitalNok, setCapitalNok] = useState(100_000);
-  const [allocations, setAllocations] = useState<StressAllocation[]>(initialAllocations);
+  const [allocations, setAllocations] = useState<StressAllocation[]>(() => atlasHandoff?.instrumentIds.length
+    ? normalizedAllocations(atlasHandoff.instrumentIds.map((instrumentId) => ({ instrumentId, weight: 1 })))
+    : initialAllocations());
   const [instrumentFilter, setInstrumentFilter] = useState<InstrumentFilter>("all");
   const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({});
   const [scenarioCategory, setScenarioCategory] = useState<ScenarioCategory>(scenarioGuides[activePresetId]?.category ?? "Macro");
@@ -154,6 +174,24 @@ export function ScenarioView({
     weight: stressHoldings.filter((holding) => holding.asset_type === assetType)
       .reduce((sum, holding) => sum + holdingValueNok(holding, fxRates), 0) / Math.max(total, 1) * 100,
   }));
+  const currencyOnlyScenario: Scenario = {
+    globalEquity: 0, usEquity: 0, europeEquity: 0, technology: 0, industrials: 0,
+    defense: 0, usdNok: scenario.usdNok, nokEur: scenario.nokEur, rates: 0, credit: 0, cash: 0,
+  };
+  const currencyImpact = stressHoldings.reduce((sum, holding) => sum + scenarioImpact(holding, currencyOnlyScenario, fxRates).impactNok, 0);
+  const largestBefore = normalized.reduce((largest, allocation) => Math.max(largest, allocation.weight), 0);
+  const postTotal = Math.max(1, total + impact);
+  const largestAfter = rows.reduce((largest, row) => Math.max(largest, row.postValue / postTotal * 100), 0);
+  const weakInstrumentId = topContributor?.holding.id.replace(/^stress-/, "");
+  const shift = weakInstrumentId ? Math.min(10, normalized.find((item) => item.instrumentId === weakInstrumentId)?.weight ?? 0) : 0;
+  const alternativeSeed = normalized
+    .filter((item) => item.instrumentId !== "lab-treasury")
+    .map((item) => item.instrumentId === weakInstrumentId ? { ...item, weight: Math.max(0, item.weight - shift) } : item);
+  const existingTreasury = normalized.find((item) => item.instrumentId === "lab-treasury")?.weight ?? 0;
+  const alternativeAllocations = normalizedAllocations([...alternativeSeed, { instrumentId: "lab-treasury", weight: existingTreasury + shift }]);
+  const alternativeHoldings = buildStressHoldings(instruments, alternativeAllocations, capitalNok);
+  const alternativeImpact = alternativeHoldings.reduce((sum, holding) => sum + scenarioImpact(holding, scenario, fxRates).impactNok, 0);
+  const recoverySensitivity = Math.max(6, Math.round(8 + Math.abs(impactPercent) * 0.9));
 
   function selectPreset(id: string) {
     const preset = scenarioPresets.find((item) => item.id === id);
@@ -225,6 +263,11 @@ export function ScenarioView({
           <button className="primary-button" onClick={() => setShareOpen(true)}><Link2 size={15} /> Share</button>
         </div>
       </section>
+
+      {atlasHandoff ? <section className="atlas-handoff-banner">
+        <div><span className="eyebrow">From Atlas</span><strong>{atlasHandoff.context.title}</strong><small>{atlasHandoff.instrumentIds.length} selected securities · temporary and not stored</small></div>
+        <button type="button" className="ghost-button" onClick={onReturnToAtlas}><ArrowRight className="atlas-back-arrow" size={15} /> Back to comparison</button>
+      </section> : null}
 
       <nav className="scenario-step-rail" aria-label="Stress test steps">
         <button onClick={() => scrollToStep("scenario-step-portfolio")}><span>1</span><strong>Build portfolio</strong><small>{stressHoldings.length} positions · {formatMoney(total, displayCurrency, fxRates)}</small></button><ArrowRight size={16} />
@@ -303,6 +346,12 @@ export function ScenarioView({
           <article><span>{impact >= 0 ? "Estimated gain" : "Estimated loss"}</span><strong className={impact >= 0 ? "good" : "bad"}>{formatMoney(impact, displayCurrency, fxRates)}</strong><em>{formatPercent(impactPercent)} of {formatMoney(total, displayCurrency, fxRates)}</em></article>
           <article><span>Value after stress</span><strong>{formatMoney(total + impact, displayCurrency, fxRates)}</strong><em>Before {formatMoney(total, displayCurrency, fxRates)}</em></article>
           <article><span>Largest weak point</span><strong>{topContributor?.holding.ticker ?? "None"}</strong><em>{topContributor ? `${formatPercent(topContributor.impactPercent)} position impact` : "No responsive exposure"}</em></article>
+        </div>
+        <div className="scenario-diagnostics">
+          <article><span>Currency contribution</span><strong className={currencyImpact >= 0 ? "good" : "bad"}>{formatMoney(currencyImpact, displayCurrency, fxRates)}</strong><small>Isolates USD/NOK and NOK/EUR assumptions</small></article>
+          <article><span>Largest position</span><strong>{largestBefore.toFixed(1)}% → {largestAfter.toFixed(1)}%</strong><small>Concentration before and immediately after stress</small></article>
+          <article><span>Recovery sensitivity</span><strong>About {recoverySensitivity} months</strong><small>Illustrative severity rule, not a forecast</small></article>
+          <article><span>Diversification counterfactual</span><strong className={alternativeImpact >= 0 ? "good" : "bad"}>{formatMoney(alternativeImpact, displayCurrency, fxRates)}</strong><small>{shift ? `Moves ${shift.toFixed(0)} points from ${topContributor?.holding.ticker} to an investment-grade Treasury` : "No weak position available to rebalance"}</small></article>
         </div>
         <div className="scenario-timeline">
           <div className="scenario-timeline-head">

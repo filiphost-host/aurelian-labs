@@ -419,6 +419,36 @@ export const scenarioPresets: ScenarioPreset[] = [
     shocks: { ...blank, usdNok: -10, nokEur: -8 },
   },
   {
+    id: "rates-higher-longer",
+    name: "Rates Stay High for Two Years",
+    description: "Persistent inflation delays easing and keeps refinancing and valuation pressure in place.",
+    shocks: { ...blank, globalEquity: -5, usEquity: -8, europeEquity: -9, technology: -12, industrials: -6, usdNok: 4, rates: 150, credit: 85 },
+  },
+  {
+    id: "oil-below-50",
+    name: "Oil Below $50",
+    description: "A demand shock cuts energy cash flow while easing inflation and transport costs.",
+    shocks: { ...blank, globalEquity: -4, usEquity: -3, europeEquity: -5, industrials: -7, defense: -2, usdNok: -9, nokEur: -4, rates: -75, credit: 70 },
+  },
+  {
+    id: "china-balance-sheet",
+    name: "China Balance-Sheet Recession",
+    description: "Deleveraging weakens Asian demand, commodities, luxury goods, and global industrial activity.",
+    shocks: { ...blank, globalEquity: -10, usEquity: -5, europeEquity: -12, technology: -9, industrials: -18, usdNok: 7, rates: -50, credit: 110 },
+  },
+  {
+    id: "europe-defense",
+    name: "European Defense Acceleration",
+    description: "European procurement and industrial capacity expand while fiscal and input pressures rise.",
+    shocks: { ...blank, globalEquity: 1, europeEquity: 4, industrials: 8, defense: 24, usdNok: -2, nokEur: 3, rates: 25, credit: -15 },
+  },
+  {
+    id: "trade-restrictions",
+    name: "Trade Restrictions Increase",
+    description: "Tariffs and export controls disrupt supply chains and raise costs across technology and industry.",
+    shocks: { ...blank, globalEquity: -9, usEquity: -7, europeEquity: -11, technology: -15, industrials: -13, defense: 5, usdNok: 6, rates: 35, credit: 90 },
+  },
+  {
     id: "custom",
     name: "Blank Custom",
     description: "Start from a neutral scenario and set each factor directly.",

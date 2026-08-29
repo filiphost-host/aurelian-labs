@@ -21,6 +21,23 @@ export type StressInstrument = {
 
 export type StressAllocation = { instrumentId: string; weight: number };
 
+export type AtlasComparisonMode = "country" | "industry" | "global";
+
+export type AtlasScenarioHandoff = {
+  id: string;
+  instrumentIds: string[];
+  context: {
+    mode: AtlasComparisonMode;
+    primaryCountryId: string;
+    primaryCountry: string;
+    comparisonCountryId?: string;
+    comparisonCountry?: string;
+    industry?: string;
+    industryLabel?: string;
+    title: string;
+  };
+};
+
 const coreStressInstrumentLibrary: StressInstrument[] = [
   { id: "lab-msft", ticker: "MSFT", name: "Microsoft", assetType: "stock", country: "United States", sector: "Technology", currency: "USD", exchange: "NASDAQ", forwardPe: 29, sharpe: 0.92, recessionRisk: 38, metricSource: "Indicative Aurelian screen", metricsAsOf: "2026-08-28", exposures: { globalEquity: 0.45, usEquity: 0.8, technology: 1, usdNok: 1 } },
   { id: "lab-nvda", ticker: "NVDA", name: "Nvidia", assetType: "stock", country: "United States", sector: "Technology", currency: "USD", exchange: "NASDAQ", forwardPe: 34, sharpe: 1.28, recessionRisk: 63, metricSource: "Indicative Aurelian screen", metricsAsOf: "2026-08-28", exposures: { globalEquity: 0.55, usEquity: 0.9, technology: 1.25, usdNok: 1 } },
@@ -37,7 +54,7 @@ const coreStressInstrumentLibrary: StressInstrument[] = [
 ];
 
 type ScreenedInstrument = Omit<StressInstrument, "id" | "exposures" | "metricSource" | "metricsAsOf"> & {
-  region: "US" | "Europe";
+  region: "US" | "Europe" | "Asia" | "Other";
   recessionRisk: number;
 };
 
@@ -64,6 +81,11 @@ const screenedUniverse: ScreenedInstrument[] = [
   { ticker: "ORCL", name: "Oracle", assetType: "stock", country: "United States", sector: "Technology", currency: "USD", exchange: "NYSE", region: "US", forwardPe: 27, sharpe: 1.12, recessionRisk: 43 },
   { ticker: "AMD", name: "Advanced Micro Devices", assetType: "stock", country: "United States", sector: "Technology", currency: "USD", exchange: "NASDAQ", region: "US", forwardPe: 34, sharpe: 0.62, recessionRisk: 63 },
   { ticker: "PLTR", name: "Palantir Technologies", assetType: "stock", country: "United States", sector: "Technology", currency: "USD", exchange: "NASDAQ", region: "US", forwardPe: 69, sharpe: 1.55, recessionRisk: 59 },
+  { ticker: "XLE", name: "Energy Select Sector SPDR ETF", assetType: "etf", country: "United States", sector: "Energy", currency: "USD", exchange: "NYSE ARCA", region: "US", forwardPe: 15, sharpe: 0.61, recessionRisk: 63 },
+  { ticker: "XLK", name: "Technology Select Sector SPDR ETF", assetType: "etf", country: "United States", sector: "Technology", currency: "USD", exchange: "NYSE ARCA", region: "US", forwardPe: 30, sharpe: 1.04, recessionRisk: 54 },
+  { ticker: "ITA", name: "iShares US Aerospace & Defense ETF", assetType: "etf", country: "United States", sector: "Defense", currency: "USD", exchange: "NYSE ARCA", region: "US", forwardPe: 27, sharpe: 0.93, recessionRisk: 33 },
+  { ticker: "XLF", name: "Financial Select Sector SPDR ETF", assetType: "etf", country: "United States", sector: "Financials", currency: "USD", exchange: "NYSE ARCA", region: "US", forwardPe: 16, sharpe: 0.82, recessionRisk: 58 },
+  { ticker: "XLV", name: "Health Care Select Sector SPDR ETF", assetType: "etf", country: "United States", sector: "Health Care", currency: "USD", exchange: "NYSE ARCA", region: "US", forwardPe: 18, sharpe: 0.67, recessionRisk: 27 },
   { ticker: "EQNR", name: "Equinor", assetType: "stock", country: "Norway", sector: "Energy", currency: "NOK", exchange: "OSLO", region: "Europe", forwardPe: 11, sharpe: 0.34, recessionRisk: 61 },
   { ticker: "DNB", name: "DNB Bank", assetType: "stock", country: "Norway", sector: "Financials", currency: "NOK", exchange: "OSLO", region: "Europe", forwardPe: 10, sharpe: 0.81, recessionRisk: 53 },
   { ticker: "NHY", name: "Norsk Hydro", assetType: "stock", country: "Norway", sector: "Materials", currency: "NOK", exchange: "OSLO", region: "Europe", forwardPe: 13, sharpe: 0.46, recessionRisk: 72 },
@@ -81,6 +103,27 @@ const screenedUniverse: ScreenedInstrument[] = [
   { ticker: "SIE", name: "Siemens", assetType: "stock", country: "Germany", sector: "Industrials", currency: "EUR", exchange: "XETRA", region: "Europe", forwardPe: 19, sharpe: 0.83, recessionRisk: 63 },
   { ticker: "AIR", name: "Airbus", assetType: "stock", country: "France", sector: "Industrials", currency: "EUR", exchange: "PARIS", region: "Europe", forwardPe: 23, sharpe: 0.74, recessionRisk: 58 },
   { ticker: "MC", name: "LVMH", assetType: "stock", country: "France", sector: "Consumer Discretionary", currency: "EUR", exchange: "PARIS", region: "Europe", forwardPe: 22, sharpe: 0.39, recessionRisk: 71 },
+  { ticker: "RHM", name: "Rheinmetall", assetType: "stock", country: "Germany", sector: "Defense", currency: "EUR", exchange: "XETRA", region: "Europe", forwardPe: 38, sharpe: 1.09, recessionRisk: 37 },
+  { ticker: "SAF", name: "Safran", assetType: "stock", country: "France", sector: "Defense", currency: "EUR", exchange: "PARIS", region: "Europe", forwardPe: 29, sharpe: 0.92, recessionRisk: 39 },
+  { ticker: "SHEL", name: "Shell", assetType: "stock", country: "United Kingdom", sector: "Energy", currency: "GBP", exchange: "LONDON", region: "Europe", forwardPe: 12, sharpe: 0.57, recessionRisk: 59 },
+  { ticker: "BA", name: "BAE Systems", assetType: "stock", country: "United Kingdom", sector: "Defense", currency: "GBP", exchange: "LONDON", region: "Europe", forwardPe: 22, sharpe: 0.88, recessionRisk: 31 },
+  { ticker: "AZN", name: "AstraZeneca", assetType: "stock", country: "United Kingdom", sector: "Health Care", currency: "GBP", exchange: "LONDON", region: "Europe", forwardPe: 18, sharpe: 0.74, recessionRisk: 26 },
+  { ticker: "HSBA", name: "HSBC Holdings", assetType: "stock", country: "United Kingdom", sector: "Financials", currency: "GBP", exchange: "LONDON", region: "Europe", forwardPe: 9, sharpe: 0.79, recessionRisk: 56 },
+  { ticker: "ROG", name: "Roche Holding", assetType: "stock", country: "Switzerland", sector: "Health Care", currency: "CHF", exchange: "SIX", region: "Europe", forwardPe: 17, sharpe: 0.65, recessionRisk: 23 },
+  { ticker: "RELIANCE", name: "Reliance Industries", assetType: "stock", country: "India", sector: "Energy", currency: "INR", exchange: "NSE", region: "Asia", forwardPe: 22, sharpe: 0.72, recessionRisk: 55 },
+  { ticker: "INFY", name: "Infosys", assetType: "stock", country: "India", sector: "Technology", currency: "INR", exchange: "NSE", region: "Asia", forwardPe: 24, sharpe: 0.76, recessionRisk: 48 },
+  { ticker: "HDFCBANK", name: "HDFC Bank", assetType: "stock", country: "India", sector: "Financials", currency: "INR", exchange: "NSE", region: "Asia", forwardPe: 18, sharpe: 0.84, recessionRisk: 52 },
+  { ticker: "SUNPHARMA", name: "Sun Pharmaceutical", assetType: "stock", country: "India", sector: "Health Care", currency: "INR", exchange: "NSE", region: "Asia", forwardPe: 27, sharpe: 0.91, recessionRisk: 29 },
+  { ticker: "005930", name: "Samsung Electronics", assetType: "stock", country: "South Korea", sector: "Technology", currency: "KRW", exchange: "KOREA", region: "Asia", forwardPe: 16, sharpe: 0.69, recessionRisk: 57 },
+  { ticker: "012450", name: "Hanwha Aerospace", assetType: "stock", country: "South Korea", sector: "Defense", currency: "KRW", exchange: "KOREA", region: "Asia", forwardPe: 30, sharpe: 1.12, recessionRisk: 41 },
+  { ticker: "2330", name: "TSMC", assetType: "stock", country: "Taiwan", sector: "Technology", currency: "TWD", exchange: "TAIWAN", region: "Asia", forwardPe: 24, sharpe: 1.16, recessionRisk: 52 },
+  { ticker: "2454", name: "MediaTek", assetType: "stock", country: "Taiwan", sector: "Technology", currency: "TWD", exchange: "TAIWAN", region: "Asia", forwardPe: 19, sharpe: 0.86, recessionRisk: 58 },
+  { ticker: "7011", name: "Mitsubishi Heavy Industries", assetType: "stock", country: "Japan", sector: "Defense", currency: "JPY", exchange: "TOKYO", region: "Asia", forwardPe: 28, sharpe: 1.08, recessionRisk: 43 },
+  { ticker: "4502", name: "Takeda Pharmaceutical", assetType: "stock", country: "Japan", sector: "Health Care", currency: "JPY", exchange: "TOKYO", region: "Asia", forwardPe: 15, sharpe: 0.55, recessionRisk: 28 },
+  { ticker: "D05", name: "DBS Group", assetType: "stock", country: "Singapore", sector: "Financials", currency: "SGD", exchange: "SINGAPORE", region: "Asia", forwardPe: 12, sharpe: 0.96, recessionRisk: 39 },
+  { ticker: "CNQ", name: "Canadian Natural Resources", assetType: "stock", country: "Canada", sector: "Energy", currency: "CAD", exchange: "TORONTO", region: "Other", forwardPe: 13, sharpe: 0.71, recessionRisk: 58 },
+  { ticker: "RY", name: "Royal Bank of Canada", assetType: "stock", country: "Canada", sector: "Financials", currency: "CAD", exchange: "TORONTO", region: "Other", forwardPe: 14, sharpe: 0.78, recessionRisk: 52 },
+  { ticker: "PBR", name: "Petrobras", assetType: "stock", country: "Brazil", sector: "Energy", currency: "BRL", exchange: "B3", region: "Other", forwardPe: 8, sharpe: 0.61, recessionRisk: 76 },
   { ticker: "VOO", name: "Vanguard S&P 500 ETF", assetType: "etf", country: "United States", sector: "Diversified", currency: "USD", exchange: "NYSE ARCA", region: "US", forwardPe: 22, sharpe: 0.84, recessionRisk: 45 },
   { ticker: "QQQ", name: "Invesco QQQ Trust", assetType: "etf", country: "United States", sector: "Technology", currency: "USD", exchange: "NASDAQ", region: "US", forwardPe: 28, sharpe: 0.96, recessionRisk: 54 },
   { ticker: "IWM", name: "iShares Russell 2000 ETF", assetType: "etf", country: "United States", sector: "Diversified", currency: "USD", exchange: "NYSE ARCA", region: "US", forwardPe: 19, sharpe: 0.35, recessionRisk: 68 },
@@ -91,11 +134,16 @@ const screenedUniverse: ScreenedInstrument[] = [
 
 function screenedInstrument(instrument: ScreenedInstrument): StressInstrument {
   const { region, ...values } = instrument;
+  const regionalExposure = region === "US"
+    ? { usEquity: instrument.assetType === "etf" ? 0.9 : 0.8 }
+    : region === "Europe"
+      ? { europeEquity: instrument.assetType === "etf" ? 0.85 : 0.65 }
+      : {};
   const exposures: FactorExposures = instrument.assetType === "bond"
     ? { credit: 0.75 }
     : {
         globalEquity: instrument.assetType === "etf" ? 0.8 : 0.4,
-        ...(region === "US" ? { usEquity: instrument.assetType === "etf" ? 0.9 : 0.8 } : { europeEquity: instrument.assetType === "etf" ? 0.85 : 0.65 }),
+        ...regionalExposure,
         ...(instrument.sector === "Technology" ? { technology: 1 } : {}),
         ...(["Industrials", "Defense"].includes(instrument.sector) ? { industrials: 0.5 } : {}),
         ...(instrument.sector === "Defense" ? { defense: 1 } : {}),
@@ -115,6 +163,55 @@ export const stressInstrumentLibrary: StressInstrument[] = [
   ...coreStressInstrumentLibrary,
   ...screenedUniverse.map(screenedInstrument),
 ];
+
+const industrySectors: Record<string, string[]> = {
+  "oil-gas": ["Energy"],
+  technology: ["Technology", "Communication Services"],
+  defense: ["Defense"],
+  financials: ["Financials"],
+  "health-care": ["Health Care"],
+};
+
+export function stressResearchTag(instrument: StressInstrument) {
+  if (instrument.assetType === "bond") return instrument.creditQuality?.includes("Investment") ? "Balance-sheet anchor" : "Credit exposure";
+  if (instrument.assetType === "etf") return "Diversified access";
+  if ((instrument.recessionRisk ?? 0) >= 70) return "Cyclical risk warning";
+  if ((instrument.sharpe ?? 0) >= 1 && (instrument.forwardPe ?? 100) <= 35) return "Quality compounder";
+  if ((instrument.forwardPe ?? 100) <= 16) return "Value candidate";
+  if (["Defense", "Energy", "Technology"].includes(instrument.sector)) return "Industry leader";
+  return "Established operator";
+}
+
+export function discoverStressInstruments({
+  countries,
+  industry,
+  limit = 14,
+}: {
+  countries: string[];
+  industry?: string | null;
+  limit?: number;
+}) {
+  const countrySet = new Set(countries);
+  const sectors = industry ? new Set(industrySectors[industry] ?? []) : null;
+  const exact = stressInstrumentLibrary.filter((instrument) =>
+    countrySet.has(instrument.country)
+      && (!sectors || sectors.has(instrument.sector) || instrument.assetType !== "stock"),
+  );
+  const thematicAccess = industry
+    ? stressInstrumentLibrary.filter((instrument) =>
+        instrument.assetType === "etf" && sectors?.has(instrument.sector),
+      )
+    : [];
+  const byId = new Map([...exact, ...thematicAccess].map((instrument) => [instrument.id, instrument]));
+  return [...byId.values()]
+    .sort((left, right) => {
+      const typeOrder = { stock: 0, etf: 1, bond: 2 } as const;
+      const typeDifference = typeOrder[left.assetType] - typeOrder[right.assetType];
+      if (typeDifference) return typeDifference;
+      return (right.sharpe ?? -10) - (left.sharpe ?? -10);
+    })
+    .slice(0, limit);
+}
 
 export function normalizedAllocations(allocations: StressAllocation[]) {
   const cleaned = allocations.map((allocation) => ({

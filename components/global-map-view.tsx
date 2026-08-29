@@ -3,6 +3,7 @@
 import { geoNaturalEarth1, geoPath } from "d3-geo";
 import {
   ArrowLeftRight,
+  Check,
   Building2,
   ChevronDown,
   ChevronUp,
@@ -15,6 +16,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Send,
   Settings2,
   X,
 } from "lucide-react";
@@ -23,11 +25,21 @@ import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import worldAtlas from "world-atlas/countries-110m.json";
 import {
+  deriveIndustryMetrics,
+  globalIndustryBenchmark,
+  industryComparisonVerdicts,
   industryLabels,
+  industryMetricProvenance,
   marketsForIndustry,
   scoreIndustryMarket,
   type HeadToHeadIndustry,
 } from "@/lib/head-to-head";
+import {
+  discoverStressInstruments,
+  stressResearchTag,
+  type AtlasComparisonMode,
+  type AtlasScenarioHandoff,
+} from "@/lib/stress-portfolio";
 import {
   clampMapCenter,
   mapViewSize,
@@ -743,8 +755,14 @@ function marketCentroid(market: MarketCountry | null | undefined): MapPoint | nu
 
 export function GlobalMapView({
   requestedCountry,
+  restoreComparison,
+  initialInstrumentIds,
+  onSendToScenarios,
 }: {
   requestedCountry: string | null;
+  restoreComparison: AtlasScenarioHandoff["context"] | null;
+  initialInstrumentIds: string[];
+  onSendToScenarios: (handoff: AtlasScenarioHandoff) => void;
 }) {
   const requestedMarket = marketCountries.find((item) =>
     item.name.toLowerCase() === requestedCountry?.toLowerCase(),
@@ -763,11 +781,12 @@ export function GlobalMapView({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeLenses, setActiveLenses] = useState<Set<MapLens>>(() => new Set());
   const [screenFilters, setScreenFilters] = useState<MarketScreen>(defaultMarketScreen);
-  const [comparisonId, setComparisonId] = useState("united-states");
-  const [comparisonMode, setComparisonMode] = useState<"country" | "industry">("country");
-  const [comparisonIndustry, setComparisonIndustry] = useState<HeadToHeadIndustry>("oil-gas");
-  const [industryPrimaryId, setIndustryPrimaryId] = useState("united-states");
-  const [industryComparisonId, setIndustryComparisonId] = useState("india");
+  const [comparisonId, setComparisonId] = useState(restoreComparison?.comparisonCountryId ?? "united-states");
+  const [comparisonMode, setComparisonMode] = useState<AtlasComparisonMode>(restoreComparison?.mode ?? "country");
+  const [comparisonIndustry, setComparisonIndustry] = useState<HeadToHeadIndustry>((restoreComparison?.industry as HeadToHeadIndustry) ?? "oil-gas");
+  const [industryPrimaryId, setIndustryPrimaryId] = useState(restoreComparison?.primaryCountryId ?? "united-states");
+  const [industryComparisonId, setIndustryComparisonId] = useState(restoreComparison?.comparisonCountryId ?? "india");
+  const [selectedInstrumentIds, setSelectedInstrumentIds] = useState<Set<string>>(() => new Set(initialInstrumentIds));
   const [filterPanel, setFilterPanel] = useState<FilterPanel>("universe");
   const [marketRegion, setMarketRegion] = useState<MarketRegion>("all");
   const [marketStage, setMarketStage] = useState<MarketStage>("all");
@@ -990,8 +1009,20 @@ export function GlobalMapView({
     : industryComparisonId;
   const industryComparison = industryOptions.find((market) => market.countryId === effectiveIndustryComparisonId)
     ?? industryOptions.find((market) => market.countryId !== industryPrimary?.countryId);
+  const globalBenchmark = globalIndustryBenchmark(comparisonIndustry);
+  const industryPeer = comparisonMode === "global" ? globalBenchmark : industryComparison;
   const industryPrimaryScore = industryPrimary ? scoreIndustryMarket(industryPrimary) : null;
-  const industryComparisonScore = industryComparison ? scoreIndustryMarket(industryComparison) : null;
+  const industryComparisonScore = industryPeer ? scoreIndustryMarket(industryPeer) : null;
+  const industryPrimaryDerived = industryPrimary ? deriveIndustryMetrics(industryPrimary) : null;
+  const industryComparisonDerived = industryPeer ? deriveIndustryMetrics(industryPeer) : null;
+  const comparisonVerdicts = industryPrimary && industryPeer ? industryComparisonVerdicts(industryPrimary, industryPeer) : [];
+  const discoveryCountries = comparisonMode === "country"
+    ? [selectedCountry?.name, comparisonCountry?.name].filter((country): country is string => Boolean(country))
+    : [industryPrimary?.country, comparisonMode === "industry" ? industryComparison?.country : null].filter((country): country is string => Boolean(country));
+  const discoveredInstruments = discoverStressInstruments({
+    countries: discoveryCountries,
+    industry: comparisonMode === "country" ? null : comparisonIndustry,
+  });
   const matchingMarkets = marketCountries.filter(marketPassesFilters);
   const matchingMarketCount = matchingMarkets.length;
   const shortcuts = ["norway", "netherlands", "united-states", "india", "singapore", "south-africa"]
@@ -1324,6 +1355,7 @@ export function GlobalMapView({
                 <div className="atlas-comparison-mode" role="tablist" aria-label="Comparison type">
                   <button type="button" role="tab" aria-selected={comparisonMode === "country"} className={comparisonMode === "country" ? "active" : ""} onClick={() => setComparisonMode("country")}>Whole market</button>
                   <button type="button" role="tab" aria-selected={comparisonMode === "industry"} className={comparisonMode === "industry" ? "active" : ""} onClick={() => setComparisonMode("industry")}>Same industry</button>
+                  <button type="button" role="tab" aria-selected={comparisonMode === "global"} className={comparisonMode === "global" ? "active" : ""} onClick={() => setComparisonMode("global")}>Global peers</button>
                 </div>
               </header>
               {comparisonMode === "country" && comparisonCountry && comparisonAnalytics && comparisonValuation ? <>
@@ -1348,36 +1380,57 @@ export function GlobalMapView({
                 </div>
                 <p>Whole-market screen. Index composition, accounting standards, and observation periods can materially change the reading.</p>
               </> : null}
-              {comparisonMode === "industry" && industryPrimary && industryComparison && industryPrimaryScore && industryComparisonScore ? <>
+              {comparisonMode !== "country" && industryPrimary && industryPeer && industryPrimaryScore && industryComparisonScore && industryPrimaryDerived && industryComparisonDerived ? <>
                 <div className="atlas-comparison-selectors">
                   <label><span>Industry</span><select value={comparisonIndustry} onChange={(event) => setComparisonIndustry(event.target.value as HeadToHeadIndustry)}>{Object.entries(industryLabels).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
                   <label><span>Market A</span><select value={industryPrimary.countryId} onChange={(event) => setIndustryPrimaryId(event.target.value)}>{industryOptions.map((market) => <option key={market.countryId} value={market.countryId}>{market.country}</option>)}</select></label>
-                  <label><span>Market B</span><select value={industryComparison.countryId} onChange={(event) => setIndustryComparisonId(event.target.value)}>{industryOptions.filter((market) => market.countryId !== industryPrimary.countryId).map((market) => <option key={market.countryId} value={market.countryId}>{market.country}</option>)}</select></label>
+                  {comparisonMode === "industry" && industryComparison ? <label><span>Market B</span><select value={industryComparison.countryId} onChange={(event) => setIndustryComparisonId(event.target.value)}>{industryOptions.filter((market) => market.countryId !== industryPrimary.countryId).map((market) => <option key={market.countryId} value={market.countryId}>{market.country}</option>)}</select></label> : <div className="atlas-benchmark-label"><span>Reference set</span><strong>Equal-weighted global peers</strong><small>Not an investable index</small></div>}
                 </div>
-                <div className="industry-verdict">
-                  <div><span>Stronger modeled setup</span><strong>{industryPrimaryScore.overall >= industryComparisonScore.overall ? industryPrimary.country : industryComparison.country}</strong><p>{industryLabels[comparisonIndustry]} · transparent screen, not a recommendation</p></div>
-                  <ScoreSummary market={industryPrimary.country} score={industryPrimaryScore.overall} />
-                  <ScoreSummary market={industryComparison.country} score={industryComparisonScore.overall} />
+                <div className="industry-verdict-grid">
+                  {comparisonVerdicts.map((verdict) => <article key={verdict.label} className={verdict.tone}><span>{verdict.label}</span><strong>{verdict.leader}</strong><small>{verdict.note}</small></article>)}
                 </div>
+                <div className="industry-score-pair"><ScoreSummary market={industryPrimary.country} score={industryPrimaryScore.overall} /><ScoreSummary market={industryPeer.country} score={industryComparisonScore.overall} /></div>
+                <div className="metric-provenance"><span>Source · {industryMetricProvenance.source}</span><span>As of · {industryMetricProvenance.asOf}</span><span>{industryMetricProvenance.freshness}</span><span>Confidence · {industryMetricProvenance.confidence}</span></div>
                 <div className="table-wrap">
                   <table>
-                    <thead><tr><th>Metric</th><th>{industryPrimary.country}</th><th>{industryComparison.country}</th><th>Reading</th></tr></thead>
+                    <thead><tr><th>Metric</th><th>{industryPrimary.country}</th><th>{industryPeer.country}</th><th>Reading</th></tr></thead>
                     <tbody>
-                      <ComparisonRow label="Industry P/E" primary={industryPrimary.pe} comparison={industryComparison.pe} suffix="x" lowerIsBetter />
-                      <ComparisonRow label="Earnings growth" primary={industryPrimary.earningsGrowth} comparison={industryComparison.earningsGrowth} suffix="%" />
-                      <ComparisonRow label="FCF yield" primary={industryPrimary.fcfYield} comparison={industryComparison.fcfYield} suffix="%" />
-                      <ComparisonRow label="Net debt / EBITDA" primary={industryPrimary.netDebtToEbitda} comparison={industryComparison.netDebtToEbitda} suffix="x" lowerIsBetter />
-                      <ComparisonRow label="Return on equity" primary={industryPrimary.roe} comparison={industryComparison.roe} suffix="%" />
-                      <ComparisonRow label="Sharpe ratio" primary={industryPrimary.sharpe} comparison={industryComparison.sharpe} />
-                      <RiskComparisonRow label="Policy risk" primary={industryPrimary.policyRisk} comparison={industryComparison.policyRisk} />
-                      <RiskComparisonRow label="Currency risk" primary={industryPrimary.currencyRisk} comparison={industryComparison.currencyRisk} />
-                      <ComparisonRow label="Market liquidity" primary={industryPrimary.liquidity} comparison={industryComparison.liquidity} suffix="/5" />
+                      <ComparisonRow label="Industry P/E" primary={industryPrimary.pe} comparison={industryPeer.pe} suffix="x" lowerIsBetter />
+                      <ComparisonRow label="PEG" primary={industryPrimaryDerived.peg} comparison={industryComparisonDerived.peg} lowerIsBetter />
+                      <ComparisonRow label="Price / book" primary={industryPrimaryDerived.priceToBook} comparison={industryComparisonDerived.priceToBook} suffix="x" lowerIsBetter />
+                      <ComparisonRow label="Expected earnings growth" primary={industryPrimary.earningsGrowth} comparison={industryPeer.earningsGrowth} suffix="%" />
+                      <ComparisonRow label="Expected revenue growth" primary={industryPrimaryDerived.expectedRevenueGrowth} comparison={industryComparisonDerived.expectedRevenueGrowth} suffix="%" />
+                      <ComparisonRow label="Historical growth" primary={industryPrimaryDerived.historicalGrowth} comparison={industryComparisonDerived.historicalGrowth} suffix="%" />
+                      <ComparisonRow label="FCF yield" primary={industryPrimary.fcfYield} comparison={industryPeer.fcfYield} suffix="%" />
+                      <ComparisonRow label="Operating margin" primary={industryPrimaryDerived.operatingMargin} comparison={industryComparisonDerived.operatingMargin} suffix="%" />
+                      <ComparisonRow label="Net debt / EBITDA" primary={industryPrimary.netDebtToEbitda} comparison={industryPeer.netDebtToEbitda} suffix="x" lowerIsBetter />
+                      <ComparisonRow label="Balance-sheet strength" primary={industryPrimaryDerived.balanceSheetStrength} comparison={industryComparisonDerived.balanceSheetStrength} suffix="/100" />
+                      <ComparisonRow label="Earnings consistency" primary={industryPrimaryDerived.earningsConsistency} comparison={industryComparisonDerived.earningsConsistency} suffix="/100" />
+                      <ComparisonRow label="Sharpe ratio" primary={industryPrimary.sharpe} comparison={industryPeer.sharpe} />
+                      <ComparisonRow label="Volatility" primary={industryPrimaryDerived.volatility} comparison={industryComparisonDerived.volatility} suffix="%" lowerIsBetter />
+                      <ComparisonRow label="Modeled max drawdown" primary={industryPrimaryDerived.maxDrawdown} comparison={industryComparisonDerived.maxDrawdown} suffix="%" />
+                      <RiskComparisonRow label="Policy risk" primary={industryPrimary.policyRisk} comparison={industryPeer.policyRisk} />
+                      <RiskComparisonRow label="Currency risk" primary={industryPrimary.currencyRisk} comparison={industryPeer.currencyRisk} />
+                      <ComparisonRow label="Market liquidity" primary={industryPrimary.liquidity} comparison={industryPeer.liquidity} suffix="/5" />
                     </tbody>
                   </table>
                 </div>
-                <div className="industry-context"><p><strong>{industryPrimary.country}</strong>{industryPrimary.note}</p><p><strong>{industryComparison.country}</strong>{industryComparison.note}</p></div>
+                <div className="industry-context"><p><strong>{industryPrimary.country}</strong>{industryPrimary.note}</p><p><strong>{industryPeer.country}</strong>{industryPeer.note}</p></div>
                 <p>Overall score: valuation 20%, growth 20%, quality 16%, balance sheet 14%, risk-adjusted return 15%, investability 15%. Inputs are indicative research screens and must be verified before use.</p>
               </> : null}
+              <section className="atlas-security-discovery">
+                <header><div><span className="eyebrow">Security discovery</span><h3>Build a test set from this comparison</h3></div><button type="button" className="primary-button" disabled={!selectedInstrumentIds.size} onClick={() => {
+                  const primaryCountryId = comparisonMode === "country" ? selectedCountry.id : industryPrimary?.countryId ?? selectedCountry.id;
+                  const primaryCountry = comparisonMode === "country" ? selectedCountry.name : industryPrimary?.country ?? selectedCountry.name;
+                  const secondCountry = comparisonMode === "country" ? comparisonCountry : comparisonMode === "industry" ? marketCountries.find((country) => country.id === industryComparison?.countryId) ?? null : null;
+                  onSendToScenarios({ id: crypto.randomUUID(), instrumentIds: [...selectedInstrumentIds], context: { mode: comparisonMode, primaryCountryId, primaryCountry, comparisonCountryId: secondCountry?.id, comparisonCountry: secondCountry?.name, industry: comparisonMode === "country" ? undefined : comparisonIndustry, industryLabel: comparisonMode === "country" ? undefined : industryLabels[comparisonIndustry], title: comparisonMode === "country" ? `${primaryCountry} vs ${comparisonCountry?.name ?? "peer market"}` : `${industryLabels[comparisonIndustry]} · ${primaryCountry} vs ${industryPeer?.country ?? "global peers"}` } });
+                }}><Send size={15} /> Send {selectedInstrumentIds.size || ""} to Scenarios</button></header>
+                <div className="atlas-security-list">
+                  {discoveredInstruments.map((instrument) => { const selected = selectedInstrumentIds.has(instrument.id); return <button type="button" key={instrument.id} className={selected ? "selected" : ""} onClick={() => setSelectedInstrumentIds((current) => { const next = new Set(current); if (next.has(instrument.id)) next.delete(instrument.id); else next.add(instrument.id); return next; })}><span className="stress-asset-icon">{selected ? <Check size={13} /> : <Plus size={13} />}</span><span><strong>{instrument.ticker}</strong><small>{instrument.name} · {instrument.country}</small></span><span><strong>{stressResearchTag(instrument)}</strong><small>{instrument.assetType} · {instrument.sector}</small></span><span><strong>{instrument.forwardPe?.toFixed(1) ?? "—"}</strong><small>Fwd P/E</small></span><span><strong>{instrument.sharpe?.toFixed(2) ?? "—"}</strong><small>Sharpe</small></span><span><strong>{instrument.recessionRisk ?? "—"}</strong><small>Recession risk</small></span></button>; })}
+                  {!discoveredInstruments.length ? <div className="empty-state">No researched securities match this comparison yet. Missing values are excluded rather than shown as zero.</div> : null}
+                </div>
+                <footer>Indicative research screen · sourced from instrument metadata dated 28 Aug 2026 · verify estimates before use. Selection is temporary and is not saved.</footer>
+              </section>
             </section>
           ) : null}
           {selectedResearch ? (
