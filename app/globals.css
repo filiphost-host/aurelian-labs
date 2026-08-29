@@ -1,21 +1,23 @@
 :root {
-  --bg: #e8e2d5;
-  --panel: #f5f0e6;
-  --panel-strong: #fffdf7;
-  --panel-muted: #ece4d4;
-  --ink: #202720;
-  --muted: #716b60;
-  --line: #cfc2aa;
-  --line-strong: #a99a7f;
-  --green: #28382e;
-  --green-deep: #17241d;
-  --green-soft: #4f7461;
-  --gold: #a77c27;
-  --gold-bright: #d6b45b;
-  --gold-dark: #674b14;
-  --red: #a65d45;
-  --teal: #3f7476;
-  --shadow: 0 16px 44px rgba(30, 37, 31, 0.12);
+  --bg: #0c090a;
+  --panel: #131012;
+  --panel-strong: #171315;
+  --panel-muted: #1d171a;
+  --ink: #f2efed;
+  --muted: #8b8689;
+  --line: rgba(255, 255, 255, 0.075);
+  --line-strong: rgba(255, 255, 255, 0.15);
+  --green: #3f8f70;
+  --green-deep: #0d1110;
+  --green-soft: #54a981;
+  --gold: #c5a45b;
+  --gold-bright: #d5b96f;
+  --gold-dark: #d5b96f;
+  --red: #d44f65;
+  --red-bright: #eb6176;
+  --red-muted: rgba(212, 79, 101, 0.16);
+  --teal: #588889;
+  --shadow: 0 22px 64px rgba(0, 0, 0, 0.34);
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
 }
@@ -30,27 +32,22 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
+  min-height: 100vh;
   color: var(--ink);
-  background:
-    repeating-linear-gradient(0deg, rgba(61, 48, 26, 0.018) 0 1px, transparent 1px 4px),
-    linear-gradient(180deg, #f0eadf 0%, var(--bg) 100%);
+  background: var(--bg);
   font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
 }
 
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  pointer-events: none;
-  opacity: 0.16;
-  background-image:
-    repeating-linear-gradient(93deg, rgba(24, 35, 29, 0.06) 0 1px, transparent 1px 5px),
-    repeating-linear-gradient(2deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 7px);
-  mix-blend-mode: multiply;
+  display: none;
 }
 
 button,
@@ -8364,4 +8361,64 @@ button {
   .radar-guardrail-band { grid-template-columns: auto 1fr; }
   .radar-guardrail-band em { grid-column: 2; }
   .alternative-signal-grid dl { grid-template-columns: 1fr; }
+}
+
+
+/* Compare-branch: dock clusters, sample honesty, import notes */
+.dock-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 5px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.floating-dock button.dock-secondary {
+  color: #8d888b;
+}
+
+.floating-dock button.dock-secondary.active {
+  color: #f7f3f1;
+}
+
+.sample-banner {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border: 1px solid rgba(212, 79, 101, 0.28);
+  border-radius: 5px;
+  color: #e7c9ce;
+  background: rgba(212, 79, 101, 0.08);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.import-honesty {
+  margin: 0 0 16px;
+  padding: 0 0 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.import-honesty li + li {
+  margin-top: 8px;
+}
+
+.import-honesty code {
+  color: #e7c9ce;
+  font-size: 11px;
+}
+
+.share-freeze-note {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 620px) {
+  .floating-dock {
+    max-width: calc(100vw - 16px);
+    overflow-x: auto;
+    left: 50%;
+  }
 }
