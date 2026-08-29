@@ -54,6 +54,9 @@ export function CompanyResearchView({
 
   return (
     <div className="research-workbench">
+      <p className="sample-banner" role="note">
+        SAMPLE · Company research figures are illustrative, not live market data.
+      </p>
       <section className="research-identity">
         <div className="research-company">
           <span className="research-mark" aria-hidden="true">{profile.ticker.slice(0, 1)}</span>

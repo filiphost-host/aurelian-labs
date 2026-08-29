@@ -47,6 +47,8 @@ import { CsvImportDialog } from "@/components/csv-import-dialog";
 import type { RemoteInstrument } from "@/components/search-command";
 import { ProvenanceBadge } from "@/components/provenance-badge";
 import { InvestorPlaybooks } from "@/components/investor-playbooks";
+import { TimeMachinePanel } from "@/components/time-machine-panel";
+import { ProjectionPanel } from "@/components/projection-panel";
 import { buildBenchmarkComparison, portfolioMilestones, type BenchmarkPricePoint } from "@/lib/portfolio-story";
 
 const chartColors = ["#f0edeb", "#4f9d78", "#b36570", "#6f777c", "#c5a45b", "#587f78"];
@@ -186,7 +188,7 @@ export function PortfolioView({
             <div className="history-status">
               <span>Portfolio</span>
               <span className="benchmark-key">
-                {comparison.benchmarkSource === "stored" ? "S&P 500 (stored closes)" : "S&P 500 reference"}
+                {comparison.benchmarkSource === "stored" ? "S&P 500 (stored closes)" : "S&P 500 · indexed estimate"}
               </span>
             </div>
           </div>
@@ -201,7 +203,7 @@ export function PortfolioView({
               />
               <Tooltip
                 contentStyle={darkTooltip}
-                formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name === "portfolioReturn" ? "Portfolio" : "S&P 500 reference"]}
+                formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name === "portfolioReturn" ? "Portfolio" : "S&P 500 · indexed estimate"]}
               />
               <Area
                 type="monotone"
@@ -390,6 +392,18 @@ export function PortfolioView({
             fxRates={fxRates}
           />
         ) : null}
+
+        <TimeMachinePanel
+          positions={summary.positions}
+          benchmarkPrices={benchmarkPrices}
+          displayCurrency={displayCurrency}
+          fxRates={fxRates}
+        />
+        <ProjectionPanel
+          startValueNok={summary.total}
+          displayCurrency={displayCurrency}
+          fxRates={fxRates}
+        />
       </div>
 
       {activeHoldingEditor ? (

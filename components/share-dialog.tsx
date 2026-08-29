@@ -74,6 +74,11 @@ export function ShareDialog({
           <button className="icon-button" onClick={onClose} aria-label="Close share dialog"><X size={17} /></button>
         </div>
 
+        <p className="share-freeze-note">
+          This is a frozen snapshot, not live portfolio access. The link uses an opaque token,
+          expires after the period you pick (7 days by default), and can be revoked immediately
+          from the Data room once created. Holding names and values stay off unless you tick them.
+        </p>
         <div className="privacy-list">
           <label>
             <input
@@ -125,6 +130,11 @@ export function ShareDialog({
             <span>{url}</span>
             <button className="icon-button" onClick={copyLink} aria-label="Copy share link"><Copy size={15} /></button>
           </div>
+        ) : null}
+        {url ? (
+          <p className="panel-note">
+            Anyone with the link sees only this frozen payload. Revoke it from Insights → Data sources if you need it dead before expiry.
+          </p>
         ) : null}
         {message ? <p className="form-message" role="status">{message}</p> : null}
 

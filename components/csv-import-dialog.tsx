@@ -120,6 +120,11 @@ export function CsvImportDialog({
           <ShieldCheck size={15} aria-hidden="true" />
           The file is read in this browser and never uploaded. Only the rows you confirm are saved.
         </p>
+        <ul className="import-honesty">
+          <li>A value like <code>1.000</code> is left out when the file does not settle decimal versus thousands. Click the row after you know which it is; the importer will not guess.</li>
+          <li>Re-importing the same file is a no-op. Each saved row stores a fingerprint, so identical lines are locked as already imported.</li>
+          <li>Two genuinely identical trades on the same day (same instrument, quantity, price, and fee) fingerprint as one row. Record the second by hand.</li>
+        </ul>
 
         <div className="import-source">
           <button className="ghost-button" onClick={() => fileInput.current?.click()}>

@@ -103,8 +103,11 @@ export function EarningsCalendarView({
 
   return (
     <div className="calendar-workbench">
+      <p className="sample-banner" role="note">
+        SAMPLE · Dates and outcomes here are planning estimates, not a live earnings feed.
+      </p>
       <section className="calendar-toolbar">
-        <div className="calendar-title"><CalendarDays size={19} /><div><span className="eyebrow">Portfolio event planning</span><h2>Earnings calendar</h2></div></div>
+        <div className="calendar-title"><CalendarDays size={19} /><div><span className="eyebrow">Portfolio event planning · SAMPLE</span><h2>Earnings calendar</h2></div></div>
         <div className="calendar-tools">
           <label className="calendar-search"><Search size={14} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter ticker" aria-label="Filter earnings calendar by ticker" /></label>
           <label className="calendar-toggle"><span>Holdings only</span><input type="checkbox" checked={holdingsOnly} onChange={(event) => setHoldingsOnly(event.target.checked)} /></label>

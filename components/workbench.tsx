@@ -1,10 +1,15 @@
 "use client";
 
 import {
+  BookOpen,
+  Briefcase,
+  CalendarDays,
   CircleGauge,
   Globe2,
   Newspaper,
+  Scale,
   SlidersHorizontal,
+  Telescope,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
@@ -62,11 +67,21 @@ const JudgmentView = dynamic(
 
 type Tab = "insights" | "portfolio" | "analyst" | "judgment" | "map" | "scenarios" | "calendar" | "research";
 
-const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
+const primaryTabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
+  { id: "portfolio", label: "Portfolio", icon: Briefcase },
   { id: "map", label: "Atlas", icon: Globe2 },
   { id: "scenarios", label: "Scenarios", icon: SlidersHorizontal },
   { id: "insights", label: "Insights", icon: Newspaper },
 ];
+
+const secondaryTabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
+  { id: "judgment", label: "Judgment", icon: Scale },
+  { id: "analyst", label: "Analyst", icon: Telescope },
+  { id: "research", label: "Research", icon: BookOpen },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
+];
+
+const tabs = [...primaryTabs, ...secondaryTabs];
 
 // PostgREST caps an unbounded select (1000 rows by default), which would silently
 // truncate a multi-year benchmark history to its oldest page and freeze the chart.
@@ -109,7 +124,7 @@ export function Workbench({
 }) {
   const configured = false;
   const supabase = useMemo(() => createClient(), []);
-  const [activeTab, setActiveTab] = useState<Tab>("map");
+  const [activeTab, setActiveTab] = useState<Tab>("portfolio");
   const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("NOK");
   const [holdings, setHoldings] = useState<Holding[]>(configured ? [] : sampleHoldings);
   const [transactions, setTransactions] = useState<Transaction[]>(configured ? [] : sampleTransactions);
@@ -463,13 +478,30 @@ export function Workbench({
         </div>
       </section>
 
-      <nav className="floating-dock" aria-label="Primary navigation">
-        {tabs.map((tab) => {
+      <nav className="floating-dock" aria-label="Workbench navigation">
+        {primaryTabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               className={activeTab === tab.id ? "active" : ""}
+              onClick={() => openTab(tab.id)}
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              aria-label={tab.label}
+              title={tab.label}
+            >
+              <Icon size={17} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+        <span className="dock-divider" aria-hidden="true" />
+        {secondaryTabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              className={`dock-secondary${activeTab === tab.id ? " active" : ""}`}
               onClick={() => openTab(tab.id)}
               aria-current={activeTab === tab.id ? "page" : undefined}
               aria-label={tab.label}
