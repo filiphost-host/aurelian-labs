@@ -33,11 +33,10 @@ import {
 } from "recharts";
 import type { FxRates } from "@/lib/fx";
 import { DataRoomPanel } from "@/components/data-room-panel";
-import { MarketHistoryView } from "@/components/market-history-view";
 import type { DailyBrief, MarketQuote } from "@/lib/types";
 
 type DeskFocus = "core" | "us" | "europe" | "discover";
-type InsightView = "overview" | "markets" | "history" | "under-radar" | "signals" | "investors" | "sources";
+type InsightView = "overview" | "markets" | "under-radar" | "signals" | "investors" | "sources";
 type IndexResearch = {
   index: {
     id: string;
@@ -94,7 +93,6 @@ type UnderRadarResponse = {
 const insightViews: Array<{ id: InsightView; label: string; description: string }> = [
   { id: "overview", label: "Daily overview", description: "Market pulse and priority signals" },
   { id: "markets", label: "Markets", description: "Major indices and geographic research" },
-  { id: "history", label: "Market history", description: "Crises, transmission, and recurring patterns since 1857" },
   { id: "under-radar", label: "Under the Radar", description: "Durable outliers beyond the headline names" },
   { id: "signals", label: "Market signals", description: "Facts, relevance, and scenarios" },
   { id: "investors", label: "Investor comparison", description: "Compare operating styles" },
@@ -255,8 +253,6 @@ export function InsightsView({
             onRefresh={refreshQuotes}
           />
         ) : null}
-
-        {insightView === "history" ? <MarketHistoryView /> : null}
 
         {insightView === "overview" ? (
           <section className="brief-stats" aria-label="Brief status">

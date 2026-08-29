@@ -3,6 +3,7 @@
 import {
   CircleGauge,
   Globe2,
+  History,
   Newspaper,
   SlidersHorizontal,
 } from "lucide-react";
@@ -44,6 +45,10 @@ const ScenarioView = dynamic(
   () => import("@/components/scenario-view").then((module) => module.ScenarioView),
   { ssr: false, loading: () => <div className="view-loading">Loading scenario tools...</div> },
 );
+const MarketHistoryView = dynamic(
+  () => import("@/components/market-history-view").then((module) => module.MarketHistoryView),
+  { ssr: false, loading: () => <div className="view-loading">Loading market timeline...</div> },
+);
 const EarningsCalendarView = dynamic(
   () => import("@/components/earnings-calendar-view").then((module) => module.EarningsCalendarView),
   { ssr: false, loading: () => <div className="view-loading">Loading event calendar...</div> },
@@ -61,12 +66,13 @@ const JudgmentView = dynamic(
   { ssr: false, loading: () => <div className="view-loading">Loading decision review...</div> },
 );
 
-type Tab = "insights" | "portfolio" | "analyst" | "judgment" | "map" | "scenarios" | "calendar" | "research";
+type Tab = "insights" | "timeline" | "portfolio" | "analyst" | "judgment" | "map" | "scenarios" | "calendar" | "research";
 
 const tabs: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: "map", label: "Atlas", icon: Globe2 },
   { id: "scenarios", label: "Scenarios", icon: SlidersHorizontal },
   { id: "insights", label: "Insights", icon: Newspaper },
+  { id: "timeline", label: "Timeline", icon: History },
 ];
 
 // PostgREST caps an unbounded select (1000 rows by default), which would silently
@@ -473,6 +479,7 @@ export function Workbench({
               }}
             />
           ) : null}
+          {activeTab === "timeline" ? <MarketHistoryView /> : null}
         </div>
       </section>
 

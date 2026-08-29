@@ -17,7 +17,9 @@ export function MarketHistoryView() {
   const preview = visibleEvents.find((event) => event.id === hoveredId) ?? null;
   const patterns = recurringHistoryPatterns(visibleEvents);
 
-  return <section className="history-workspace" aria-labelledby="market-history-title">
+  return <div className="history-layout">
+    <section className="history-toolbar primary-view-toolbar"><div><h2>Timeline</h2></div></section>
+    <section className="history-workspace" aria-labelledby="market-history-title">
     <header className="history-heading">
       <div><span className="eyebrow">1857 to today</span><h3 id="market-history-title">Market history, transmission, and repair</h3><p>Explore what broke, how stress traveled, and which conditions repeat. Events are selected for learning value, not as a complete chronology.</p></div>
       <button type="button" className="ghost-button" onClick={() => { setCategory("All"); setHoveredId(null); setSelectedId("great-depression"); }}><RotateCcw size={14} /> Reset</button>
@@ -68,5 +70,6 @@ export function MarketHistoryView() {
       <div className="history-lesson"><Landmark size={17} /><div><span>Common denominator</span><strong>{selected.lesson}</strong><p>{selected.commonDenominators.join(" · ")}</p></div></div>
       <footer><BookOpen size={14} /><span>Primary research reference</span><a href={selected.sourceUrl} target="_blank" rel="noreferrer">{selected.source}<ExternalLink size={12} /></a><em>Historical synthesis · reviewed 29 Aug 2026</em></footer>
     </article>
-  </section>;
+    </section>
+  </div>;
 }

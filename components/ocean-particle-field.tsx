@@ -135,7 +135,7 @@ export function OceanParticleField({ surfaceRef }: { surfaceRef: RefObject<SVGSV
 
       draw();
       if (remainingMotion > 0.025) frameId = window.requestAnimationFrame(animate);
-      else {
+      else if (!active) {
         particles.forEach((particle) => {
           particle.x = particle.baseX;
           particle.y = particle.baseY;

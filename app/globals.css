@@ -7808,6 +7808,9 @@ button {
 }
 
 /* Market history */
+.history-layout { display: grid; gap: 12px; }
+.history-toolbar { min-height: 58px; }
+.history-toolbar h2 { margin: 0; }
 .history-workspace {
   overflow: hidden;
   border: 1px solid rgba(199, 169, 93, .17);
@@ -7833,7 +7836,7 @@ button {
 .history-timeline { position: relative; height: 295px; margin: 0 12px; }
 .history-axis { position: absolute; right: 0; bottom: 58px; left: 0; height: 1px; background: linear-gradient(90deg, rgba(199,169,93,.18), rgba(199,169,93,.55), rgba(199,169,93,.2)); }
 .history-axis::before { position: absolute; inset: -10px 0; content: ""; background-image: repeating-linear-gradient(90deg, transparent 0 calc(5.68% - 1px), rgba(255,255,255,.05) calc(5.68% - 1px) 5.68%); }
-.history-timeline > button { position: absolute; bottom: 28px; width: 70px; padding: 0; border: 0; color: #87908a; background: transparent; text-align: left; transform: translateX(-11px); cursor: pointer; }
+.history-timeline > button { position: absolute; bottom: 28px; width: 70px; padding: 0; border: 0; color: #87908a; background: transparent; text-align: left; transform: translateX(-11px); transition: transform 180ms ease, filter 180ms ease; cursor: pointer; }
 .history-timeline > button i { display: block; width: 3px; margin-left: 9px; border-radius: 1px 1px 0 0; background: #8f7b48; box-shadow: 0 0 12px rgba(199,169,93,.12); transition: height 180ms ease, background 180ms ease, box-shadow 180ms ease; }
 .history-timeline > button::after { position: absolute; bottom: 27px; left: 6px; width: 7px; height: 7px; border: 1px solid #b29a58; border-radius: 50%; background: #10130f; content: ""; transition: transform 180ms ease, background 180ms ease; }
 .history-timeline > button span, .history-timeline > button strong { display: block; white-space: nowrap; }
@@ -7841,6 +7844,7 @@ button {
 .history-timeline > button strong { margin-top: 3px; overflow: hidden; color: #747d77; font-size: 8px; font-weight: 500; text-overflow: ellipsis; }
 .history-timeline > button:hover i, .history-timeline > button:focus-visible i, .history-timeline > button.selected i { background: #d1b65f; box-shadow: 0 0 20px rgba(209,182,95,.25); }
 .history-timeline > button:hover::after, .history-timeline > button:focus-visible::after, .history-timeline > button.selected::after { background: #cfb35e; transform: scale(1.35); }
+.history-timeline > button:hover, .history-timeline > button:focus-visible { z-index: 3; filter: brightness(1.16); transform: translate(-11px, -4px); }
 .history-timeline > button.selected strong { color: #d6d7d2; }
 .history-timeline > button.inflation i { background: #a75b64; }
 .history-timeline > button.currency i { background: #587b70; }
