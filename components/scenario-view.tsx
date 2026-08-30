@@ -109,6 +109,7 @@ export function ScenarioView({
     ? normalizedAllocations(atlasHandoff.instrumentIds.map((instrumentId) => ({ instrumentId, weight: 1 })))
     : initialAllocations());
   const [instrumentFilter, setInstrumentFilter] = useState<InstrumentFilter>("all");
+  const [showInstrumentResearch, setShowInstrumentResearch] = useState(false);
   const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({});
   const [scenarioCategory, setScenarioCategory] = useState<ScenarioCategory>(scenarioGuides[activePresetId]?.category ?? "Macro");
   const [modelOpen, setModelOpen] = useState(false);
@@ -263,7 +264,7 @@ export function ScenarioView({
   return <>
     <div className="scenario-layout scenario-workbench scenario-lab-v2">
       <section className="scenario-toolbar primary-view-toolbar">
-        <div><h2>Scenarios</h2></div>
+        <div><h2>Scenarios</h2><p>Build a test mix, choose a market move, then see the pressure points.</p></div>
         <div className="scenario-actions">
           <button className="ghost-button" onClick={() => selectPreset("custom")}><RotateCcw size={15} /> Clear shock</button>
           <button className="ghost-button" onClick={() => setSaveOpen(true)}><Save size={15} /> Save</button>
@@ -277,14 +278,14 @@ export function ScenarioView({
       </section> : null}
 
       <nav className="scenario-step-rail" aria-label="Stress test steps">
-        <button className={activeStep === 1 ? "active" : ""} aria-current={activeStep === 1 ? "step" : undefined} onClick={() => goToStep(1)}><span>1</span><strong>Build portfolio</strong><small>{stressHoldings.length} positions · {formatMoney(total, displayCurrency, fxRates)}</small></button><ArrowRight size={16} />
-        <button className={activeStep === 2 ? "active" : ""} aria-current={activeStep === 2 ? "step" : undefined} onClick={() => goToStep(2)}><span>2</span><strong>Choose market move</strong><small>{activePreset?.name ?? "Custom assumptions"}</small></button><ArrowRight size={16} />
-        <button className={activeStep === 3 ? "active" : ""} aria-current={activeStep === 3 ? "step" : undefined} onClick={() => goToStep(3)}><span>3</span><strong>Understand the result</strong><small className={impact >= 0 ? "good" : "bad"}>{formatMoney(impact, displayCurrency, fxRates)} · {formatPercent(impactPercent)}</small></button>
+        <button className={activeStep === 1 ? "active" : ""} aria-current={activeStep === 1 ? "step" : undefined} onClick={() => goToStep(1)}><span>1</span><strong>Portfolio</strong><small>{stressHoldings.length} positions · {formatMoney(total, displayCurrency, fxRates)}</small></button><ArrowRight size={16} />
+        <button className={activeStep === 2 ? "active" : ""} aria-current={activeStep === 2 ? "step" : undefined} onClick={() => goToStep(2)}><span>2</span><strong>Market move</strong><small>{activePreset?.name ?? "Custom assumptions"}</small></button><ArrowRight size={16} />
+        <button className={activeStep === 3 ? "active" : ""} aria-current={activeStep === 3 ? "step" : undefined} onClick={() => goToStep(3)}><span>3</span><strong>Result</strong><small className={impact >= 0 ? "good" : "bad"}>{formatMoney(impact, displayCurrency, fxRates)} · {formatPercent(impactPercent)}</small></button>
       </nav>
 
       {activeStep === 1 ? <section id="scenario-step-portfolio" className="stress-builder scenario-step-panel">
-        <div className="scenario-section-heading">
-          <div><span className="eyebrow">Step 1 · Test portfolio</span><h2>What do you want to stress?</h2></div>
+          <div className="scenario-section-heading">
+          <div><span className="eyebrow">Step 1 · Test portfolio</span><h2>Choose what to test</h2></div>
           <div className="stress-builder-actions"><button className="ghost-button" onClick={loadSamplePortfolio}>Reset example</button><button className="ghost-button" onClick={equalWeight}><Equal size={15} /> Equal weight</button></div>
         </div>
         <div className="stress-builder-grid">
@@ -300,7 +301,7 @@ export function ScenarioView({
                 return <article key={instrument.id}>
                   <button className="icon-button danger" title={`Remove ${instrument.name}`} onClick={() => toggleInstrument(instrument.id)}><X size={14} /></button>
                   <div className="stress-selected-name"><CompanyMark ticker={instrument.ticker} assetType={instrument.assetType} size={27} /><span><strong>{instrument.ticker}</strong><span>{instrument.name} · {instrument.assetType}</span></span></div>
-                  <label><input aria-label={`${instrument.name} weight`} type="number" min="0" max="100" step="1" inputMode="decimal" value={weightDrafts[instrument.id] ?? Number(allocation.weight.toFixed(1))} onChange={(event) => updateWeight(instrument.id, event.target.value)} onBlur={() => commitWeight(instrument.id)} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /><span>%</span></label>
+                  <div className="stress-weight-control"><input aria-label={`${instrument.name} weight`} type="range" min="0" max="100" step="1" value={allocation.weight} onChange={(event) => updateWeight(instrument.id, event.target.value)} /><label><input aria-label={`${instrument.name} weight percentage`} type="number" min="0" max="100" step="1" inputMode="decimal" value={weightDrafts[instrument.id] ?? Number(allocation.weight.toFixed(1))} onChange={(event) => updateWeight(instrument.id, event.target.value)} onBlur={() => commitWeight(instrument.id)} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /><span>%</span></label></div>
                 </article>;
               })}
               {!normalized.length ? <div className="empty-state">Select at least one stock, ETF, or bond from the instrument list.</div> : null}
@@ -309,18 +310,16 @@ export function ScenarioView({
           <div className="stress-universe">
             <div className="stress-universe-tools">
               <div>{(["all", "stock", "etf", "bond"] as const).map((filter) => <button key={filter} className={instrumentFilter === filter ? "active" : ""} onClick={() => setInstrumentFilter(filter)}>{filter === "all" ? "All" : filter === "etf" ? "ETFs" : `${filter[0].toUpperCase()}${filter.slice(1)}s`}</button>)}</div>
-              <p>Forward P/E is estimate-based. Sharpe uses one year of adjusted weekly returns when sourced. Recession risk is Aurelian&apos;s transparent 1–100 model.</p>
+              <div className="stress-research-toggle"><span>Add or remove instruments. Weights always rebalance to 100%.</span><button type="button" onClick={() => setShowInstrumentResearch((current) => !current)}>{showInstrumentResearch ? "Hide research" : "Show research"}</button></div>
             </div>
-            <div className="stress-instrument-list">
-              <div className="stress-instrument-head"><span>Instrument</span><span>Fwd P/E</span><span>Sharpe</span><span>Recession risk</span></div>
+            <div className={`stress-instrument-list${showInstrumentResearch ? " show-research" : ""}`}>
+              <div className="stress-instrument-head"><span>Instrument</span>{showInstrumentResearch ? <><span>Fwd P/E</span><span>Sharpe</span><span>Recession risk</span></> : <span>Click to add or remove</span>}</div>
               {filteredInstruments.map((instrument) => {
                 const selected = selectedIds.has(instrument.id);
                 return <button key={instrument.id} className={selected ? "selected" : ""} onClick={() => toggleInstrument(instrument.id)}>
                   <span className="stress-asset-icon">{selected ? <Check size={14} /> : <Plus size={14} />}</span>
                   <span className="stress-instrument-name"><CompanyMark ticker={instrument.ticker} assetType={instrument.assetType} size={27} /><span><strong>{instrument.ticker}</strong><small>{instrument.name} · {instrument.country}</small></span></span>
-                  <span className="stress-metric"><strong>{instrument.forwardPe == null ? "—" : instrument.forwardPe.toFixed(1)}</strong><small>{instrument.forwardPe == null ? "Unavailable" : "Estimate"}</small></span>
-                  <span className="stress-metric"><strong>{instrument.sharpe == null ? "—" : instrument.sharpe.toFixed(2)}</strong><small>1Y weekly</small></span>
-                  <span className={`stress-risk risk-${(instrument.recessionRisk ?? 50) < 35 ? "low" : (instrument.recessionRisk ?? 50) < 65 ? "medium" : "high"}`}><span><i style={{ width: `${instrument.recessionRisk ?? 50}%` }} /></span><strong>{instrument.recessionRisk ?? 50}</strong><small>{instrument.metricSource ?? "Modeled"}</small></span>
+                  {showInstrumentResearch ? <><span className="stress-metric"><strong>{instrument.forwardPe == null ? "—" : instrument.forwardPe.toFixed(1)}</strong><small>{instrument.forwardPe == null ? "Unavailable" : "Estimate"}</small></span><span className="stress-metric"><strong>{instrument.sharpe == null ? "—" : instrument.sharpe.toFixed(2)}</strong><small>1Y weekly</small></span><span className={`stress-risk risk-${(instrument.recessionRisk ?? 50) < 35 ? "low" : (instrument.recessionRisk ?? 50) < 65 ? "medium" : "high"}`}><span><i style={{ width: `${instrument.recessionRisk ?? 50}%` }} /></span><strong>{instrument.recessionRisk ?? 50}</strong><small>{instrument.metricSource ?? "Modeled"}</small></span></> : <span className="stress-add-label">{selected ? "Included" : "Add to test"}</span>}
                 </button>;
               })}
               {!filteredInstruments.length ? <div className="empty-state">No instruments are available in this category.</div> : null}
@@ -356,12 +355,6 @@ export function ScenarioView({
           <article><span>Value after stress</span><strong>{formatMoney(total + impact, displayCurrency, fxRates)}</strong><em>Before {formatMoney(total, displayCurrency, fxRates)}</em></article>
           <article><span>Largest weak point</span><strong>{topContributor?.holding.ticker ?? "None"}</strong><em>{topContributor ? `${formatPercent(topContributor.impactPercent)} position impact` : "No responsive exposure"}</em></article>
         </div>
-        <div className="scenario-diagnostics">
-          <article><span>Currency contribution</span><strong className={currencyImpact >= 0 ? "good" : "bad"}>{formatMoney(currencyImpact, displayCurrency, fxRates)}</strong><small>Isolates USD/NOK and NOK/EUR assumptions</small></article>
-          <article><span>Largest position</span><strong>{largestBefore.toFixed(1)}% → {largestAfter.toFixed(1)}%</strong><small>Concentration before and immediately after stress</small></article>
-          <article><span>Recovery sensitivity</span><strong>About {recoverySensitivity} months</strong><small>Illustrative severity rule, not a forecast</small></article>
-          <article><span>Diversification counterfactual</span><strong className={alternativeImpact >= 0 ? "good" : "bad"}>{formatMoney(alternativeImpact, displayCurrency, fxRates)}</strong><small>{shift ? `Moves ${shift.toFixed(0)} points from ${topContributor?.holding.ticker} to an investment-grade Treasury` : "No weak position available to rebalance"}</small></article>
-        </div>
         <div className="stress-reading stress-reading-summary">
           <article><ShieldAlert size={18} /><span>Main cause</span><strong>{topContributor?.holding.name ?? "No weak point identified"}</strong><p>{topContributor ? `${formatMoney(topContributor.impactNok, displayCurrency, fxRates)} of the modeled move comes from this position.` : "Choose a scenario with an active factor for this portfolio."}</p></article>
           <article><Landmark size={18} /><span>How the shock travels</span><strong>{activeGuide.trigger}</strong><div>{activeGuide.transmission.slice(0, 3).map((step) => <span key={step}><ArrowRight size={12} />{step}</span>)}</div></article>
@@ -370,7 +363,12 @@ export function ScenarioView({
         <button className={`scenario-details-trigger scenario-results-trigger${resultsOpen ? " open" : ""}`} onClick={() => setResultsOpen((current) => !current)} aria-expanded={resultsOpen}>
           <div><SlidersHorizontal size={17} /><span><strong>{resultsOpen ? "Hide detailed analysis" : "Open charts, historical path, and assumptions"}</strong><small>Inspect contributors, historical stress periods, and the position-level model</small></span></div>{resultsOpen ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
         </button>
-        {resultsOpen ? <div className="scenario-result-details"><div className="scenario-timeline">
+        {resultsOpen ? <div className="scenario-result-details"><div className="scenario-diagnostics">
+          <article><span>Currency contribution</span><strong className={currencyImpact >= 0 ? "good" : "bad"}>{formatMoney(currencyImpact, displayCurrency, fxRates)}</strong><small>Isolates USD/NOK and NOK/EUR assumptions</small></article>
+          <article><span>Largest position</span><strong>{largestBefore.toFixed(1)}% → {largestAfter.toFixed(1)}%</strong><small>Concentration before and immediately after stress</small></article>
+          <article><span>Recovery sensitivity</span><strong>About {recoverySensitivity} months</strong><small>Illustrative severity rule, not a forecast</small></article>
+          <article><span>Diversification counterfactual</span><strong className={alternativeImpact >= 0 ? "good" : "bad"}>{formatMoney(alternativeImpact, displayCurrency, fxRates)}</strong><small>{shift ? `Moves ${shift.toFixed(0)} points from ${topContributor?.holding.ticker} to an investment-grade Treasury` : "No weak position available to rebalance"}</small></article>
+        </div><div className="scenario-timeline">
           <div className="scenario-timeline-head">
             <div><strong>Indexed stress path</strong><span>Hypothetical mix starting at 100</span></div>
             <div className="timeline-event-toggles" aria-label="Historical events shown on timeline">

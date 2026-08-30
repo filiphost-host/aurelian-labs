@@ -8258,7 +8258,7 @@ button {
 .stress-allocation-list { max-height: 480px; overflow: auto; }
 .stress-allocation-list article {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 76px;
+  grid-template-columns: 30px minmax(0, 1fr) minmax(124px, .5fr);
   align-items: center;
   gap: 10px;
   min-height: 58px;
@@ -8271,9 +8271,11 @@ button {
 .stress-allocation-list article > div span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stress-allocation-list article > div strong { color: #dbddd9; font-size: 11px; }
 .stress-allocation-list article > div span { margin-top: 3px; color: #777e78; font-size: 9px; }
-.stress-allocation-list article > label { display: flex; align-items: center; border: 1px solid rgba(255, 255, 255, .09); background: #101210; }
-.stress-allocation-list article > label input { width: 52px; height: 32px; border: 0; padding-left: 8px; color: #ddd9d3; background: transparent; font: inherit; }
-.stress-allocation-list article > label span { color: #797f79; font-size: 10px; }
+.stress-weight-control { display: grid; grid-template-columns: minmax(58px, 1fr) 62px; align-items: center; gap: 8px; }
+.stress-weight-control > input { width: 100%; accent-color: #b79748; }
+.stress-weight-control label { display: flex; align-items: center; border: 1px solid rgba(255, 255, 255, .09); background: #101210; }
+.stress-weight-control label input { width: 42px; height: 32px; border: 0; padding-left: 8px; color: #ddd9d3; background: transparent; font: inherit; }
+.stress-weight-control label span { color: #797f79; font-size: 10px; }
 
 .stress-universe { min-width: 0; }
 .stress-universe-tools { padding: 15px 16px 10px; border-bottom: 1px solid rgba(255, 255, 255, .05); }
@@ -8283,7 +8285,9 @@ button {
 .stress-universe-tools > div button { min-height: 30px; padding: 0 10px; border: 1px solid rgba(255,255,255,.07); border-radius: 2px; color: #777e79; background: transparent; font-size: 9px; }
 .stress-universe-tools > div button:hover { color: #d7d6d2; background: rgba(255,255,255,.05); }
 .stress-universe-tools > div button.active { border-color: rgba(199,169,93,.25); color: #e1c778; background: rgba(199,169,93,.09); }
-.stress-universe-tools > p { margin: 9px 0 0; color: #666d67; font-size: 8px; line-height: 1.45; }
+.stress-research-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; color: #666d67; font-size: 8px; line-height: 1.45; }
+.stress-research-toggle button { flex: 0 0 auto; border: 0; padding: 0; color: #c8ad64; background: transparent; font-size: 8px; }
+.stress-research-toggle button:hover { color: #e1c778; text-decoration: underline; }
 .stress-search-state { color: #b8a468; font-size: 8px; text-transform: uppercase; }
 .stress-instrument-list { max-height: 410px; overflow: auto; padding: 5px; }
 .stress-instrument-head {
@@ -8317,6 +8321,11 @@ button {
 }
 .stress-instrument-list > button:hover { background: rgba(255,255,255,.045); }
 .stress-instrument-list > button.selected { background: rgba(70,111,83,.12); }
+.stress-instrument-list:not(.show-research) .stress-instrument-head { grid-template-columns: minmax(170px, 1fr) 130px; }
+.stress-instrument-list:not(.show-research) > button { grid-template-columns: 28px minmax(170px, 1fr) 110px; }
+.stress-instrument-list:not(.show-research) .stress-instrument-head > span:last-child { text-align: right; }
+.stress-add-label { color: #7e857f; font-size: 9px; text-align: right; }
+.stress-instrument-list > button.selected .stress-add-label { color: #69ad84; }
 .stress-asset-icon { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.1); color: #8b918c; }
 .stress-instrument-list > button.selected .stress-asset-icon { border-color: rgba(91,163,122,.32); color: #67ad86; }
 .stress-instrument-list > button > span strong,
